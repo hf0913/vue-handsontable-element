@@ -52,6 +52,7 @@ function checkType(type, value) {
     if (typeof value === "string") {
         value = value.replace(/(^\s*)|(\s*$)/g, "");
     }
+
     switch (true) {
         case type === "notNull":
             state = !(value !== 0 && !value);
@@ -77,7 +78,7 @@ function changeCellProperties({
         size: "mini"
     }
 } = {}) {
-    const o = this.$store.state.MapleStore.tableColumn[this.col];
+    const o = this.$store.state.MapleStore.tableColumn[this.col] || {};
     const { cellProperties = {}, cellProps = {} } =
         this.$store.state.MapleStore.tableData[this.row] || {};
 
@@ -88,14 +89,14 @@ function changeCellProperties({
     );
     this.props = { ...props, ...o.props };
 
-    if (Reflect.has(cellProperties, o.key)) {
+    if (cellProperties && Reflect.has(cellProperties, o.key)) {
         this.cellProperties = Object.assign(
             this.cellProperties,
             properties,
             cellProperties[o.key]
         );
     }
-    if (Reflect.has(cellProps, o.key)) {
+    if (cellProps && Reflect.has(cellProps, o.key)) {
         this.props = { ...props, ...cellProps[o.key] };
     }
     this.$store.dispatch("disComponentInit", {

@@ -16,10 +16,9 @@ export default {
             colWidths: 128,
             readOnlyColor: "red"
         },
-        tableData: null,
-        tableColumn: null,
+        tableData: [],
+        tableColumn: [],
         commit: () => {},
-        addressOpts: [],
         $input: Element,
         hotInstance: Object,
         keepCellAttribute: {},
@@ -30,13 +29,15 @@ export default {
                 callback(checkState, v);
             });
         }),
-        checkAllabled: false
+        checkAllabled: false,
+        initCellsAttribute: Function,
+        loading: false
     },
     mutations: {
         setHotSettings(state, payload = {}) {
             state.hotSettings = Object.assign(state.hotSettings, payload);
         },
-        setTableData(state, payload = []) {
+        setTableData(state, payload) {
             state.tableData = payload;
         },
         setTableColumn(state, payload = []) {
@@ -63,47 +64,101 @@ export default {
         setChangeTDbg(state, payload = {}) {
             state.changeTDbg = Object.assign(state.changeTDbg, payload);
         },
-        setCheckAllabled(state, payload) {
+        setCheckAllabled(state, payload = false) {
             state.checkAllabled = payload;
+        },
+        setInitCellsAttribute(state, payload = Function) {
+            state.initCellsAttribute = payload;
+        },
+        setLoading(state, payload = false) {
+            state.loading = payload;
         }
     },
     actions: {
         disUpdateData(
-            { state, commit },
-            { row, col, value, type = "splice", own }
+            { state, commit, dispatch },
+            { row, col, value, type = "splice", own, extraItem = {} }
         ) {
+            const { key, type: t } = state.tableColumn[col];
+
             if (type === "splice") {
+                let val = value;
+
+                if (t === "cascader" || t === "date") {
+                    if (value && value.includes(`{"${t}":`)) {
+                        let o = JSON.parse(value);
+                        val = o[t];
+                    } else val = undefined;
+                }
                 state.hotSettings.data[row][col] = value;
+                state.tableData[row][key] = val;
+
+                commit("setTableData", state.tableData);
             }
             if (type === "copyAdd") {
+                if (state.loading) return;
+                dispatch("disLoading");
+
                 let item = JSON.parse(
                     JSON.stringify(state.hotSettings.data[row])
                 );
+                const newItem = JSON.parse(
+                    JSON.stringify({ ...state.tableData[row], ...extraItem })
+                );
+
                 if (state.tableColumn[1].type === "index") {
                     item[1] = state.hotSettings.data.length + 1;
                 }
                 if (state.tableColumn[0].type === "index") {
                     item[0] = state.hotSettings.data.length + 1;
                 }
-                state.hotSettings.data.push(item);
-                commit("setHotSettings", {
-                    data: state.hotSettings.data
-                });
+
+                commit("setTableData", state.tableData.concat([newItem]));
             }
             if (type === "addNew") {
+                if (state.loading) return;
+                dispatch("disLoading");
                 let item = [];
+                let newItem = {};
+
+                for (let [key, value] of Object.entries(state.tableData[row])) {
+                    let val;
+                    switch (true) {
+                        case typeof value === "number":
+                            val = 0;
+                            break;
+                        case typeof value === "string":
+                            val = "";
+                            break;
+                        case typeof value === "boolean":
+                            val = false;
+                            break;
+                        case value instanceof Array:
+                            val = [];
+                            break;
+                        case value instanceof Object:
+                            val = {};
+                            break;
+                    }
+
+                    newItem = { ...newItem, [key]: val, ...extraItem };
+                }
+
                 if (state.tableColumn[1].type === "index") {
                     item[1] = state.hotSettings.data.length + 1;
                 }
                 if (state.tableColumn[0].type === "index") {
                     item[0] = state.hotSettings.data.length + 1;
                 }
-                state.hotSettings.data.push(item);
-                state.tableData.push(item);
-                state.commit("input", state.tableData);
+
+                commit("setTableData", state.tableData.concat([newItem]));
             }
             if (type === "delete") {
+                if (state.loading) return;
+                dispatch("disLoading");
                 state.hotSettings.data.splice(row, 1);
+                state.tableData.splice(row, 1);
+
                 if (state.hotSettings.data.length) {
                     for (let i = row; i < state.hotSettings.data.length; i++) {
                         if (state.tableColumn[1].type === "index") {
@@ -114,9 +169,17 @@ export default {
                         }
                     }
                 }
+
+                commit("setHotSettings", {
+                    data: state.hotSettings.data
+                });
+                commit("setTableData", state.tableData);
             }
+
+            state.initCellsAttribute();
             own.$nextTick(() => {
-                own.$store.state.MapleStore.validate(undefined, own);
+                state.commit("input", state.tableData);
+                state.validate(undefined, own);
             });
         },
         disComponentInit({ state, commit }, { own }) {
@@ -124,44 +187,39 @@ export default {
             const o = state.tableColumn[own.col];
 
             if (o) {
-                if (o._type === "address") {
-                    if (state.addressOpts.length) {
-                        own.options = state.addressOpts;
-                    } else {
-                        for (let [k1, v1] of Object.entries(
-                            address["100000"]
+                if (o.subType === "address") {
+                    let options = [];
+                    for (let [k1, v1] of Object.entries(address["100000"])) {
+                        let children1 = [];
+
+                        for (let [k2, v2] of Object.entries(
+                            address[k1] || []
                         )) {
-                            let children1 = [];
+                            let children2 = [];
 
-                            for (let [k2, v2] of Object.entries(
-                                address[k1] || []
+                            for (let [k3, v3] of Object.entries(
+                                address[k2] || []
                             )) {
-                                let children2 = [];
-
-                                for (let [k3, v3] of Object.entries(
-                                    address[k2] || []
-                                )) {
-                                    children2.push({
-                                        value: k3,
-                                        label: v3
-                                    });
-                                }
-
-                                children1.push({
-                                    value: k2,
-                                    label: v2,
-                                    children: children2
+                                children2.push({
+                                    value: k3,
+                                    label: v3
                                 });
                             }
 
-                            own.options.push({
-                                value: k1,
-                                label: v1,
-                                children: children1
+                            children1.push({
+                                value: k2,
+                                label: v2,
+                                children: children2
                             });
                         }
-                        state.addressOpts = own.options;
+
+                        options.push({
+                            value: k1,
+                            label: v1,
+                            children: children1
+                        });
                     }
+                    own.options = options;
                 } else own.options = o.options;
             }
         },
@@ -247,15 +305,21 @@ export default {
                     value = o[type];
                 } else value = null;
             }
-            state.commit("change", {
-                type,
-                value,
-                row: own.row,
-                col: own.col,
-                core: state.hotInstance
+            own.$nextTick(() => {
+                state.commit("change", {
+                    type,
+                    value,
+                    row: own.row,
+                    col: own.col,
+                    core: state.hotInstance,
+                    td: own.TD
+                });
             });
         },
-        disSelectionChange({ state }, { type, currentRow = -1208 }) {
+        disSelectionChange(
+            { state },
+            { type = "selection", currentRow = -1208, subType }
+        ) {
             let selection = [];
             state.hotSettings.data.map(([bl], row) => {
                 if (bl) selection.push(row);
@@ -263,7 +327,8 @@ export default {
             state.commit("change", {
                 type,
                 value: selection,
-                currentRow
+                row: currentRow,
+                subType
             });
         },
         disExchangeData({ state }, { key, own, col }) {
@@ -289,54 +354,22 @@ export default {
             }
         },
         disValidate({ state }, callback = () => {}) {
-            let value;
             let validate = true;
-            const d = [];
-
-            for (let fn of Object.values(state.changeTDbg)) {
-                let $td = fn();
-                if ($td) $td.style.padding = 0;
-            }
 
             for (let [j, v] of state.hotSettings.data.entries()) {
-                let o = {};
                 for (let [i, item] of state.tableColumn.entries()) {
                     const { dataType } = state.tableColumn[i];
-                    value = v[i];
+                    let value = v[i];
 
-                    switch (true) {
-                        case item.type === "date" || item.type === "cascader":
+                    if (dataType) {
+                        if (item.type === "date" || item.type === "cascader") {
                             if (value && value.includes(`{"${item.type}":`)) {
                                 value = JSON.parse(value);
                                 value = value[item.type];
                             } else value = null;
-                            o = {
-                                ...o,
-                                [item.key]: value
-                            };
-                            break;
-                        case item.type === "selection":
-                            o = {
-                                ...o,
-                                mapleChecked: value
-                            };
-                            break;
-                        case item.type === "index":
-                            o = {
-                                ...o,
-                                mapleIndex: value
-                            };
-                            break;
-                        case item.type !== "handle":
-                            o = { ...o, [item.key]: value };
-                            break;
-                    }
+                        }
+                        const { state: status } = checkType(dataType, value);
 
-                    if (dataType) {
-                        const { state: status, value: val } = checkType(
-                            dataType,
-                            value
-                        );
                         if (
                             Reflect.has(state.changeTDbg, `row-${j}-col-${i}`)
                         ) {
@@ -346,18 +379,20 @@ export default {
                                 if (!status) validate = false;
                             }
                         }
-                        value = val;
                     }
                 }
-                const obj = state.tableData[j] || {};
-                d.push({
-                    ...obj,
-                    ...o
-                });
             }
-            console.log(d, 8888);
-            state.commit("input", d);
-            callback(validate, d);
+
+            callback(validate, state.tableData);
+        },
+        disLoading({ commit }, payload = 1208) {
+            commit("setLoading", true);
+            setTimeout(() => {
+                document.querySelector(".el-loading-mask").style.width = `${
+                    document.querySelector(".wtHider").clientWidth
+                }px`;
+            }, 60);
+            setTimeout(() => commit("setLoading"), payload);
         }
     }
 };

@@ -60,22 +60,25 @@ export default {
                 col: this.col,
                 row: this.row,
                 core: this.hotInstance,
-                copyAddRow: () => {
+                td: this.TD,
+                copyAddRow: extraItem => {
                     this.$store.dispatch("disUpdateData", {
                         type: "copyAdd",
                         td: this.TD,
                         col: this.col,
                         row: this.row,
-                        own: this
+                        own: this,
+                        extraItem
                     });
                 },
-                addNewRow: () => {
+                addNewRow: extraItem => {
                     this.$store.dispatch("disUpdateData", {
                         type: "addNew",
                         td: this.TD,
                         col: this.col,
                         row: this.row,
-                        own: this
+                        own: this,
+                        extraItem
                     });
                 },
                 deleteRow: () => {

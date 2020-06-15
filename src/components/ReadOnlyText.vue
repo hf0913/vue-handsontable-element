@@ -49,7 +49,8 @@ export default {
                 type: "readOnlyText",
                 col: this.col,
                 row: this.row,
-                core: this.hotInstance
+                core: this.hotInstance,
+                td: this.TD
             });
         }
     },
@@ -74,5 +75,6 @@ export default {
 <style scoped>
 .maple-readonly-text {
     font-size: 12px;
+    cursor: not-allowed;
 }
 </style>

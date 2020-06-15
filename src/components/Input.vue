@@ -68,7 +68,8 @@ export default {
                 type: "input",
                 col: this.col,
                 row: this.row,
-                core: this.hotInstance
+                core: this.hotInstance,
+                td: this.TD
             });
         }
     },

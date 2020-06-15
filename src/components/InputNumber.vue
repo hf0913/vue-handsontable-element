@@ -63,7 +63,8 @@ export default {
                 type: "inputNumber",
                 col: this.col,
                 row: this.row,
-                core: this.hotInstance
+                core: this.hotInstance,
+                td: this.TD
             });
         }
     },

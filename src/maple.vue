@@ -4,6 +4,7 @@
         :settings="settings"
         language="zh-CN"
         ref="hotTableRef"
+        v-loading="options.loading || $store.state.MapleStore.loading"
     >
         <hot-column
             v-for="(item, index) in columns"
@@ -115,7 +116,7 @@ export default {
                     autoInsertRow: false,
                     direction: "vertical"
                 },
-                contextMenu: ["copy", "cut"],
+                contextMenu: [],
                 licenseKey: "non-commercial-and-evaluation",
                 rowHeaders: false,
                 manualColumnResize: true,
@@ -140,7 +141,7 @@ export default {
                                 ? "checked"
                                 : ""
                         }/>`;
-                    } else return this.columns[col].title;
+                    } else return this.columns[col] && this.columns[col].title;
                 },
                 afterOnCellCornerMouseDown: this.afterOnCellCornerMouseDown,
                 beforePaste: this.beforePaste,
@@ -168,16 +169,18 @@ export default {
         MapleReadOnlyText
     },
     mounted() {
+        this.$store.commit(
+            "setInitCellsAttribute",
+            this.$store.state.MapleStore.debounce.call(
+                this,
+                this.initCellsAttribute
+            )
+        );
+        this.$store.commit("setCommit", this.commit);
         this.$maple = this.$refs.hotTableRef;
         Handsontable.dom.addEvent(this.$el, "mousedown", this.eventListener);
         this.$store.state.MapleStore.validate(undefined, this);
-    },
-    created() {
-        this.initCellsAttributeFn = this.$store.state.MapleStore.debounce.call(
-            this,
-            this.initCellsAttribute
-        );
-        this.$store.commit("setCommit", this.commit);
+        this.initCellsAttribute();
     },
     methods: {
         eventListener(o) {
@@ -201,7 +204,7 @@ export default {
 
                 this.$store.commit("setCheckAllabled", !checked);
                 this.$store.dispatch("disSelectionChange", {
-                    type: "allSelection"
+                    subType: "allSelection"
                 });
 
                 for (let [key, fn] of Object.entries(
@@ -296,11 +299,11 @@ export default {
                                     })
                                 );
                                 break;
-                            case item.type === "selection":
-                                innerArr.push(v.mapleChecked || false);
-                                break;
                             case item.type === "index":
                                 innerArr.push(v.mapleIndex || ++index);
+                                break;
+                            case item.type === "inputNumber":
+                                innerArr.push(v[item.key] - 0 || 0);
                                 break;
                             default:
                                 innerArr.push(v[item.key]);
@@ -311,8 +314,11 @@ export default {
             }
             o = { ...o, data: outerArr, colWidths };
             this.$store.commit("setTableColumn", this.columns);
-            this.$store.commit("setTableData", this.value);
             this.$store.commit("setHotSettings", o);
+            this.$store.commit(
+                "setTableData",
+                JSON.parse(JSON.stringify(this.value))
+            );
         },
         initCellsAttribute() {
             // 初始化单元格属性
@@ -329,14 +335,11 @@ export default {
         columns() {
             console.log("watch columns..........");
             this.initTableData();
+            this.initCellsAttribute();
         },
         value() {
             console.log("watch value............");
             this.initTableData();
-        },
-        "$store.state.MapleStore.hotSettings.data"() {
-            console.log("watch hotSettings............");
-            this.initCellsAttributeFn();
         },
         options() {
             console.log("watch options............");

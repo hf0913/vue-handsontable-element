@@ -5,7 +5,7 @@
         :id="`maple${row}${col}`"
         @dblclick="click"
     >
-        <textarea
+        <el-input
             ref="textareaRef"
             :disabled="dbDisabled"
             class="flex-1 text-center w-100 bg-white"
@@ -72,13 +72,13 @@ export default {
             this.dbDisabled = !!(this.props && this.props.disabled);
             if (!this.dbDisabled) {
                 setTimeout(() => this.$refs.textareaRef.focus(), 60);
-                this.$refs.textareaRef.style.width = "700px";
             }
             this.$store.state.MapleStore.commit("click", {
                 type: "text",
                 col: this.col,
                 row: this.row,
-                core: this.hotInstance
+                core: this.hotInstance,
+                td: this.TD
             });
         }
     },
@@ -111,16 +111,17 @@ export default {
 };
 </script>
 
-<style scoped>
-textarea {
+<style>
+.maple-text input {
     border: none;
     border: 0;
     outline: 0;
     resize: none;
     height: 28px;
     line-height: 28px;
-}
-.maple-text .box {
-    width: 90%;
+    background: none !important;
+    background-color: none !important;
+    color: #606266 !important;
+    cursor: initial !important;
 }
 </style>

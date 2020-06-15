@@ -38,7 +38,7 @@ export default {
             editorElement: null,
             isVisible: false,
             value: null,
-            date: null
+            date: []
         };
     },
     methods: {
@@ -78,7 +78,8 @@ export default {
                 type: "date",
                 col: this.col,
                 row: this.row,
-                core: this.hotInstance
+                core: this.hotInstance,
+                td: this.TD
             });
         }
     },
@@ -95,6 +96,7 @@ export default {
             this.$store.commit("setChangeTDbg", {
                 [`row-${this.row}-col-${this.col}`]: this.changeTDbg
             });
+            this.changeValue(this.value);
         }
         this.$store.dispatch("disComponentInit", {
             own: this
