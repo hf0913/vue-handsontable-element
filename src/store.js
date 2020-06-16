@@ -170,9 +170,6 @@ export default {
                     }
                 }
 
-                commit("setHotSettings", {
-                    data: state.hotSettings.data
-                });
                 commit("setTableData", state.tableData);
             }
 
@@ -237,27 +234,8 @@ export default {
                         data: options,
                         currentValue: value + ""
                     });
-                    dispatch("disUpdateData", {
-                        row: own.row,
-                        col: own.col,
-                        value,
-                        own
-                    });
-                } else if (values.includes(value + "")) {
-                    dispatch("disUpdateData", {
-                        row: own.row,
-                        col: own.col,
-                        value,
-                        own
-                    });
-                } else {
+                } else if (!values.includes(value + "")) {
                     value = "";
-                    dispatch("disUpdateData", {
-                        row: own.row,
-                        col: own.col,
-                        value,
-                        own
-                    });
                 }
             } else if (type === "switch" || type === "selection") {
                 const open = [
@@ -272,47 +250,37 @@ export default {
                     true
                 ];
                 value = open.includes(own.value);
-                dispatch("disUpdateData", {
-                    row: own.row,
-                    col: own.col,
-                    value,
-                    own
-                });
             } else if (type === "inputNumber") {
                 value = own.value - 0 || 0;
-                dispatch("disUpdateData", {
-                    row: own.row,
-                    col: own.col,
-                    value,
-                    own
-                });
-            } else {
-                dispatch("disUpdateData", {
-                    row: own.row,
-                    col: own.col,
-                    value,
-                    own
-                });
             }
 
-            if (state.changeValues[`${type}-row-${own.row}-col-${own.col}`])
+            if (state.changeValues[`${type}-row-${own.row}-col-${own.col}`]) {
                 state.changeValues[`${type}-row-${own.row}-col-${own.col}`](
                     value
                 );
+            }
             if (type === "cascader" || type === "date") {
                 if (value && value.includes(`{"${type}":`)) {
                     let o = JSON.parse(value);
                     value = o[type];
                 } else value = null;
             }
+            dispatch("disUpdateData", {
+                row: own.row,
+                col: own.col,
+                value,
+                own
+            });
             own.$nextTick(() => {
-                state.commit("change", {
-                    type,
-                    value,
-                    row: own.row,
-                    col: own.col,
-                    core: state.hotInstance,
-                    td: own.TD
+                setTimeout(() => {
+                    state.commit("change", {
+                        type,
+                        value,
+                        row: own.row,
+                        col: own.col,
+                        core: state.hotInstance,
+                        td: own.TD
+                    });
                 });
             });
         },
