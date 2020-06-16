@@ -107,9 +107,13 @@ export default {
             own: this
         });
     },
+    mounted() {
+        if (this.col != null) {
+            this.changeValue(this.value);
+        }
+    },
     watch: {
-        value(v) {
-            this.changeValue(v);
+        value() {
             this.$store.dispatch("disKeepCellValueOK", {
                 own: this
             });

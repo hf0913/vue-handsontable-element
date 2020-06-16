@@ -41,9 +41,13 @@ function exchange({
  * @description 校验数据类型
  * @param {String} type 必传，数据类型：notNull（非空）
  * @param {Any} value 必传，需要校验的值
+ * @param {Number} col 必传，列号
+ * @param {Number} row 必传，行号
+ * @param {Function} customValidate 自定义校验函数
+ * @param {Function} changeTDbg 修改单元格背景色
  * @returns {Object} state(校验状态，true校验通过，false校验失败)，value(被校验的值)
  */
-function checkType(type, value) {
+function checkType({ type, value, col, row, customValidate, changeTDbg }) {
     let state = true;
     let res = {
         state,
@@ -54,15 +58,63 @@ function checkType(type, value) {
     }
 
     switch (true) {
+        // 非空
         case type === "notNull":
-            state = !(value !== 0 && !value);
-            if (value instanceof Array) {
-                state = !!value.length;
+            switch (true) {
+                case typeof value === "string" || value instanceof Array:
+                    state = !!value.length;
+                    break;
+                case value == null:
+                    state = !!value;
+                    break;
             }
-            res = { ...res, value, state };
+            break;
+        // 数字
+        case type === "number":
+            state = !!(value - 0);
+            break;
+        // 正数
+        case type === "positiveNumber":
+            state = !!(value - 0) && value - 0 > 0;
+            break;
+        // 正整数
+        case type === "positiveInteger":
+            state =
+                !!(value - 0) && value - 0 > 0 && !(value + "").includes(".");
+            break;
+        // 自定义校验
+        case type === "customValidate":
+            if (customValidate instanceof Function) {
+                state = customValidate({
+                    col,
+                    row,
+                    value,
+                    changeCellsBg: d => {
+                        if (d instanceof Array) {
+                            d.map(({ col, row, status }) => {
+                                if (
+                                    col != null &&
+                                    row != null &&
+                                    changeTDbg[`row-${row}-col-${col}`]
+                                ) {
+                                    const $td = changeTDbg[
+                                        `row-${row}-col-${col}`
+                                    ]();
+                                    if ($td) {
+                                        $td.style.background = status
+                                            ? ""
+                                            : "red";
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                if (state == null) state = true;
+            }
             break;
     }
-    return res;
+    return { ...res, value, state };
 }
 /**
  * @description 修改单元格属性

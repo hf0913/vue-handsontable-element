@@ -92,8 +92,7 @@ export default {
         });
     },
     watch: {
-        value(v) {
-            this.setValue(v);
+        value() {
             this.$store.dispatch("disKeepCellValueOK", {
                 own: this
             });

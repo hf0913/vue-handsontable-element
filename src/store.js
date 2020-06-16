@@ -79,19 +79,11 @@ export default {
             { state, commit, dispatch },
             { row, col, value, type = "splice", own, extraItem = {} }
         ) {
-            const { key, type: t } = state.tableColumn[col];
+            const { key } = state.tableColumn[col];
 
             if (type === "splice") {
-                let val = value;
-
-                if (t === "cascader" || t === "date") {
-                    if (value && value.includes(`{"${t}":`)) {
-                        let o = JSON.parse(value);
-                        val = o[t];
-                    } else val = undefined;
-                }
                 state.hotSettings.data[row][col] = value;
-                state.tableData[row][key] = val;
+                state.tableData[row][key] = value;
 
                 commit("setTableData", state.tableData);
             }
@@ -326,7 +318,7 @@ export default {
 
             for (let [j, v] of state.hotSettings.data.entries()) {
                 for (let [i, item] of state.tableColumn.entries()) {
-                    const { dataType } = state.tableColumn[i];
+                    const { dataType, customValidate } = state.tableColumn[i];
                     let value = v[i];
 
                     if (dataType) {
@@ -336,7 +328,14 @@ export default {
                                 value = value[item.type];
                             } else value = null;
                         }
-                        const { state: status } = checkType(dataType, value);
+                        const { state: status } = checkType({
+                            type: dataType,
+                            value,
+                            row: j,
+                            col: i,
+                            customValidate,
+                            changeTDbg: state.changeTDbg
+                        });
 
                         if (
                             Reflect.has(state.changeTDbg, `row-${j}-col-${i}`)

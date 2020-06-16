@@ -96,7 +96,6 @@ export default {
             this.$store.commit("setChangeTDbg", {
                 [`row-${this.row}-col-${this.col}`]: this.changeTDbg
             });
-            this.changeValue(this.value);
         }
         this.$store.dispatch("disComponentInit", {
             own: this
@@ -107,9 +106,13 @@ export default {
             col: this.col
         });
     },
+    mounted() {
+        if (this.col != null) {
+            this.changeValue(this.value);
+        }
+    },
     watch: {
-        value(v) {
-            this.changeValue(v);
+        value() {
             this.$store.dispatch("disKeepCellValueOK", {
                 own: this
             });
