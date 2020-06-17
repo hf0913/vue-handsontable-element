@@ -13,12 +13,7 @@
             v-bind="props"
             @blur="dbDisabled = true"
             @focus="$event => input($event)"
-            :style="{
-                color:
-                    props && props.disabled
-                        ? $store.state.MapleStore.hotSettings.readOnlyColor
-                        : ''
-            }"
+            :class="props && props.disabled ? 'maple-disabled' : ''"
         />
     </div>
 </template>
@@ -122,5 +117,9 @@ export default {
     background-color: none !important;
     color: #606266 !important;
     cursor: initial !important;
+}
+.maple-text .maple-disabled input:disabled {
+    color: red !important;
+    cursor: not-allowed !important;
 }
 </style>

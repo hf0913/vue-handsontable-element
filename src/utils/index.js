@@ -6,7 +6,7 @@ import address from "./address";
  */
 function debounce(fn, delay = 666) {
     let timer;
-    return function() {
+    return function () {
         let ctx = this;
         let args = arguments;
         if (timer) {
@@ -44,10 +44,9 @@ function exchange({
  * @param {Number} col 必传，列号
  * @param {Number} row 必传，行号
  * @param {Function} customValidate 自定义校验函数
- * @param {Function} changeTDbg 修改单元格背景色
  * @returns {Object} state(校验状态，true校验通过，false校验失败)，value(被校验的值)
  */
-function checkType({ type, value, col, row, customValidate, changeTDbg }) {
+function checkType({ type, value, col, row, customValidate }) {
     let state = true;
     let res = {
         state,
@@ -88,27 +87,7 @@ function checkType({ type, value, col, row, customValidate, changeTDbg }) {
                 state = customValidate({
                     col,
                     row,
-                    value,
-                    changeCellsBg: d => {
-                        if (d instanceof Array) {
-                            d.map(({ col, row, status }) => {
-                                if (
-                                    col != null &&
-                                    row != null &&
-                                    changeTDbg[`row-${row}-col-${col}`]
-                                ) {
-                                    const $td = changeTDbg[
-                                        `row-${row}-col-${col}`
-                                    ]();
-                                    if ($td) {
-                                        $td.style.background = status
-                                            ? ""
-                                            : "red";
-                                    }
-                                }
-                            });
-                        }
-                    }
+                    value
                 });
                 if (state == null) state = true;
             }

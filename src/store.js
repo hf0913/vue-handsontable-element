@@ -31,7 +31,8 @@ export default {
         }),
         checkAllabled: false,
         initCellsAttribute: Function,
-        loading: false
+        loading: false,
+        validateAbled: true
     },
     mutations: {
         setHotSettings(state, payload = {}) {
@@ -72,6 +73,9 @@ export default {
         },
         setLoading(state, payload = false) {
             state.loading = payload;
+        },
+        setValidateAbled(state, payload = false) {
+            state.validateAbled = payload;
         }
     },
     actions: {
@@ -314,6 +318,7 @@ export default {
             }
         },
         disValidate({ state }, callback = () => {}) {
+            if (state.validateAbled) return;
             let validate = true;
 
             for (let [j, v] of state.hotSettings.data.entries()) {

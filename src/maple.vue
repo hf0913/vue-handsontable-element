@@ -219,6 +219,7 @@ export default {
         },
         validate(callback = () => {}) {
             this.$nextTick(() => {
+                this.$store.commit("setValidateAbled");
                 this.$store.state.MapleStore.validate(callback, this);
             });
         },
