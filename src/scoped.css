@@ -1,0 +1,56 @@
+#maple-table {
+    position: relative;
+}
+.empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #c0c4cc;
+    border: 1px solid #ccc;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1105;
+}
+.loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 1208;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.circular {
+    height: 42px;
+    width: 42px;
+    animation: loading-rotate 2s linear infinite;
+}
+.circular .path {
+    animation: loading-dash 1.5s ease-in-out infinite;
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: 0;
+    stroke-width: 2;
+    stroke: #409eff;
+    stroke-linecap: round;
+}
+@keyframes loading-rotate {
+    to {
+        transform: rotate(1turn);
+    }
+}
+@keyframes loading-dash {
+    0% {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -40px;
+    }
+    to {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -120px;
+    }
+}
