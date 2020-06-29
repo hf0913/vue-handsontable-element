@@ -1,35 +1,5 @@
 <template>
-    <div id="maple-table">
-        <hot-table :settings="settings" ref="mapleTable"> </hot-table>
-        <div
-            v-show="showEmpty"
-            :style="{
-                width: `${width}px`,
-                height: `${height}px`
-            }"
-            class="empty"
-        >
-            暂无数据
-        </div>
-        <div
-            v-show="loading || myLoading"
-            :style="{
-                width: `${width}px`,
-                height: `${height}px`
-            }"
-            class="loading"
-        >
-            <svg viewBox="25 25 50 50" class="circular">
-                <circle
-                    cx="50"
-                    cy="50"
-                    r="20"
-                    fill="none"
-                    class="path"
-                ></circle>
-            </svg>
-        </div>
-    </div>
+    <hot-table :settings="settings" ref="mapleTable" />
 </template>
 
 <script>
@@ -52,9 +22,6 @@ export default {
         },
         options: {
             type: Object
-        },
-        loading: {
-            type: Boolean
         }
     },
     data() {
@@ -62,6 +29,7 @@ export default {
             settings: {
                 data: [],
                 columns: [],
+                comments: true,
                 rowHeaders: true,
                 licenseKey: "non-commercial-and-evaluation",
                 language: "zh-CN",
@@ -91,28 +59,28 @@ export default {
                 afterRemoveRow: this.afterRemoveRow,
                 beforeCreateRow: this.beforeCreateRow,
                 maxRows: 12080,
-                height: 1208
+                height: 1208,
+                readOnlyCellClassName: "maple-readOnly"
             },
             core: {},
             checkAllabled: false,
             mapleHeaderCheckboxCol: 0,
-            showEmpty: false,
             width: 0,
             height: 0,
-            myLoading: false
+            selectOpts: [],
+            changes: {}
         };
     },
     components: { HotTable },
     mounted() {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
-        this.init();
-        this.changeWidth();
+        this.init("mounted");
     },
     methods: {
-        init() {
+        init(t) {
             const vm = this;
-            const columns = this.collageColumns();
+            const columns = this.collageColumns(t);
             const colHeaders = col => {
                 if (this.columns[col].subType === "selection") {
                     this.mapleHeaderCheckboxCol = col;
@@ -127,87 +95,91 @@ export default {
                 }
             };
 
-            this.settings = Object.assign(this.settings, this.options, {
-                columns: columns.map(item => {
-                    if (item.subType === "handle") {
-                        item = {
-                            ...item,
-                            renderer: function(
-                                instance,
-                                td,
-                                row,
-                                col,
-                                prop,
-                                value,
-                                // eslint-disable-next-line no-unused-vars
-                                cellProperties
-                            ) {
-                                cellProperties = Object.assign(cellProperties, {
-                                    readOnly: true,
-                                    editor: true
-                                });
-
-                                let $el = document.createElement("DIV");
-                                $el.style.height = "100%";
-                                $el.style.display = "flex";
-                                $el.style.justifyContent = "space-around";
-                                $el.style.alignItems = "center";
-
-                                item.options.map(({ name, color }, index) => {
-                                    let $btn = document.createElement("DIV");
-                                    $btn.innerHTML = name;
-                                    $btn.style.color = color;
-                                    $btn.style.cursor = "pointer";
-                                    $el.append($btn);
-
-                                    maple.dom.addEvent(
-                                        $btn,
-                                        "mousedown",
-                                        event => {
-                                            vm.$emit("click", {
-                                                row,
-                                                col,
-                                                index,
-                                                $el: $btn,
-                                                event,
-                                                core: instance,
-                                                name
-                                            });
-                                            event.stopPropagation &&
-                                                event.stopPropagation();
-                                            event.cancelBubble = true;
+            if (t === "mounted" || t === "columns") {
+                this.settings = Object.assign(this.settings, {
+                    columns: columns.map(item => {
+                        if (item.subType === "handle") {
+                            item = {
+                                ...item,
+                                renderer: function(
+                                    instance,
+                                    td,
+                                    row,
+                                    col,
+                                    prop,
+                                    value,
+                                    // eslint-disable-next-line no-unused-vars
+                                    cellProperties
+                                ) {
+                                    cellProperties = Object.assign(
+                                        cellProperties,
+                                        {
+                                            readOnly: true,
+                                            editor: true
                                         }
                                     );
-                                });
 
-                                maple.dom.empty(td);
-                                td.appendChild($el);
+                                    let $el = document.createElement("DIV");
+                                    $el.style.height = "100%";
+                                    $el.style.display = "flex";
+                                    $el.style.justifyContent = "space-around";
+                                    $el.style.alignItems = "center";
 
-                                return td;
-                            }
-                        };
-                    }
-                    return item;
-                }),
-                data: this.data,
-                colWidths: columns.map(({ width = 200 }) => width),
-                colHeaders
-            });
+                                    item.options.map(
+                                        ({ name, color }, index) => {
+                                            let $btn = document.createElement(
+                                                "DIV"
+                                            );
+                                            $btn.innerHTML = name;
+                                            $btn.style.color = color;
+                                            $btn.style.cursor = "pointer";
+                                            $el.append($btn);
+
+                                            maple.dom.addEvent(
+                                                $btn,
+                                                "mousedown",
+                                                event => {
+                                                    vm.$emit("click", {
+                                                        row,
+                                                        col,
+                                                        index,
+                                                        $el: $btn,
+                                                        event,
+                                                        core: instance,
+                                                        name
+                                                    });
+                                                    event.stopPropagation &&
+                                                        event.stopPropagation();
+                                                    event.cancelBubble = true;
+                                                }
+                                            );
+                                        }
+                                    );
+
+                                    maple.dom.empty(td);
+                                    td.appendChild($el);
+
+                                    return td;
+                                }
+                            };
+                        }
+                        return item;
+                    }),
+                    colWidths: columns.map(({ width = 200 }) => width)
+                });
+            }
+            if (t === "mounted" || t === "data") {
+                this.settings = Object.assign(this.settings, {
+                    data: this.data,
+                    colHeaders
+                });
+            }
+            if (t === "mounted" || t === "options") {
+                this.settings = Object.assign(this.settings, this.options);
+            }
 
             maple.dom.addEvent(this.$el, "mousedown", this.eventListener);
             this.changeCheckAllabled();
-        },
-        changeWidth() {
-            this.$nextTick(() => {
-                const $el = this.$el.querySelector(".wtHider");
-
-                this.width = $el.clientWidth;
-                this.height = this.settings.height || $el.clientHeight;
-                this.showEmpty = this.core.countRows() === 0;
-                if (this.showEmpty) {
-                    this.clearFilters();
-                }
-            });
         },
         afterOnCellMouseDown(event, coords, $el) {
             const { row, col } = coords;
@@ -228,20 +200,19 @@ export default {
         },
         beforeChange(changes, source) {
             changes.map(item => {
-                this.$emit("change", {
-                    source,
-                    changes: [item],
-                    datas: [
-                        {
-                            row: item[0],
-                            key: item[1],
-                            oldVal: item[2],
-                            newVal: item[3],
-                            core: this.core,
-                            type: "change"
-                        }
-                    ]
-                });
+                const [row, key, oldVal, newVal] = item;
+                if (!isNaN(row)) {
+                    this.changes[`${row}-${key}-${oldVal}-${newVal}`] = item;
+                }
+            });
+
+            this.$emit("change", {
+                source,
+                changes,
+                core: this.core,
+                type: "change",
+                getKeyChange: this.getKeyChange,
+                filterKeysChanges: this.filterKeysChanges
             });
             if (
                 changes.length &&
@@ -253,152 +224,314 @@ export default {
                 return false;
             }
         },
-        beforeColumnResize() {
-            this.changeWidth();
+        beforeColumnResize() {},
+        afterRemoveRow(index, amount, physicalRows, source) {
+            this.$emit("afterRemoveRow", {
+                index,
+                amount,
+                physicalRows,
+                source
+            });
         },
-        afterRemoveRow() {
-            this.changeWidth();
+        beforeCreateRow(index, amount, source) {
+            this.$emit("beforeCreateRow", {
+                index,
+                amount,
+                source
+            });
         },
-        beforeCreateRow() {
-            this.changeWidth();
-        },
-        collageColumns() {
+        collageColumns(t) {
+            if (t !== "mounted" && t !== "columns") return;
             const c = [];
+            const vm = this;
+            const debounceOptimize = _.debounce(
+                ({
+                    query,
+                    options = [],
+                    maxMatchLen,
+                    labelName,
+                    index,
+                    process
+                }) => {
+                    let opts = [];
 
-            this.columns.map(item => {
-                const options = item.options || item.source;
-                const labelName = item.labelName || "label";
-
-                c.push({
-                    ...item,
-                    source: options
-                        ? options.map(ele => ele[labelName])
-                        : undefined,
-                    data: item.key || item.data,
-                    options
-                });
-            });
-
-            return c;
-        },
-        getData(callback = () => {}, openValidate = true) {
-            return new Promise(resolve => {
-                this.myLoading = true;
-                setTimeout(() => {
-                    const { countRows } = this.core;
-                    const rows = [];
-                    let o = {
-                        value: this.collageData(callback),
-                        valid: false
-                    };
-
-                    if (openValidate) {
-                        for (let i = 0; i < countRows(); i++) {
-                            rows.push(i);
+                    query = query.replace(/(^\s*)|(\s*$)/g, "");
+                    if (query === "") {
+                        if (options instanceof Function) {
+                            options = options();
                         }
-                        this.core.validateRows(rows, valid => {
-                            resolve({
-                                ...o,
-                                valid
-                            });
-                        });
-                    } else resolve(o);
-                    this.myLoading = false;
-                });
-            });
-        },
-        collageData(callback) {
-            const { getData, getSourceDataAtRow } = this.core;
-            const d = getData();
-            const m = this.core.getPlugin("trimRows").trimmedRows;
-            const data = [];
-
-            m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
-            d.map((ele, i) => {
-                let o = this.data[i] || {};
-                const dItem = d[i];
-                const keys = this.settings.columns.map(
-                    ({
-                        data,
-                        options,
-                        valueType,
-                        subType,
-                        labelName,
-                        valueName,
-                        extraField
-                    }) => ({
-                        data,
-                        options,
-                        valueType,
-                        subType,
-                        labelName,
-                        valueName,
-                        extraField
-                    })
-                );
-
-                for (let [
-                    j,
-                    {
-                        data: k,
-                        options: opts,
-                        valueType,
-                        labelName = "label",
-                        valueName = "value",
-                        extraField = "maple_extra_field",
-                        subType
-                    }
-                ] of keys.entries()) {
-                    const v = dItem[j];
-                    const extraItem =
-                        callback({
-                            key: k,
-                            row: i,
-                            col: j,
-                            value: v
-                        }) || {};
-                    o = {
-                        ...o,
-                        notAddabled: extraItem.notAddabled
-                    };
-                    if (extraItem.notAddabled) break;
-                    if (subType !== "handle" && opts && opts.length) {
-                        if (!valueType) valueType = valueName;
-                        if (valueType === valueName) {
-                            o = {
-                                ...o,
-                                [k]: _.exchange({
-                                    data: opts,
-                                    currentValue: v,
-                                    currentKey: labelName
-                                })[valueName],
-                                [extraField]: v,
-                                ...extraItem
-                            };
-                        } else {
-                            o = {
-                                ...o,
-                                [k]: v,
-                                [extraField]: _.exchange({
-                                    data: opts,
-                                    currentValue: v,
-                                    currentKey: valueName
-                                })[labelName],
-                                ...extraItem
-                            };
-                        }
+                        opts = options.slice(0, maxMatchLen);
+                        process(opts.map(m => m[labelName]));
+                        vm.selectOpts[index] = opts;
                     } else {
-                        o = {
-                            ...o,
-                            [k]: v,
-                            ...extraItem
-                        };
+                        let i = 0;
+
+                        for (let m of options.values()) {
+                            let v = m[labelName];
+
+                            if (v.includes(query)) {
+                                opts.push(m);
+                                i++;
+                                if (i >= maxMatchLen) {
+                                    break;
+                                }
+                            }
+                        }
+                        process(opts.map(m => m[labelName]));
+                        vm.selectOpts[index] = opts;
                     }
                 }
-                if (!o.notAddabled) data.push(o);
-            });
+            );
+            const debounceAjax = _.debounce(
+                ({ ajaxConfig, query, labelName, index, process }) => {
+                    let { queryField, data, param } = ajaxConfig;
+                    const fn = (k, v) => {
+                        if (v && Reflect.has(v, queryField)) {
+                            ajaxConfig = {
+                                ...ajaxConfig,
+                                [k]: {
+                                    ...v,
+                                    [queryField]: query
+                                }
+                            };
+                        }
+                    };
 
-            return data;
+                    fn("data", data);
+                    fn("param", param);
+                    _.ajax(ajaxConfig).then(v => {
+                        process(v.map(m => m[labelName]));
+                        vm.selectOpts[index] = v;
+                    });
+                }
+            );
+
+            this.columns.map((item, index) => {
+                const options = item.options || item.source;
+                const labelName = item.labelName || "label";
+                const maxMatchLen = item.maxMatchLen || 8;
+                const allowEmpty = item.allowEmpty == false ? false : true;
+                const field = item.key || item.data;
+                let ajaxConfig = item.ajaxConfig;
+
+                switch (true) {
+                    case item.type === "autocomplete":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "autocomplete",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            options,
+                            data: field
+                        });
+                        break;
+                    case item.subType === "optimize":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "autocomplete",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            data: field,
+                            type: "autocomplete",
+                            options,
+                            source: function(query, process) {
+                                debounceOptimize({
+                                    query,
+                                    options,
+                                    maxMatchLen,
+                                    labelName,
+                                    index,
+                                    process
+                                });
+                            }
+                        });
+                        break;
+                    case item.subType === "ajax":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "autocomplete",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            type: "autocomplete",
+                            data: field,
+                            options,
+                            source: function(query, process) {
+                                debounceAjax({
+                                    ajaxConfig,
+                                    query,
+                                    labelName,
+                                    index,
+                                    process
+                                });
+                            }
+                        });
+                        break;
+                    case item.type === "dropdown":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "dropdown",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            source: options
+                                ? options.map(ele => ele[labelName])
+                                : undefined,
+                            data: field,
+                            options
+                        });
+                        break;
+                    case item.type === "numeric":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "numeric",
+                                        value,
+                                        allowEmpty,
+                                        dateFormat: item.dateFormat,
+                                        timeFormat: item.timeFormat,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            data: field,
+                            options
+                        });
+                        break;
+                    default:
+                        c.push({
+                            ...item,
+                            data: field,
+                            options
+                        });
+                }
+            });
+            return c;
+        },
+        getData(callback = () => {}) {
+            return new Promise(resolve => {
+                const { getData, getSourceDataAtRow } = this.core;
+                const d = getData();
+                const m = this.core.getPlugin("trimRows").trimmedRows;
+                const data = [];
+
+                m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
+                d.map(async (ele, i) => {
+                    let o = this.data[i] || {};
+                    const dItem = d[i];
+                    const keys = this.settings.columns;
+
+                    for (let [
+                        j,
+                        {
+                            data: k,
+                            options: opts,
+                            valueType,
+                            labelName = "label",
+                            valueName = "value",
+                            extraField = "maple_extra_field",
+                            subType
+                        }
+                    ] of keys.entries()) {
+                        const v = dItem[j];
+
+                        opts =
+                            this.selectOpts[j] && this.selectOpts[j].length
+                                ? this.selectOpts[j]
+                                : opts;
+                        if (subType !== "handle" && opts && opts.length && k) {
+                            if (!valueType) valueType = labelName;
+                            if (valueType === valueName) {
+                                o = {
+                                    ...o,
+                                    [k]: _.exchange({
+                                        data: opts,
+                                        currentValue: v,
+                                        currentKey: labelName
+                                    })[valueName],
+                                    [extraField]: v
+                                };
+                            } else {
+                                o = {
+                                    ...o,
+                                    [k]: v,
+                                    [extraField]: _.exchange({
+                                        data: opts,
+                                        currentValue: v,
+                                        currentKey: labelName
+                                    })[valueName]
+                                };
+                            }
+                        } else if (subType !== "handle" && k) {
+                            o = {
+                                ...o,
+                                [k]: v
+                            };
+                        }
+                    }
+                    let extraItem = callback(o, i) || {};
+
+                    o = {
+                        ...o,
+                        ...extraItem
+                    };
+                    // 根据callback返回的notAddabled字段，判断是否添加数据
+                    if (!o.notAddabled) data.push(o);
+                });
+                this.core.validateCells(valid => {
+                    resolve({
+                        value: data,
+                        valid: valid
+                    });
+                });
+            });
         },
         checkBox(event, coords, $el) {
             const { row, col } = coords;
@@ -418,7 +551,8 @@ export default {
                     type,
                     event,
                     core: this.core,
-                    checkAllabled: this.checkAllabled
+                    checkAllabled: this.checkAllabled,
+                    getKeyChange: this.getKeyChange
                 });
             } else {
                 this.changeCheckAllabled(col, true);
@@ -439,8 +573,14 @@ export default {
             setTimeout(() => {
                 const { countRows, getDataAtCol } = this.core;
                 const colCounts = getDataAtCol(col).filter(v => v);
-                const bl =
-                    !!this.data.length && colCounts.length === countRows();
+                let rows = countRows();
+                if (
+                    this.options.columnSummary &&
+                    this.options.columnSummary.length > 0
+                ) {
+                    rows = rows - 1;
+                }
+                const bl = !!this.data.length && colCounts.length === rows;
 
                 if (bl !== this.checkAllabled) {
                     this.checkAllabled = bl;
@@ -454,34 +594,43 @@ export default {
                         });
                     }
                 }
-            }, 60);
+            }, 128);
         },
         clearFilters() {
             this.core.getPlugin("filters").clearConditions();
             this.core.getPlugin("filters").filter();
         },
-        worker() {
-            if (window.Worker) {
-                const myWorker = new Worker("worker.js");
-                myWorker.postMessage("maple love"); // 发送数据
-                myWorker.onmessage = function(e) {
-                    console.log("Message received from worker", e.data);
-                };
+        getKeyChange(key, changes) {
+            // 针对多个changes，根据要columns中data || key的字段名，返回符合条件的数据集合
+            let o = [];
+
+            for (let item of changes.values()) {
+                if (item[1] === key) {
+                    o.push(item);
+                }
+            }
+            return o;
+        },
+        filterKeysChanges({ keys, changes, callback }) {
+            for (let item of changes.values()) {
+                const [row, key, oldVal, newVal] = item;
+                const i = keys.indexOf(key);
+
+                if (keys[i] === key) {
+                    callback({ row, key, oldVal, newVal });
+                }
             }
         }
     },
     watch: {
         columns() {
-            console.log("watch columns .......................");
-            this.init();
+            this.init("columns");
         },
         data() {
-            console.log("watch data .......................");
-            this.init();
+            this.init("data");
         },
         options() {
-            console.log("watch options .......................");
-            this.init();
+            this.init("options");
         }
     }
 };
