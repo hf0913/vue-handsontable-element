@@ -101,7 +101,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function(
+                                renderer: function (
                                     instance,
                                     td,
                                     row,
@@ -356,7 +356,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -388,7 +388,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -482,6 +482,9 @@ export default {
                     ] of keys.entries()) {
                         const v = dItem[j];
 
+                        if (opts instanceof Function) {
+                            opts = opts();
+                        }
                         opts =
                             this.selectOpts[j] && this.selectOpts[j].length
                                 ? this.selectOpts[j]
