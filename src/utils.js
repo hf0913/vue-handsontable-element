@@ -117,7 +117,8 @@ function checkType({
     allowEmpty,
     item,
     vm,
-    index
+    index,
+    options
 }) {
     let opts =
         (vm.selectOpts[index] && vm.selectOpts[index].length
@@ -135,8 +136,8 @@ function checkType({
         minute,
         second,
         colon;
-
     let baseMonthsDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
     const yearIndex = dateFormat.indexOf("YYYY");
     const monthIndex = dateFormat.indexOf("MM");
     const dayIndex = dateFormat.indexOf("DD");
@@ -147,6 +148,10 @@ function checkType({
     const secondIndex = timeFormat.indexOf("SS");
     const { numericFormat = {} } = item;
 
+    if (options instanceof Function) {
+        options = options();
+    }
+    opts = (opts.length ? opts : options) || [];
     if (value === "" || value == null) return allowEmpty;
     switch (type) {
         case "autocomplete":

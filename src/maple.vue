@@ -77,6 +77,9 @@ export default {
         this.core = this.$refs.mapleTable.hotInstance;
         this.init("mounted");
     },
+    activated() {
+        this.fixView();
+    },
     methods: {
         init(t) {
             const vm = this;
@@ -101,7 +104,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function (
+                                renderer: function(
                                     instance,
                                     td,
                                     row,
@@ -327,7 +330,8 @@ export default {
                                         item,
                                         vm,
                                         field,
-                                        index
+                                        index,
+                                        options
                                     })
                                 );
                             },
@@ -348,7 +352,8 @@ export default {
                                         item,
                                         vm,
                                         field,
-                                        index
+                                        index,
+                                        options
                                     })
                                 );
                             },
@@ -356,7 +361,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -380,7 +385,8 @@ export default {
                                         item,
                                         vm,
                                         field,
-                                        index
+                                        index,
+                                        options
                                     })
                                 );
                             },
@@ -388,7 +394,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -411,7 +417,8 @@ export default {
                                         item,
                                         vm,
                                         field,
-                                        index
+                                        index,
+                                        options
                                     })
                                 );
                             },
@@ -436,7 +443,8 @@ export default {
                                         item,
                                         vm,
                                         field,
-                                        index
+                                        index,
+                                        options
                                     })
                                 );
                             },
@@ -623,6 +631,18 @@ export default {
                     callback({ row, key, oldVal, newVal });
                 }
             }
+        },
+        fixView() {
+            let t1, t2;
+            t1 = setTimeout(() => {
+                this.core.scrollViewportTo(0, this.columns.length - 1);
+                t2 = setTimeout(() => {
+                    this.core.scrollViewportTo(0, 0);
+                    clearTimeout(t1);
+                    clearTimeout(t2);
+                    t1 = t2 = null;
+                });
+            });
         }
     },
     watch: {
