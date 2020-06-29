@@ -8,8 +8,8 @@
 function exchange({ data, currentValue, currentKey }) {
     let o = {};
 
+    if (currentValue == "" || currentValue == null) return o;
     for (let item of data.values()) {
-        if (currentValue == "" || currentValue == null) break;
         if (item[currentKey] == currentValue) {
             o = item;
             break;

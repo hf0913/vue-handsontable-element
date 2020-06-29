@@ -55,9 +55,8 @@ export default {
                 renderAllRows: false,
                 afterOnCellMouseDown: this.afterOnCellMouseDown,
                 beforeChange: this.beforeChange,
-                beforeColumnResize: this.beforeColumnResize,
                 afterRemoveRow: this.afterRemoveRow,
-                beforeCreateRow: this.beforeCreateRow,
+                afterCreateRow: this.afterCreateRow,
                 maxRows: 12080,
                 height: 1208,
                 readOnlyCellClassName: "maple-readOnly"
@@ -104,7 +103,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function(
+                                renderer: function (
                                     instance,
                                     td,
                                     row,
@@ -227,7 +226,6 @@ export default {
                 return false;
             }
         },
-        beforeColumnResize() {},
         afterRemoveRow(index, amount, physicalRows, source) {
             this.$emit("afterRemoveRow", {
                 index,
@@ -236,8 +234,8 @@ export default {
                 source
             });
         },
-        beforeCreateRow(index, amount, source) {
-            this.$emit("beforeCreateRow", {
+        afterCreateRow(index, amount, source) {
+            this.$emit("afterCreateRow", {
                 index,
                 amount,
                 source
@@ -259,10 +257,10 @@ export default {
                     let opts = [];
 
                     query = query.replace(/(^\s*)|(\s*$)/g, "");
+                    if (options instanceof Function) {
+                        options = options() || [];
+                    }
                     if (query === "") {
-                        if (options instanceof Function) {
-                            options = options();
-                        }
                         opts = options.slice(0, maxMatchLen);
                         process(opts.map(m => m[labelName]));
                         vm.selectOpts[index] = opts;
@@ -361,7 +359,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -394,7 +392,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -612,7 +610,6 @@ export default {
             this.core.getPlugin("filters").filter();
         },
         getKeyChange(key, changes) {
-            // 针对多个changes，根据要columns中data || key的字段名，返回符合条件的数据集合
             let o = [];
 
             for (let item of changes.values()) {
@@ -628,7 +625,13 @@ export default {
                 const i = keys.indexOf(key);
 
                 if (keys[i] === key) {
-                    callback({ row, key, oldVal, newVal });
+                    callback({
+                        row,
+                        key,
+                        oldVal,
+                        newVal,
+                        changeCurrentCell: item
+                    });
                 }
             }
         },
