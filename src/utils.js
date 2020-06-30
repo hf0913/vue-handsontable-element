@@ -149,7 +149,7 @@ function checkType({
     const { numericFormat = {} } = item;
 
     if (options instanceof Function) {
-        options = options();
+        options = options() || [];
     }
     opts = (opts.length ? opts : options) || [];
     if (value === "" || value == null) return allowEmpty;

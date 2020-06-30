@@ -489,14 +489,15 @@ export default {
                         const v = dItem[j];
 
                         if (opts instanceof Function) {
-                            opts = opts();
+                            opts = opts() || [];
                         }
                         opts =
                             this.selectOpts[j] && this.selectOpts[j].length
                                 ? this.selectOpts[j]
                                 : opts;
                         if (subType !== "handle" && opts && opts.length && k) {
-                            if (!valueType) valueType = labelName;
+                            valueType = valueType || valueName;
+
                             if (valueType === valueName) {
                                 o = {
                                     ...o,
