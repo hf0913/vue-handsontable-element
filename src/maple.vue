@@ -594,8 +594,8 @@ export default {
                 const colCounts = getDataAtCol(col).filter(v => v);
                 let rows = countRows();
                 if (
-                    this.options.columnSummary &&
-                    this.options.columnSummary.length > 0
+                    this.settings.columnSummary &&
+                    this.settings.columnSummary.length > 0
                 ) {
                     rows = rows - 1;
                 }
@@ -658,7 +658,7 @@ export default {
             });
         },
         isEmptyRow(row) {
-            const hasDefaultValFileds = this.options.hasDefaultValFileds || [];
+            const hasDefaultValFileds = this.settings.hasDefaultValFileds || [];
             const rowData = this.core.getDataAtRow(row);
             const { length } = rowData.filter(
                 item => item === "" || item == null
@@ -672,12 +672,19 @@ export default {
             };
         },
         afterValidate(isValid, value, row, prop) {
-            if (this.getDataDoubled && this.options.openEmptyValid) {
+            if (this.getDataDoubled && this.settings.openEmptyValid) {
                 const hasDefaultValFileds =
-                    this.options.hasDefaultValFileds || [];
+                    this.settings.hasDefaultValFileds || [];
                 const index = hasDefaultValFileds.indexOf(prop);
                 const { isEmptyRow, emptyLenBl } = this.isEmptyRow(row);
 
+                if (
+                    this.settings.columnSummary &&
+                    this.settings.columnSummary.length > 0 &&
+                    row + 1 === this.core.countRows()
+                ) {
+                    return true;
+                }
                 if (isEmptyRow) {
                     switch (true) {
                         case hasDefaultValFileds[index] === prop &&
