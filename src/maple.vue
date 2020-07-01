@@ -57,9 +57,11 @@ export default {
                 beforeChange: this.beforeChange,
                 afterRemoveRow: this.afterRemoveRow,
                 afterCreateRow: this.afterCreateRow,
+                afterValidate: this.afterValidate,
                 maxRows: 12080,
                 height: 1208,
-                readOnlyCellClassName: "maple-readOnly"
+                readOnlyCellClassName: "maple-readOnly",
+                openEmptyValid: true
             },
             core: {},
             checkAllabled: false,
@@ -67,7 +69,8 @@ export default {
             width: 0,
             height: 0,
             selectOpts: [],
-            changes: {}
+            changes: {},
+            getDataDoubled: false
         };
     },
     components: { HotTable },
@@ -84,7 +87,9 @@ export default {
             const vm = this;
             const columns = this.collageColumns(t);
             const colHeaders = col => {
-                if (this.columns[col].subType === "selection") {
+                const item = this.columns[col];
+
+                if (item.subType === "selection" && item.type === "checkbox") {
                     this.mapleHeaderCheckboxCol = col;
                     return `<input type='checkbox' ${
                         vm.checkAllabled ? "checked" : ""
@@ -338,7 +343,8 @@ export default {
                             data: field
                         });
                         break;
-                    case item.subType === "optimize":
+                    case item.subType === "optimize" &&
+                        item.type === "dropdown":
                         c.push({
                             validator: (value, callback) => {
                                 callback(
@@ -371,7 +377,7 @@ export default {
                             }
                         });
                         break;
-                    case item.subType === "ajax":
+                    case item.subType === "ajax" && item.type === "dropdown":
                         c.push({
                             validator: (value, callback) => {
                                 callback(
@@ -462,6 +468,8 @@ export default {
             return c;
         },
         getData(callback = () => {}) {
+            if (this.getDataDoubled) return;
+            this.getDataDoubled = true;
             return new Promise(resolve => {
                 const { getData, getSourceDataAtRow } = this.core;
                 const d = getData();
@@ -469,7 +477,7 @@ export default {
                 const data = [];
 
                 m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
-                d.map(async (ele, i) => {
+                d.map((ele, i) => {
                     let o = this.data[i] || {};
                     const dItem = d[i];
                     const keys = this.settings.columns;
@@ -540,6 +548,7 @@ export default {
                         value: data,
                         valid: valid
                     });
+                    this.getDataDoubled = false;
                 });
             });
         },
@@ -647,6 +656,70 @@ export default {
                     t1 = t2 = null;
                 });
             });
+        },
+        isEmptyRow(row) {
+            const hasDefaultValFileds = this.options.hasDefaultValFileds || [];
+            const rowData = this.core.getDataAtRow(row);
+            const { length } = rowData.filter(
+                item => item === "" || item == null
+            );
+
+            return {
+                isEmptyRow:
+                    length >= rowData.length - hasDefaultValFileds.length,
+                emptyLenBl:
+                    length === rowData.length - hasDefaultValFileds.length
+            };
+        },
+        afterValidate(isValid, value, row, prop) {
+            if (this.getDataDoubled && this.options.openEmptyValid) {
+                const hasDefaultValFileds =
+                    this.options.hasDefaultValFileds || [];
+                const index = hasDefaultValFileds.indexOf(prop);
+                const { isEmptyRow, emptyLenBl } = this.isEmptyRow(row);
+
+                if (isEmptyRow) {
+                    switch (true) {
+                        case hasDefaultValFileds[index] === prop &&
+                            !isValid &&
+                            (value === "" ||
+                                value == null ||
+                                value === "null" ||
+                                value === "undefined") &&
+                            emptyLenBl:
+                            isValid = false;
+                            break;
+                        case hasDefaultValFileds[index] === prop &&
+                            !isValid &&
+                            value !== "" &&
+                            value != null &&
+                            value !== "undefined" &&
+                            value !== "null":
+                            isValid = false;
+                            break;
+                        case hasDefaultValFileds[index] === prop &&
+                            isValid &&
+                            value !== "" &&
+                            value != null &&
+                            value !== "undefined" &&
+                            value !== "null":
+                            isValid = true;
+                            break;
+                        case hasDefaultValFileds[index] !== prop &&
+                            !isValid &&
+                            value !== "" &&
+                            value != null &&
+                            value !== "undefined" &&
+                            value !== "null":
+                            isValid = false;
+                            break;
+                        default:
+                            isValid = true;
+                    }
+                }
+            }
+
+            return isValid;
         }
     },
     watch: {
