@@ -541,7 +541,7 @@ export default {
                         ...extraItem
                     };
                     // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (!o.notAddabled) data.push(o);
+                    if (!o.notAddabled && o.mapleTotal !== "合计") data.push(o);
                 });
                 this.core.validateCells(valid => {
                     resolve({
