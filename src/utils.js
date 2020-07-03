@@ -46,7 +46,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function() {
+        xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
@@ -88,12 +88,12 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
 function debounce(fn, delay = 128) {
     let t = null;
 
-    return function() {
+    return function () {
         let self = this;
         let args = arguments;
 
         t && clearTimeout(t);
-        t = setTimeout(function() {
+        t = setTimeout(function () {
             fn.apply(self, args);
             t = null;
         }, delay);

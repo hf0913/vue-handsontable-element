@@ -610,7 +610,8 @@ export default {
                     event,
                     core: this.core,
                     checkAllabled: this.checkAllabled,
-                    getKeyChange: this.getKeyChange
+                    getKeyChange: this.getKeyChange,
+                    filterKeysChanges: this.filterKeysChanges
                 });
             } else {
                 this.changeCheckAllabled(col, true);
@@ -628,7 +629,7 @@ export default {
             });
         },
         changeCheckAllabled(col, emitChange) {
-            setTimeout(() => {
+            let t = setTimeout(() => {
                 const { countRows, getDataAtCol } = this.core;
                 const colCounts = getDataAtCol(col).filter(v => v);
                 let rows = countRows();
@@ -652,27 +653,50 @@ export default {
                         });
                     }
                 }
+                setTimeout(t);
+                t = null;
             }, 128);
         },
         clearFilters() {
             this.core.getPlugin("filters").clearConditions();
             this.core.getPlugin("filters").filter();
         },
-        getKeyChange(key, changes) {
+        getKeyChange(key, changes, filterSummaryRow = true) {
             let o = [];
 
             for (let item of changes.values()) {
+                if (
+                    filterSummaryRow &&
+                    this.settings.columnSummary &&
+                    this.settings.columnSummary.length > 0 &&
+                    item[0] === this.core.countRows() - 1
+                ) {
+                    return o;
+                }
                 if (item[1] === key) {
                     o.push(item);
                 }
             }
             return o;
         },
-        filterKeysChanges({ keys, changes, callback }) {
+        filterKeysChanges({
+            keys,
+            changes,
+            callback,
+            filterSummaryRow = true
+        }) {
             for (let item of changes.values()) {
                 const [row, key, oldVal, newVal] = item;
                 const i = keys.indexOf(key);
 
+                if (
+                    filterSummaryRow &&
+                    this.settings.columnSummary &&
+                    this.settings.columnSummary.length > 0 &&
+                    row === this.core.countRows() - 1
+                ) {
+                    return;
+                }
                 if (keys[i] === key) {
                     callback({
                         row,
