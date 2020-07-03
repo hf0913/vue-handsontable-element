@@ -153,6 +153,7 @@ function checkType({
     }
     opts = (opts.length ? opts : options) || [];
     if (value === "" || value == null) return allowEmpty;
+
     switch (type) {
         case "autocomplete":
             opts = opts.filter(m => m[labelName] === value);
@@ -249,6 +250,9 @@ function checkType({
                     break;
                 }
             }
+            break;
+        case "text":
+            state = value !== "" && value != null;
             break;
         case "checkbox":
             state =

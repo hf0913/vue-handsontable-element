@@ -54,7 +54,7 @@ export default {
                 manualRowResize: true,
                 renderAllRows: false,
                 afterOnCellMouseDown: this.afterOnCellMouseDown,
-                beforeChange: this.beforeChange,
+                afterChange: this.afterChange,
                 afterRemoveRow: this.afterRemoveRow,
                 afterCreateRow: this.afterCreateRow,
                 afterValidate: this.afterValidate,
@@ -205,7 +205,8 @@ export default {
                 });
             }
         },
-        beforeChange(changes, source) {
+        afterChange(changes, source) {
+            if (!changes) return;
             changes.map(item => {
                 const [row, key, oldVal, newVal] = item;
                 if (!isNaN(row)) {
@@ -457,6 +458,44 @@ export default {
                             options
                         });
                         break;
+                    case item.type == null || item.type == "text":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "text",
+                                        value,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            data: field
+                        });
+                        break;
+                    case item.type === "checkbox":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "checkbox",
+                                        value,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            data: field
+                        });
+                        break;
                     default:
                         c.push({
                             ...item,
@@ -657,26 +696,11 @@ export default {
                 });
             });
         },
-        isEmptyRow(row) {
-            const hasDefaultValFileds = this.settings.hasDefaultValFileds || [];
-            const rowData = this.core.getDataAtRow(row);
-            const { length } = rowData.filter(
-                item => item === "" || item == null
-            );
-
-            return {
-                isEmptyRow:
-                    length >= rowData.length - hasDefaultValFileds.length,
-                emptyLenBl:
-                    length === rowData.length - hasDefaultValFileds.length
-            };
-        },
         afterValidate(isValid, value, row, prop) {
             if (this.getDataDoubled && this.settings.openEmptyValid) {
                 const hasDefaultValFileds =
                     this.settings.hasDefaultValFileds || [];
                 const index = hasDefaultValFileds.indexOf(prop);
-                const { isEmptyRow, emptyLenBl } = this.isEmptyRow(row);
 
                 if (
                     this.settings.columnSummary &&
@@ -685,43 +709,40 @@ export default {
                 ) {
                     return true;
                 }
+
+                const isEmptyRow = this.core.isEmptyRow(row);
+
                 if (isEmptyRow) {
-                    switch (true) {
-                        case hasDefaultValFileds[index] === prop &&
-                            !isValid &&
-                            (value === "" ||
-                                value == null ||
-                                value === "null" ||
-                                value === "undefined") &&
-                            emptyLenBl:
+                    isValid = true;
+                } else if (
+                    !isValid &&
+                    prop !== hasDefaultValFileds[index] &&
+                    (value == null || value === "")
+                ) {
+                    const rowData = this.core.getDataAtRow(row);
+                    let count = 0;
+
+                    for (let [
+                        j,
+                        { data: k = "maple" }
+                    ] of this.settings.columns.entries()) {
+                        const i = hasDefaultValFileds.indexOf(k);
+                        const key = hasDefaultValFileds[i];
+                        const v = rowData[j];
+
+                        if (k !== key && v) {
                             isValid = false;
                             break;
-                        case hasDefaultValFileds[index] === prop &&
-                            !isValid &&
-                            value !== "" &&
-                            value != null &&
-                            value !== "undefined" &&
-                            value !== "null":
-                            isValid = false;
-                            break;
-                        case hasDefaultValFileds[index] === prop &&
-                            isValid &&
-                            value !== "" &&
-                            value != null &&
-                            value !== "undefined" &&
-                            value !== "null":
-                            isValid = true;
-                            break;
-                        case hasDefaultValFileds[index] !== prop &&
-                            !isValid &&
-                            value !== "" &&
-                            value != null &&
-                            value !== "undefined" &&
-                            value !== "null":
-                            isValid = false;
-                            break;
-                        default:
-                            isValid = true;
+                        }
+                        if (k !== key && (v == null || v === "")) {
+                            count++;
+                        }
+                    }
+                    if (
+                        count + hasDefaultValFileds.length ===
+                        this.core.countCols()
+                    ) {
+                        isValid = true;
                     }
                 }
             }
