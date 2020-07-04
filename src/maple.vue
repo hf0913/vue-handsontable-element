@@ -75,8 +75,24 @@ export default {
     },
     components: { HotTable },
     mounted() {
+        const vm = this;
+
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
+        this.core.view.wt.update("onCellDblClick", function (
+            mouseEvent,
+            cellCoords,
+            $el
+        ) {
+            const { row, col } = cellCoords;
+            vm.$emit("cellDblClick", {
+                mouseEvent,
+                row,
+                col,
+                $el
+            });
+        });
+
         this.init("mounted");
     },
     activated() {
