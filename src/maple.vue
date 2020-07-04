@@ -85,11 +85,17 @@ export default {
             $el
         ) {
             const { row, col } = cellCoords;
+
             vm.$emit("cellDblClick", {
                 mouseEvent,
                 row,
                 col,
-                $el
+                $el,
+                activeEditorFn: () => {
+                    // 激活编辑
+                    const activeEditor = vm.core.getActiveEditor();
+                    activeEditor.beginEditing();
+                }
             });
         });
 
