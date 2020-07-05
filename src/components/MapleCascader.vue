@@ -1,0 +1,161 @@
+<template>
+    <el-cascader
+        v-if="cascaderAbled"
+        ref="cascaderRef"
+        v-model="value"
+        :options="options"
+        clearable
+        filterable
+        size="mini"
+        :style="{
+            position: 'absolute',
+            zIndex: 1208,
+            width: `${width}px`,
+            top: 0,
+            left: 0,
+            marginTop: `${top}px`,
+            marginLeft: `${left}px`
+        }"
+        :class="{ 'maple-hidden': show && neddInput }"
+        v-bind="prop"
+        @change="change"
+        @visible-change="visible"
+    />
+</template>
+
+<script>
+import address from "../utils/address";
+import _ from "../utils/index";
+
+export default {
+    name: "MapleCascader",
+    props: {
+        neddInput: {
+            type: Boolean,
+            default: true
+        }
+    },
+    data() {
+        return {
+            options: [],
+            value: null,
+            show: true,
+            coords: {},
+            top: 0,
+            left: 0,
+            width: "auto",
+            core: {},
+            prop: {},
+            columns: [],
+            $body: null,
+            $input: null,
+            cascaderAbled: false,
+            address: []
+        };
+    },
+    mounted() {
+        this.$body = document.body;
+        this.$body.appendChild(this.$el);
+    },
+    methods: {
+        visible(v) {
+            this.show = !v;
+        },
+        change(v) {
+            const { col } = this.coords;
+            const { subType } = this.columns[col];
+
+            if (subType === "address" || subType === "cascader") {
+                v = _.getCascaderLabelValue({
+                    data: this.options,
+                    value: v
+                });
+                v = Object.values(v).join("/");
+            }
+            this.controlPickerPanel(false);
+            this.changeDate(v);
+        },
+        changeDate(v) {
+            const { col, row } = this.coords;
+
+            if (col !== -1208 && row !== -1208 && col != null && row != null) {
+                this.core.setDataAtCell(row, col, v, "changeDate");
+            }
+        },
+        controlOpen({
+            open = false,
+            col = 0,
+            row = 0,
+            width = "auto",
+            top = 0,
+            left = 0,
+            core = {},
+            columns = []
+        } = {}) {
+            this.core = core;
+            this.coords = {
+                col,
+                row
+            };
+            if (col !== -1208 && row !== -1208 && col != null && row != null) {
+                const { subType = "", props = {}, type } = columns[col];
+
+                if (!type) {
+                    this.options =
+                        columns[col].source || columns[col].options || [];
+                    this.columns = columns;
+                    if (subType === "address") {
+                        if (this.address.length) {
+                            this.options = this.address;
+                        } else {
+                            this.options = _.collageAddress(address);
+                            this.address = this.options;
+                        }
+                    }
+                    if (subType === "address" || subType === "cascader") {
+                        this.value = this.core.getDataAtCell(row, col);
+                        if (this.value) {
+                            let v = _.getCascaderLabelValue({
+                                data: this.options,
+                                value: this.value.split("/"),
+                                matchFieldName: "label"
+                            });
+                            this.value = Object.keys(v);
+                            if (!this.value.length)
+                                this.core.setDataAtCell(
+                                    row,
+                                    col,
+                                    "",
+                                    "changeDate"
+                                );
+                        }
+                        this.show = !open;
+                        this.controlPickerPanel(open);
+                        this.width = width;
+                        this.top = top;
+                        this.left = left;
+                        this.prop = Object.assign({}, props);
+                    }
+                }
+            }
+        },
+        controlPickerPanel(bl) {
+            this.cascaderAbled = false;
+            if (bl) {
+                let t1 = setTimeout(() => {
+                    this.cascaderAbled = true;
+                    let t2 = setTimeout(() => {
+                        this.$el.click();
+                        this.$el.querySelector("input").focus();
+                        clearTimeout(t2);
+                        t2 = null;
+                    }, 128);
+
+                    clearTimeout(t1);
+                    t1 = null;
+                }, 60);
+            }
+        }
+    }
+};
+</script>

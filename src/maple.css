@@ -1,0 +1,15 @@
+#maple-header-checkbox:disabled {
+    cursor: not-allowed;
+}
+.maple-readOnly {
+    cursor: not-allowed;
+    color: #c0c4cc;
+}
+.htInvalid {
+    color: white;
+}
+.maple-hidden {
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
