@@ -89,7 +89,7 @@ export default {
         cellDblClick() {
             const vm = this;
 
-            vm.core.view.wt.update("onCellDblClick", function(
+            vm.core.view.wt.update("onCellDblClick", function (
                 mouseEvent,
                 cellCoords,
                 $el
@@ -155,7 +155,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function(
+                                renderer: function (
                                     instance,
                                     td,
                                     row,
@@ -413,7 +413,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -446,7 +446,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,

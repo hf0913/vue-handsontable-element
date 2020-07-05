@@ -1,146 +1,262 @@
-# Requirements
+# 申明
 
-1.监听当前单元格并修改当前单元格，存在 bug，对方必须使用 setTimeout
+.[基于 handsontable 二次封装源码]: https://github.com/hf0913/vue-handsontable-element
+.[handsontable 官网]: https://handsontable.com/
 
-## Install
+## 简要步骤
 
-From npm:
+1. 原表格标签修改为：Handsontable
+2. 对于 columns，key 或者 data 属性名都可以用来存放后端字段名
+3. 对于 columns 中 type 属性，仅支持：autocomplete、checkbox、date、dropdown、handsontable、numeric、password、text、time，默认为 text，切记不要设置 type 类型为其他值
 
-```sh
+### 示例代码
 
-$ npm install vue-upload-drag -D
-
-```
-
-### Usage
-
-```javascript
-import VueUploadDrag from "vue-upload-drag";
-Vue.use(VueUploadDrag);
-```
-
-```html
-<!--your.vue-->
 <template>
-    <upload-drag v-model="fileList" :config="config" />
-</template>
-```
-
-#### API
-
--   `{onChange} Function`
--   `{onProgress} Function`
--   `{onError} Function`
--   `{onSuccess} Function 必须接受，并回调exChangeUrl方法`
-
-##### slot
-
--   `具名插槽：loading，用于自定义loading，结合config.loading用`
--   `具名插槽：imgBtns，用于自定义imgBtns，结合config.imgBtns用`
--   `具名插槽：liItem，该插槽是在li元素根节点`
-
-###### Arguments:
-
--   `{config} Object`
-
-```javascript
-export default {
-    name: "uploadDrag",
-    props: {
-        value: {
-            required: true,
-            type: Array
-        },
-        config: {
-            required: false,
-            type: Object,
-            default: _ => ({
-                accept: "image/*", // 文件上传类型
-                action: "https://jsonplaceholder.typicode.com/posts/", // 上传域名
-                data: {}, // 请求参数
-                limit: 9, // 支持最大上传文件数
-                multiple: true, // 支持多个文件选择
-                imgUrl: "url", // 图片路径字段
-                deleteBtnName: "删除", // 删除按钮名
-                viewBtnName: "查看", // 查看按钮名
-                dragabled: true, // 是否拖拽
-                imgBtns: ["删除", "查看"], // 图片按钮显示集合，另可以通过具名插槽名imgBtns自定义
-                loading: true, // 图片加载loading是否开启，另可以通过具名插槽名Loading自定义
-                isHttpRequest: false, // 是否自定义请求
-                uploadField: "file" // 上传默认字段
-            })
-        }
-    }
-};
-```
-
-###### Example
-
-```html
-<template>
-    <upload-drag
-        v-model="fileList"
-        :config="config"
-        @onChange="onChange"
-        @onProgress="onProgress"
-        @picsExceed="picsExceed"
-        @onError="onError"
-        @onSuccess="onSuccess"
+    <Handsontable
+        :columns="columns"
+        v-model="tableData"
+        @click="handsontableClick"
+        @change="handsontableChange"
+        @getCore="getCore"
+        :options="options"
+        ref="handsontableRef"
     />
 </template>
-```
 
-```javascript
-import VueUploadDrag from "vue-upload-drag";
-Vue.use(VueUploadDrag);
-
+<script>
 export default {
-    data() {
+    data(){
         return {
-            fileList: [
-                {
-                    name: "food.jpg",
-                    url: "https://www.baidu.com/img/bd_logo1.png",
-                    id: 11
+            selectArr: [{
+                test: "maple1",
+                id: 1
+            }], // 下拉框数据集合
+            tableData: [],
+            columns: [{
+                key: "checkbox", // 设置后端字段名
+                type: "checkbox", // 复选框
+                width: 200, // 表格宽度
+                subType: "selection" // 用来挑选行数据，禁止使用title，如果使用了title，就会出现table header没有复选框，只显示 title。
+            },
+            {
+                title: "普通文本", // 表头名
+                key: "text",
+                width: 200,
+                validator: (value, callback)=>{
+                    // 自定义校验，value为单元格值，callback回调函数，入参为boolean类型。
+                    callback(true) // 校验通过
+                    callback(false) // 校验失败，单元格背景色标记红色
+                },
+                readOnly: true, // 只读属性，不能被修改。
+                editor: false, // 禁止编辑，但是可以通过粘贴、被填充修改。
+                allowInvalid: true // 开启校验
+            },
+            {
+                title: "数字",
+                data: "numeric",
+                type: "numeric",
+                subType: "posInt", // 正整数类型
+                numericFormat: {
+                    pattern: "0.00", // 显示值类型
+                    min: 0, // 最小值
+                    max: 1208 // 最大值
+                },
+                allowEmpty: true, // 是否可以接受空值
+                width: 200
+            },
+            {
+                title: "日期",
+                data: "date",
+                type: "date",
+                dateFormat: "YYYY-MM-DD", // 日期类型
+                width: 200
+            },
+            {
+                title: "时间",
+                data: "time",
+                type: "time",
+                timeFormat: "HH:mm", // 时间类型
+                correctFormat: true, // 失去焦点，矫正时间格式
+                width: 200
+            },
+            {
+                title: "下拉框(优化模式，options属性或者source属性，接受一个回调函数，返回数据字典集合)",
+                data: "select",
+                type: "dropdown",
+                // options: () => this.selectArr, // 这种也可以哦，下拉框选项值字段名支持：source || options
+                source: () => this.selectArr, // 存放下拉框选项值集合，每一项中包含值和id，取名source或者options都可以
+                width: 300,
+                // extraField属性：调用getData方法，返回多余字段名，其值取item[valueType === valueName ? labelName : valueName]
+                extraField: "maple_love",
+                valueType: "id", // 配合extraField属性使用，默认等于valueName
+                labelName: "test", // 下拉框选项值集合，每一项中值字段名，默认：label
+                valueName: "id", // 下拉框选项值集合，每一项中id字段名，默认：value
+                subType: "optimize", // 优化模式，配合maxMatchLen属性一起使用
+                maxMatchLen: 8 // 根据source属性值，模糊匹配最大条数，默认8条，即用户点击下拉框只可以选择8条数据。
+            },
+            {
+                title: "下拉框(优化模式)",
+                data: "select",
+                type: "dropdown",
+                source: [],
+                width: 300,
+                extraField: "maple_love",
+                valueType: "id",
+                labelName: "test",
+                valueName: "id",
+                subType: "optimize",
+                maxMatchLen: 8
+            },
+            {
+                title: "下拉框(自定义请求ajax)",
+                data: "selectAjax",
+                type: "dropdown",
+                source: [],
+                width: 300,
+                extraField: "maple_love",
+                valueType: "id",
+                labelName: "test",
+                valueName: "id",
+                subType: "ajax", // 自定义ajax请求，在编辑业务场景中数据回显，请必须请求一次数据，并将数据赋值给source属性。
+                ajaxConfig: { // ajax请求配置
+                    url: "http://www.maplehu.com.cn/api/login", // 请求后端的完整地址，切记不能携带任何请求参数。
+                    method: "post", // 请求方式
+                    queryField: "query", // 查询字段名，动态获取查询值value
+                    data: { // 请求参数以body形式发送，如果不需要请设置data属性。
+                        login_name: "admin",
+                        password: "123456",
+                        query: "test"
+                    },
+                    // param:{} // 请求参数从url携带发送，查询参数，场景业务场景如get请求
+                    result: "res.data.data" // 根据后端返回关于下拉框选项集合的数据结构，给出一个字段访问链。必须滴。
                 }
-            ],
-            config: {
-                limit: 1
-            }
-        };
+            },
+            {
+                title: "操作",
+                subType: "handle", // 操作模式
+                width: 140,
+                options: [
+                    {
+                        name: "复制", // 文本标题
+                        color: "#409eff" // 文本颜色
+                    },
+                    {
+                        name: "添加",
+                        color: "#67c23a"
+                    },
+                    {
+                        name: "删除",
+                        color: "#f56c6c"
+                    }
+                ]
+            }],
+            options: {
+                // 更多options，https://handsontable.com/docs/7.4.2/Options.html
+                maxRows: 12080, // 数据上限
+                minRows: 8, // 至少8条，如果设置该属性，请删除与之冲突的补偿数据的代码。
+                height: 400,
+                readOnly: false, // table是否只读
+                hiddenColumns: {
+                    // 隐藏某些列，接受列号的数组
+                    columns: []
+                },
+                wordWrap: false, // 不换行
+                columnSummary: [ // 表尾合计
+                    {
+                        key: "n1", // 需要统计某列的字段名
+                        type: "sum", // 目前暂时仅支持sum类型（求和）
+                        col: 2 // 需要统计某列的列号
+                    },
+                    {
+                        key: "n2",
+                        type: "sum",
+                        col: 3
+                    }
+                ],
+                nestedHeaders: [
+                    ['A', {label: 'B', colspan: 8}, 'C'],
+                    ['D', {label: 'E', colspan: 4}, {label: 'F', colspan: 4}, 'G'],
+                    ['H', {label: 'I', colspan: 2}, {label: 'J', colspan: 2}, {label: 'K', colspan: 2}, {label: 'L', colspan: 2}, 'M'],
+                    ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']
+                ],
+                cells: (row, column, prop) => { // 控制一个或多个单元格属性
+                    // row:行号, column:列号, prop:字段名
+                    const cellProperties = {};
+                    if (row === this.myValue.length - 1) { // 行号等于最后一行
+                        cellProperties.readOnly = true; // 单元格只读
+                        cellProperties.comment = { // 单元格备注
+                            value: "备注内容", // 单元格备注内容
+                            readOnly: true // 备注内容只读
+                        };
+                    }
+                    return cellProperties;
+                }
+            },
+            core: Object // https://handsontable.com/docs/7.4.2/Core.html
+        }
     },
     methods: {
-        onChange(f) {
-            // 图片选择改变，且config中isHttpRequest为true
-            console.log(f);
+        getCore (v) {
+            // 获取core
+            this.core = v
         },
-        onProgress({ e, file, uid }) {
-            // 上传中
-            console.log(e, file, uid);
+        handsontableChange(o) {
+            // change事件，通用模版
+            // getKeyChange, filterKeysChanges方法二选一，个人建议filterKeysChanges方法
+            // row：行号 key：字段名 oldVal：旧值 newVal：新值 changes：单元格数据修改的集合
+            // changeCurrentCell 修改当前监听的单元格值
+            const { getKeyChange, filterKeysChanges, changes = [[]], changeCurrentCell } = o;
+
+            getKeyChange('你需要监听的字段名1', changes).map(([row, key, oldVal, newVal]) => {
+                console.log(row, key, oldVal, newVal)
+            });
+            getKeyChange('你需要监听的字段名2', changes).map(([row, key, oldVal, newVal]) => {
+                console.log(row, key, oldVal, newVal)
+            });
+
+            filterKeysChanges({
+                changes,
+                keys: ['你需要监听的字段名1', '你需要监听的字段名2'],
+                callback: ({ row, key, oldVal, newVal }) => {
+                    console.log(row, key, oldVal, newVal)
+                }
+            })
+
+            // changeCurrentCell[3] = 'maple test'
         },
-        onError({ err, file, uid }) {
-            // 上传失败,会自动把图片移除，建议给提示
-            alert("图片上传失败");
-            console.log(err, file, uid);
+        handsontableClick(o) {
+            console.log(o, '点击事件')
         },
-        picsExceed({ uploadBefore, selectCount, files, value }) {
-            // 同时选择多张图片超过限制数会被触发
-            alert("选择的图片数量超过最大数");
-            uploadBefore(files, value); // 过滤多余的图片继续上传
+        getData() {
+            // 获取并校验table数据
+            this.$refs.handsontableRef.getData((item, index)=>{
+                item = {
+                    ...item,
+                    notAddabled: false, // 是否不添加当前item数据，false即添加，true即不添加
+                    maple: index // 基于item合并新属性
+                }
+                return item
+            }).then(({value, valid}) => {
+                // valid 校验状态，true即通过
+                console.log(value, valid)
+            })
         },
-        onSuccess({ res, file, _uid, exChangeUrl, handleRemove }) {
-            // 上传成功，请必须接受onSuccess方法
-            console.log(res, file, _uid, exChangeUrl, handleRemove);
-            // 仅是举例而已哦
-            if (res.code === "0") {
-                // 根据后端状态判断
-                const { url } = res.data;
-                exChangeUrl(_uid, url); // url为后端返回的图片链接值，uid是onSuccess传入的
-            } else {
-                alert("图片上传失败");
-                handleRemove(_uid); // 删除图片
-            }
-        }
     }
-};
-```
+}
+</script>
+
+#### 使用说明
+
+1. 关于下拉框，建议使用【title: "下拉框(优化模式，options 属性或者 source 属性，接受一个回调函数，返回数据字典集合)"】这种类型
+2. 获取某一个单元格值：this.core.getDataAtCell(row,col)
+3. 获取某一行数据：this.core.getDataAtRow(row)
+4. 获取某一列数据：this.core.getDataAtCol(col)
+5. 折叠行，https://handsontable.com/docs/7.4.2/demo-nested-rows.html
+6. 设置某一个单元格的值：this.core.setDataAtCell(row, col, value, '标记')
+7. 关于 core 获取，可以通过@getCore 方法，查看上面的示例代码，change 方法和 click 方法也会返回 core 对象
+
+##### 建议
+
+1. 修改数组，建议使用可以修改原数组的方法，比如：push、splice、unshift、pop 等等
+2. 修改对象某属性，先 data 中申明，然后可以使用 Object.assign 进行浅合并，示例：this.testOpts = Object.assign({}, testOpts, this.testNewOpts);
+3. 修改单元格值请调用 core 方法中的 setDataAtCell
