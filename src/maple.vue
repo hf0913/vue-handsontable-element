@@ -77,66 +77,60 @@ export default {
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
+    destroyed() {
+        this.$el.removeEventListener("dblclick", e => {
+            this.cellDblClick(e);
+        });
+    },
     mounted() {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
-        this.cellDblClick();
+        this.$el.addEventListener("dblclick", e => {
+            this.cellDblClick(e);
+        });
         this.init("mounted");
     },
     activated() {
         this.fixView();
     },
     methods: {
-        cellDblClick() {
-            const vm = this;
+        cellDblClick(mouseEvent) {
+            const $el = mouseEvent.target;
+            const [[row, col]] = this.core.getSelected() || [[]];
+            const { width, top, left, height } = $el.getBoundingClientRect();
+            let {
+                subType,
+                readOnly = false,
+                editor = true
+            } = this.settings.columns[col];
 
-            vm.core.view.wt.update("onCellDblClick", function(
-                mouseEvent,
-                cellCoords,
-                $el
+            if (subType === "address") subType = "cascader";
+            if (
+                this.$refs[`${subType}Ref`] &&
+                row >= 0 &&
+                !readOnly &&
+                editor &&
+                ((this.hasColumnSummary && row !== this.core.countRows() - 1) ||
+                    !this.hasColumnSummary)
             ) {
-                const { row, col } = cellCoords;
-                const {
+                this.$refs[`${subType}Ref`].controlOpen({
+                    col,
+                    row,
                     width,
+                    height,
                     top,
                     left,
-                    height
-                } = $el.getBoundingClientRect();
-                let { subType, readOnly = false, editor = true } = vm.columns[
+                    open: true,
+                    core: this.core,
+                    columns: this.columns
+                });
+            }
+            this.$emit("cellDblClick", {
+                mouseEvent,
+                $el,
+                coord: {
+                    row,
                     col
-                ];
-
-                if (subType === "address") subType = "cascader";
-                if (
-                    vm.$refs[`${subType}Ref`] &&
-                    row >= 0 &&
-                    !readOnly &&
-                    editor &&
-                    ((vm.hasColumnSummary && row !== vm.core.countRows() - 1) ||
-                        !vm.hasColumnSummary)
-                ) {
-                    vm.$refs[`${subType}Ref`].controlOpen({
-                        col,
-                        row,
-                        width,
-                        height,
-                        top,
-                        left,
-                        open: true,
-                        core: vm.core,
-                        columns: vm.columns
-                    });
-                } else {
-                    // 激活编辑
-                    const activeEditor = vm.core.getActiveEditor();
-
-                    activeEditor && activeEditor.beginEditing();
-                    vm.$emit("cellDblClick", {
-                        mouseEvent,
-                        row,
-                        col,
-                        $el
-                    });
                 }
             });
         },
