@@ -8,13 +8,11 @@
         filterable
         size="mini"
         :style="{
-            position: 'absolute',
+            position: 'fixed',
             zIndex: 1208,
             width: `${width}px`,
-            top: 0,
-            left: 0,
-            marginTop: `${top}px`,
-            marginLeft: `${left}px`
+            top: `${top}px`,
+            left: `${left}px`
         }"
         :class="{ 'maple-hidden': show && neddInput }"
         v-bind="prop"
@@ -24,7 +22,6 @@
 </template>
 
 <script>
-import address from "../utils/address";
 import _ from "../utils/index";
 
 export default {
@@ -92,6 +89,9 @@ export default {
             core = {},
             columns = []
         } = {}) {
+            if (!open) {
+                return (this.cascaderAbled = false);
+            }
             this.core = core;
             this.coords = {
                 col,
@@ -108,7 +108,7 @@ export default {
                         if (this.address.length) {
                             this.options = this.address;
                         } else {
-                            this.options = _.collageAddress(address);
+                            this.options = _.collageAddress(_.address);
                             this.address = this.options;
                         }
                     }

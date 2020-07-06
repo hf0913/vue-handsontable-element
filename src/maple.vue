@@ -10,6 +10,8 @@
 import { HotTable } from "@handsontable/vue";
 import maple from "handsontable";
 import _ from "./utils";
+import MapleCascader from "./components/MapleCascader";
+import MapleDatePicker from "./components/MapleDatePicker";
 
 export default {
     name: "MapleHandsontable",
@@ -24,6 +26,10 @@ export default {
         },
         options: {
             type: Object
+        },
+        checkBox: {
+            type: Object,
+            default: () => ({ key: "checked", col: 0 })
         }
     },
     data() {
@@ -40,7 +46,7 @@ export default {
                     autoInsertRow: false,
                     direction: "vertical"
                 },
-                dropdownMenu: ["filter_by_condition", "filter_action_bar"],
+                dropdownMenu: null,
                 contextMenu: [
                     "row_above",
                     "row_below",
@@ -55,11 +61,6 @@ export default {
                 manualColumnResize: true,
                 manualRowResize: false,
                 renderAllRows: false,
-                afterOnCellMouseDown: this.afterOnCellMouseDown,
-                afterChange: this.afterChange,
-                afterRemoveRow: this.afterRemoveRow,
-                afterCreateRow: this.afterCreateRow,
-                afterValidate: this.afterValidate,
                 maxRows: 12080,
                 height: 1208,
                 readOnlyCellClassName: "maple-readOnly",
@@ -71,11 +72,11 @@ export default {
             width: 0,
             height: 0,
             selectOpts: [],
-            changes: {},
-            getDataDoubled: false
+            getDataDoubled: false,
+            hasColumnSummary: false
         };
     },
-    components: { HotTable },
+    components: { HotTable, MapleCascader, MapleDatePicker },
     mounted() {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
@@ -89,7 +90,7 @@ export default {
         cellDblClick() {
             const vm = this;
 
-            vm.core.view.wt.update("onCellDblClick", function (
+            vm.core.view.wt.update("onCellDblClick", function(
                 mouseEvent,
                 cellCoords,
                 $el
@@ -101,10 +102,19 @@ export default {
                     left,
                     height
                 } = $el.getBoundingClientRect();
-                let { subType } = vm.columns[col];
+                let { subType, readOnly = false, editor = true } = vm.columns[
+                    col
+                ];
 
                 if (subType === "address") subType = "cascader";
-                if (vm.$refs[`${subType}Ref`]) {
+                if (
+                    vm.$refs[`${subType}Ref`] &&
+                    row >= 0 &&
+                    !readOnly &&
+                    editor &&
+                    ((vm.hasColumnSummary && row !== vm.core.countRows() - 1) ||
+                        !vm.hasColumnSummary)
+                ) {
                     vm.$refs[`${subType}Ref`].controlOpen({
                         col,
                         row,
@@ -130,24 +140,30 @@ export default {
                 }
             });
         },
+        customHeader(col) {
+            const item = this.columns[col];
+
+            if (item.subType === "selection" && item.type === "checkbox") {
+                this.mapleHeaderCheckboxCol = col;
+                return `<input type='checkbox' ${
+                    this.checkAllabled ? "checked" : ""
+                } id="maple-header-checkbox" style="margin-right: 6px" ${
+                    this.data.length ? "" : "disabled"
+                }/>`;
+            } else {
+                return `
+                    <div id="maple-fliter">
+                        <span>${item.title}</span>
+                        <a style="display: ${
+                            item.openCustomFiter ? "inline" : "none"
+                        };margin-left: 4px;" href="javascript:;" class="el-icon-s-operation cursor" id="maple-fliter"></a>
+                    </div>
+                    `;
+            }
+        },
         init(t) {
             const vm = this;
             const columns = this.collageColumns(t);
-            const colHeaders = col => {
-                const item = this.columns[col];
-
-                if (item.subType === "selection" && item.type === "checkbox") {
-                    this.mapleHeaderCheckboxCol = col;
-                    return `<input type='checkbox' ${
-                        vm.checkAllabled ? "checked" : ""
-                    } id="maple-header-checkbox" style="margin-left: ${
-                        this.settings.dropdownMenu &&
-                        this.settings.dropdownMenu.length
-                            ? "21px"
-                            : 0
-                    }" ${this.data.length ? "" : "disabled"}/>`;
-                }
-            };
 
             if (t === "mounted" || t === "columns") {
                 this.settings = Object.assign(this.settings, {
@@ -155,7 +171,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function (
+                                renderer: function(
                                     instance,
                                     td,
                                     row,
@@ -219,27 +235,43 @@ export default {
                         }
                         return item;
                     }),
-                    colWidths: columns.map(({ width = 200 }) => width)
+                    colWidths: columns.map(({ width = 200 }) => width),
+                    afterOnCellMouseDown: this.afterOnCellMouseDown,
+                    afterChange: this.afterChange,
+                    afterRemoveRow: this.afterRemoveRow,
+                    afterCreateRow: this.afterCreateRow,
+                    afterValidate: this.afterValidate,
+                    beforeChange: this.beforeChange,
+                    afterScrollHorizontally: this.afterScrollHorizontally,
+                    afterScrollVertically: this.afterScrollVertically
                 });
             }
             if (t === "mounted" || t === "data") {
                 this.settings = Object.assign(this.settings, {
                     data: this.data,
-                    colHeaders
+                    colHeaders: col => this.customHeader(col)
                 });
             }
             if (t === "mounted" || t === "options") {
                 this.settings = Object.assign(this.settings, this.options);
             }
-
+            this.hasColumnSummary =
+                this.settings.columnSummary &&
+                this.settings.columnSummary.length > 0;
             maple.dom.addEvent(this.$el, "mousedown", this.eventListener);
-            this.changeCheckAllabled();
         },
         afterOnCellMouseDown(event, coords, $el) {
             const { row, col } = coords;
 
+            if (event.target.id === "maple-fliter") {
+                this.$emit("controlCustomFilter", {
+                    event,
+                    coords,
+                    $el
+                });
+            }
             if (col === this.mapleHeaderCheckboxCol) {
-                this.checkBox(event, coords, $el);
+                this.checkAllBox(event, coords, $el);
             } else {
                 this.$emit("click", {
                     col,
@@ -252,14 +284,54 @@ export default {
                 });
             }
         },
+        afterScrollVertically() {
+            this.$refs.datePickerRef.controlOpen();
+            this.$refs.cascaderRef.controlOpen();
+            this.$emit("afterScrollVertically");
+        },
+        afterScrollHorizontally() {
+            this.$refs.datePickerRef.controlOpen();
+            this.$refs.cascaderRef.controlOpen();
+            this.$emit("afterScrollHorizontally");
+        },
+        beforeChange: change => {
+            if (
+                change.length &&
+                change[0] &&
+                change[0].length &&
+                change[0].filter(value => Number.isNaN(value)).length
+            ) {
+                return false;
+            }
+            return true;
+        },
         afterChange(changes, source) {
             if (!changes) return;
-            changes.map(item => {
-                const [row, key, oldVal, newVal] = item;
-                if (!isNaN(row)) {
-                    this.changes[`${row}-${key}-${oldVal}-${newVal}`] = item;
+            const { key = "checked", col = 0 } = this.checkBox || {};
+            const checkBoxVal = this.getKeyChange(key, changes);
+            let checked = [];
+
+            if (checkBoxVal.length) {
+                let { length: len } = this.core
+                    .getDataAtCol(col)
+                    .filter((bl, row) => {
+                        if (bl) {
+                            checked.push({
+                                row,
+                                checked: bl
+                            });
+                        }
+                        return bl;
+                    });
+                let countRows = this.core.countRows();
+
+                if (this.hasColumnSummary) countRows--;
+                let bl = len === countRows;
+                if (bl !== this.checkAllabled) {
+                    this.checkAllabled = bl;
+                    this.core.render();
                 }
-            });
+            }
 
             this.$emit("change", {
                 source,
@@ -267,17 +339,9 @@ export default {
                 core: this.core,
                 type: "change",
                 getKeyChange: this.getKeyChange,
-                filterKeysChanges: this.filterKeysChanges
+                filterKeysChanges: this.filterKeysChanges,
+                checked
             });
-            if (
-                changes.length &&
-                changes[0] &&
-                changes[0].length &&
-                changes[0].filter(value => Number.isNaN(value)).length
-            ) {
-                // 解决表头自定义为checkbox click error
-                return false;
-            }
         },
         afterRemoveRow(index, amount, physicalRows, source) {
             this.$emit("afterRemoveRow", {
@@ -368,6 +432,10 @@ export default {
                 const field = item.key || item.data;
                 let ajaxConfig = item.ajaxConfig;
 
+                item = {
+                    ...item,
+                    title: null
+                };
                 switch (true) {
                     case item.type === "autocomplete":
                         c.push({
@@ -413,7 +481,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -446,7 +514,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -543,6 +611,69 @@ export default {
                             data: field
                         });
                         break;
+                    case item.subType === "datePicker":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "datePicker",
+                                        value,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
+                            data: field
+                        });
+                        break;
+                    case item.subType === "address":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "address",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index,
+                                        options
+                                    })
+                                );
+                            },
+                            ...item,
+                            options,
+                            data: field
+                        });
+                        break;
+                    case item.subType === "cascader":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "cascader",
+                                        value,
+                                        labelName,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index,
+                                        options
+                                    })
+                                );
+                            },
+                            ...item,
+                            options,
+                            data: field
+                        });
+                        break;
                     default:
                         c.push({
                             ...item,
@@ -561,6 +692,8 @@ export default {
                 const d = getData();
                 const m = this.core.getPlugin("trimRows").trimmedRows;
                 const data = [];
+                let columns = [];
+                let addressOtps = [];
 
                 m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
                 d.map((ele, i) => {
@@ -577,11 +710,16 @@ export default {
                             labelName = "label",
                             valueName = "value",
                             extraField = "maple_extra_field",
-                            subType
+                            subType,
+                            type
                         }
                     ] of keys.entries()) {
                         const v = dItem[j];
 
+                        columns[j] = {
+                            ...this.columns[j],
+                            width: this.core.getColWidth(j)
+                        };
                         if (opts instanceof Function) {
                             opts = opts() || [];
                         }
@@ -589,7 +727,12 @@ export default {
                             this.selectOpts[j] && this.selectOpts[j].length
                                 ? this.selectOpts[j]
                                 : opts;
-                        if (subType !== "handle" && opts && opts.length && k) {
+                        if (
+                            (type === "dropdown" || type === "autocomplete") &&
+                            opts &&
+                            opts.length &&
+                            k
+                        ) {
                             valueType = valueType || valueName;
 
                             if (valueType === valueName) {
@@ -613,6 +756,35 @@ export default {
                                     })[valueName]
                                 };
                             }
+                        } else if (
+                            subType === "cascader" ||
+                            subType === "address"
+                        ) {
+                            if (
+                                addressOtps.length === 0 &&
+                                subType === "address"
+                            ) {
+                                addressOtps = _.collageAddress(_.address);
+                            }
+                            const res = _.getCascaderLabelValue({
+                                data:
+                                    subType === "address" ? addressOtps : opts,
+                                value: (v + "").split("/"),
+                                matchFieldName: "label"
+                            });
+                            if (valueType === "label") {
+                                o = {
+                                    ...o,
+                                    [k]: Object.values(res),
+                                    [extraField]: Object.keys(res)
+                                };
+                            } else {
+                                o = {
+                                    ...o,
+                                    [k]: Object.keys(res),
+                                    [extraField]: Object.values(res)
+                                };
+                            }
                         } else if (subType !== "handle" && k) {
                             o = {
                                 ...o,
@@ -632,13 +804,14 @@ export default {
                 this.core.validateCells(valid => {
                     resolve({
                         value: data,
-                        valid: valid
+                        valid: valid,
+                        columns
                     });
                     this.getDataDoubled = false;
                 });
             });
         },
-        checkBox(event, coords, $el) {
+        checkAllBox(event, coords, $el) {
             const { row, col } = coords;
             const { countRows, setDataAtCell } = this.core;
             let type = "checkbox";
@@ -648,6 +821,9 @@ export default {
 
                 this.checkAllabled = !this.checkAllabled;
                 for (let i = 0; i < countRows(); i++) {
+                    if (this.hasColumnSummary && i === countRows() - 1) {
+                        continue;
+                    }
                     checkAllableds.push([i, col, this.checkAllabled]);
                 }
                 setDataAtCell(checkAllableds);
@@ -660,9 +836,6 @@ export default {
                     getKeyChange: this.getKeyChange,
                     filterKeysChanges: this.filterKeysChanges
                 });
-            } else {
-                this.changeCheckAllabled(col, true);
-                type = "singleCheckbox";
             }
 
             this.$emit("click", {
@@ -675,35 +848,6 @@ export default {
                 type
             });
         },
-        changeCheckAllabled(col, emitChange) {
-            let t = setTimeout(() => {
-                const { countRows, getDataAtCol } = this.core;
-                const colCounts = getDataAtCol(col).filter(v => v);
-                let rows = countRows();
-                if (
-                    this.settings.columnSummary &&
-                    this.settings.columnSummary.length > 0
-                ) {
-                    rows = rows - 1;
-                }
-                const bl = !!this.data.length && colCounts.length === rows;
-
-                if (bl !== this.checkAllabled) {
-                    this.checkAllabled = bl;
-                    this.core.render();
-                    if (emitChange) {
-                        this.$emit("change", {
-                            type: "allCheckbox",
-                            event,
-                            core: this.core,
-                            checkAllabled: this.checkAllabled
-                        });
-                    }
-                }
-                setTimeout(t);
-                t = null;
-            }, 128);
-        },
         clearFilters() {
             this.core.getPlugin("filters").clearConditions();
             this.core.getPlugin("filters").filter();
@@ -714,8 +858,7 @@ export default {
             for (let item of changes.values()) {
                 if (
                     filterSummaryRow &&
-                    this.settings.columnSummary &&
-                    this.settings.columnSummary.length > 0 &&
+                    this.hasColumnSummary &&
                     item[0] === this.core.countRows() - 1
                 ) {
                     return o;
@@ -738,8 +881,7 @@ export default {
 
                 if (
                     filterSummaryRow &&
-                    this.settings.columnSummary &&
-                    this.settings.columnSummary.length > 0 &&
+                    this.hasColumnSummary &&
                     row === this.core.countRows() - 1
                 ) {
                     return;
@@ -774,8 +916,7 @@ export default {
                 const index = hasDefaultValFileds.indexOf(prop);
 
                 if (
-                    this.settings.columnSummary &&
-                    this.settings.columnSummary.length > 0 &&
+                    this.hasColumnSummary &&
                     row + 1 === this.core.countRows()
                 ) {
                     return true;

@@ -1,5 +1,6 @@
 <template>
     <el-date-picker
+        v-if="datePickerAbled"
         ref="datePickerRef"
         v-model="value"
         size="mini"
@@ -7,13 +8,11 @@
         filterable
         :style="{
             background: 'white',
-            position: 'absolute',
+            position: 'fixed',
             zIndex: 1208,
             width: `${width}px`,
-            top: 0,
-            left: 0,
-            marginTop: `${top}px`,
-            marginLeft: `${left}px`
+            top: `${top}px`,
+            left: `${left}px`
         }"
         :class="{ 'maple-hidden': show && neddInput }"
         v-bind="prop"
@@ -43,7 +42,8 @@ export default {
             prop: {},
             columns: [],
             $body: null,
-            $input: null
+            $input: null,
+            datePickerAbled: true
         };
     },
     mounted() {
@@ -75,16 +75,27 @@ export default {
             core = {},
             columns = []
         } = {}) {
+            if (!open) {
+                return (this.datePickerAbled = false);
+            }
+            this.datePickerAbled = true;
             this.coords = {
                 col,
                 row
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 const { subType = "", props = {}, type } = columns[col];
+                const charReg = /^[\u4e00-\u9fa5]+$/;
+                const { valueFormat = "yyyy-MM-dd HH:mm:ss" } = props;
 
                 this.columns = columns;
                 if (subType === "datePicker" && !type) {
-                    this.value = core.getDataAtCell(row, col);
+                    let v = core.getDataAtCell(row, col);
+
+                    this.value =
+                        v && v.length === valueFormat.length && !charReg.test(v)
+                            ? v
+                            : null;
                     this.core = core;
                     this.show = !open;
                     this.controlPickerPanel(open);

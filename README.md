@@ -13,11 +13,13 @@
 
 <template>
     <Handsontable
+        :checkBox="checkBox"
         :columns="columns"
         v-model="tableData"
         @click="handsontableClick"
         @change="handsontableChange"
         @getCore="getCore"
+        @cellDblClick="cellDblClick"
         :options="options"
         ref="handsontableRef"
     />
@@ -36,7 +38,8 @@ export default {
                 key: "checkbox", // 设置后端字段名
                 type: "checkbox", // 复选框
                 width: 200, // 表格宽度
-                subType: "selection" // 用来挑选行数据，禁止使用title，如果使用了title，就会出现table header没有复选框，只显示 title。
+                subType: "selection", // 用来挑选行数据，禁止使用title，如果使用了title，就会出现table header没有复选框，只显示 title。
+                openCustomFiter: true // 开启自定义头部筛选
             },
             {
                 title: "普通文本", // 表头名
@@ -49,7 +52,37 @@ export default {
                 },
                 readOnly: true, // 只读属性，不能被修改。
                 editor: false, // 禁止编辑，但是可以通过粘贴、被填充修改。
-                allowInvalid: true // 开启校验
+                allowEmpty: true, // 是否可以接受空值
+                openCustomFiter: true // 开启自定义头部筛选
+            },
+            {
+                title: "地址级联选择",
+                data: "address",
+                subType: "address",
+                width: 200,
+                extraField: "maple_address",
+                valueType: "label", // label || value，默认value
+                props: {} // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
+            },
+            {
+                title: "普通级联选择",
+                data: "cascader",
+                subType: "cascader",
+                options: [],
+                extraField: "maple_address",
+                valueType: "label", // label || value，默认value
+                props: {} // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
+            },
+            {
+                title: "时间日期组合",
+                key: "datePicker",
+                subType: "datePicker",
+                width: 200,
+                props: { // 参考 https://element.eleme.cn/#/zh-CN/component/datetime-picker
+                    type: "datetime",
+                    format: "yyyy-MM-dd HH:mm:ss",
+                    valueFormat: "yyyy-MM-dd HH:mm:ss"
+                }
             },
             {
                 title: "数字",
@@ -89,8 +122,8 @@ export default {
                 // extraField属性：调用getData方法，返回多余字段名，其值取item[valueType === valueName ? labelName : valueName]
                 extraField: "maple_love",
                 valueType: "id", // 配合extraField属性使用，默认等于valueName
-                labelName: "test", // 下拉框选项值集合，每一项中值字段名，默认：label
-                valueName: "id", // 下拉框选项值集合，每一项中id字段名，默认：value
+                labelName: "test", // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
+                valueName: "id", // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
                 subType: "optimize", // 优化模式，配合maxMatchLen属性一起使用
                 maxMatchLen: 8 // 根据source属性值，模糊匹配最大条数，默认8条，即用户点击下拉框只可以选择8条数据。
             },
@@ -161,6 +194,28 @@ export default {
                     columns: []
                 },
                 wordWrap: false, // 不换行
+                nestedHeaders: [ // 合并表头
+                    ['A', {label: 'B', colspan: 8}, 'C'],
+                    ['D', {label: 'E', colspan: 4}, {label: 'F', colspan: 4}, 'G'],
+                    ['H', {label: 'I', colspan: 2}, {label: 'J', colspan: 2}, {label: 'K', colspan: 2}, {label: 'L', colspan: 2}, 'M'],
+                    ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']
+                ],
+                cells: (row, column, prop) => { // 控制一个或多个单元格属性
+                    // row:行号, column:列号, prop:字段名
+                    const cellProperties = {};
+                    
+                    if (row === this.myValue.length - 1) { // 行号等于最后一行
+                        cellProperties.readOnly = true; // 单元格只读
+                        cellProperties.comment = { // 单元格备注
+                            value: "备注内容", // 单元格备注内容
+                            readOnly: true // 备注内容只读
+                        };
+                    }
+                    if(this.core.getDataAtRow(row)[0] === '合计') {
+                        cellProperties.readOnly = true;
+                    } // 专为表尾合计用，如果使用了表尾合计，请一定要加上此段代码
+                    return cellProperties;
+                },
                 columnSummary: [ // 表尾合计
                     {
                         key: "n1", // 需要统计某列的字段名
@@ -173,26 +228,25 @@ export default {
                         col: 3
                     }
                 ],
-                nestedHeaders: [
-                    ['A', {label: 'B', colspan: 8}, 'C'],
-                    ['D', {label: 'E', colspan: 4}, {label: 'F', colspan: 4}, 'G'],
-                    ['H', {label: 'I', colspan: 2}, {label: 'J', colspan: 2}, {label: 'K', colspan: 2}, {label: 'L', colspan: 2}, 'M'],
-                    ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']
-                ],
-                cells: (row, column, prop) => { // 控制一个或多个单元格属性
-                    // row:行号, column:列号, prop:字段名
-                    const cellProperties = {};
-                    if (row === this.myValue.length - 1) { // 行号等于最后一行
-                        cellProperties.readOnly = true; // 单元格只读
-                        cellProperties.comment = { // 单元格备注
-                            value: "备注内容", // 单元格备注内容
-                            readOnly: true // 备注内容只读
-                        };
-                    }
-                    return cellProperties;
+                openEmptyValid: true, // 是否开启空行校验，默认开启
+                hasDefaultValFileds: ['字段一','字段二'], // 是否存在默认值的字段集合，在getData数据校验空行会综合考虑是否标记单元格红色
+                multiColumnSorting: true, // 开启排序
+                multiColumnSorting: { // 排序配置
+                    initialConfig: [{
+                        column: 1,
+                        sortOrder: 'asc' // 正序
+                    }, {
+                        column: 0,
+                        sortOrder: 'desc' // 反序
+                    }]
                 }
             },
-            core: Object // https://handsontable.com/docs/7.4.2/Core.html
+            core: Object, // https://handsontable.com/docs/7.4.2/Core.html
+            checkBox: {
+                // 表头中全选checkBox必须配置
+                key: "checkbox", // 复选框字段名
+                col: 0 // 复选框行号
+            },
         }
     },
     methods: {
@@ -202,33 +256,37 @@ export default {
         },
         handsontableChange(o) {
             // change事件，通用模版
-            // getKeyChange, filterKeysChanges方法二选一，个人建议filterKeysChanges方法
+            // getKeyChange, filterKeysChanges方法二选一，个人建议filterKeysChanges方法，第三个参数是否过滤监听合计一行数据变化，默认是true，即过滤
             // row：行号 key：字段名 oldVal：旧值 newVal：新值 changes：单元格数据修改的集合
             // changeCurrentCell 修改当前监听的单元格值
-            const { getKeyChange, filterKeysChanges, changes = [[]], changeCurrentCell } = o;
+            // filterSummaryRow: 过滤监听合计一行的数据变化，默认是true，即过滤
+            // checked：勾选数据集合，复选框触发
+            const { getKeyChange, filterKeysChanges, changes = [[]], changeCurrentCell, checked} = o;
 
-            getKeyChange('你需要监听的字段名1', changes).map(([row, key, oldVal, newVal]) => {
+            getKeyChange('你需要监听的字段名1', changes, true).map(([row, key, oldVal, newVal]) => {
                 console.log(row, key, oldVal, newVal)
             });
-            getKeyChange('你需要监听的字段名2', changes).map(([row, key, oldVal, newVal]) => {
+            getKeyChange('你需要监听的字段名2', changes, true).map(([row, key, oldVal, newVal]) => {
                 console.log(row, key, oldVal, newVal)
             });
 
             filterKeysChanges({
+                filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是true，即过滤
                 changes,
                 keys: ['你需要监听的字段名1', '你需要监听的字段名2'],
-                callback: ({ row, key, oldVal, newVal }) => {
+                callback: ({ row, key, oldVal, newVal, changeCurrentCell }) => {
                     console.log(row, key, oldVal, newVal)
+                    // changeCurrentCell[3] = 'maple test'
                 }
             })
-
-            // changeCurrentCell[3] = 'maple test'
         },
         handsontableClick(o) {
             console.log(o, '点击事件')
         },
+        /**
+         * @description getData方法是一个promise，该方法会去遍历table数据，在遍历到每一个item，都会触发一个回调函数，该回调函数会提供两个参数（item,index），并接受一个对象，该对象会被浅合并到当前item。
+        */
         getData() {
-            // 获取并校验table数据
             this.$refs.handsontableRef.getData((item, index)=>{
                 item = {
                     ...item,
@@ -236,11 +294,17 @@ export default {
                     maple: index // 基于item合并新属性
                 }
                 return item
-            }).then(({value, valid}) => {
+            }).then(({value, valid, columns}) => {
                 // valid 校验状态，true即通过
-                console.log(value, valid)
+                console.log(value, valid, columns)
             })
         },
+        /**
+         * @description  单元格双击事件
+         */
+        cellDblClick({ row, col, $el }) {
+            console.log(row, col, $el)
+        }
     }
 }
 </script>
@@ -254,6 +318,7 @@ export default {
 5. 折叠行，https://handsontable.com/docs/7.4.2/demo-nested-rows.html
 6. 设置某一个单元格的值：this.core.setDataAtCell(row, col, value, '标记')
 7. 关于 core 获取，可以通过@getCore 方法，查看上面的示例代码，change 方法和 click 方法也会返回 core 对象
+8. 请不要在 change 事件中使用 setTimeout 来达到视图层更新
 
 ##### 建议
 
