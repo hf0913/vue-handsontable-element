@@ -3,6 +3,13 @@
         <hot-table :settings="settings" ref="mapleTable" />
         <MapleDatePicker ref="datePickerRef" />
         <MapleCascader ref="cascaderRef" />
+        <div
+            class="empty"
+            v-show="showEmpty"
+            :style="{ height: `${settings.height - 30}px` }"
+        >
+            暂无数据
+        </div>
     </div>
 </template>
 
@@ -73,7 +80,8 @@ export default {
             height: 0,
             selectOpts: [],
             getDataDoubled: false,
-            hasColumnSummary: false
+            hasColumnSummary: false,
+            showEmpty: !this.data.length
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
@@ -83,6 +91,7 @@ export default {
         });
     },
     mounted() {
+        this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
         this.$el.addEventListener("dblclick", e => {
@@ -165,7 +174,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function(
+                                renderer: function (
                                     instance,
                                     td,
                                     row,
@@ -338,6 +347,7 @@ export default {
             });
         },
         afterRemoveRow(index, amount, physicalRows, source) {
+            this.showEmpty = this.core.countRows() === 0;
             this.$emit("afterRemoveRow", {
                 index,
                 amount,
@@ -475,7 +485,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -508,7 +518,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function(query, process) {
+                            source: function (query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -960,7 +970,8 @@ export default {
         columns() {
             this.init("columns");
         },
-        data() {
+        data(v) {
+            this.showEmpty = !v.length;
             this.init("data");
         },
         options() {
