@@ -577,25 +577,6 @@ export default {
                             options
                         });
                         break;
-                    case item.type == null || item.type == "text":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "text",
-                                        value,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field
-                        });
-                        break;
                     case item.type === "checkbox":
                         c.push({
                             validator: (value, callback) => {
@@ -675,6 +656,25 @@ export default {
                             },
                             ...item,
                             options,
+                            data: field
+                        });
+                        break;
+                    case item.type == null || item.type == "text":
+                        c.push({
+                            validator: (value, callback) => {
+                                callback(
+                                    _.checkType({
+                                        type: "text",
+                                        value,
+                                        allowEmpty,
+                                        item,
+                                        vm,
+                                        field,
+                                        index
+                                    })
+                                );
+                            },
+                            ...item,
                             data: field
                         });
                         break;

@@ -101,8 +101,10 @@ export default {
                 const { subType = "", props = {}, type } = columns[col];
 
                 if (!type) {
-                    this.options =
+                    let opts =
                         columns[col].source || columns[col].options || [];
+                    if (opts instanceof Function) opts = opts();
+                    this.options = opts;
                     this.columns = columns;
                     if (subType === "address") {
                         if (this.address.length) {
