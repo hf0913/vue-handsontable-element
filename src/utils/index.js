@@ -281,8 +281,8 @@ function checkType({
                 value: (value + "").split("/"),
                 matchFieldName: "label"
             });
-            value = Object.keys(v);
-            state = !!value.length;
+            v = v.map(({ label }) => label).join("/");
+            state = value === v;
             break;
     }
 
@@ -341,7 +341,7 @@ function exchangeCascaderData({
  * @param {String} childrenName 指定选项的子选项为选项对象的某个属性值
  * @param {String} matchFieldName 匹配字段名
  * @param {Array} value 当前的value
- * @returns {Object}
+ * @returns {Array}
  */
 function getCascaderLabelValue({
     data = [],
@@ -351,29 +351,37 @@ function getCascaderLabelValue({
     matchFieldName = "value",
     value = []
 }) {
-    let arr = JSON.parse(JSON.stringify(data));
-    let o = {};
-    const fn = children => {
-        for (let item of Object.values(children)) {
-            let matchVal = item[matchFieldName];
-            let i = value.indexOf(matchVal);
-            let k = value[i];
+    let arr = [];
+    const m = item => {
+        let matchVal = item[matchFieldName];
+        let i = value.indexOf(matchVal);
+        let k = value[i];
 
-            item = Object.assign(item, {
-                label: item[labelName],
-                value: item[valueName]
-            });
+        item = Object.assign(item, {
+            label: item[labelName],
+            value: item[valueName]
+        });
 
-            if (matchVal === k) {
-                o[item[valueName]] = item.label;
-                if (item[childrenName]) fn(item.children);
-                break;
-            }
+        if (matchVal === k) {
+            arr.push(item);
             if (item[childrenName]) fn(item.children);
+            return true;
+        }
+        if (item[childrenName]) fn(item.children);
+    };
+    const fn = children => {
+        if (children instanceof Array) {
+            for (let item of children.values()) {
+                if (m(item)) break;
+            }
+        } else {
+            for (let item of Object.values(children)) {
+                if (m(item)) break;
+            }
         }
     };
-    fn(arr);
-    return o;
+    fn(data);
+    return arr;
 }
 /**
  * @description 从后到前遍历，返回最终不为空的值

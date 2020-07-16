@@ -66,8 +66,9 @@ export default {
                 v = _.getCascaderLabelValue({
                     data: this.options,
                     value: v
-                });
-                v = Object.values(v).join("/");
+                })
+                    .map(({ label }) => label)
+                    .join("/");
             }
             this.controlPickerPanel(false);
             this.changeDate(v);
@@ -117,12 +118,11 @@ export default {
                     if (subType === "address" || subType === "cascader") {
                         this.value = this.core.getDataAtCell(row, col);
                         if (this.value) {
-                            let v = _.getCascaderLabelValue({
+                            this.value = _.getCascaderLabelValue({
                                 data: this.options,
                                 value: this.value.split("/"),
                                 matchFieldName: "label"
-                            });
-                            this.value = Object.keys(v);
+                            }).map(({ value }) => value);
                             if (!this.value.length)
                                 this.core.setDataAtCell(
                                     row,

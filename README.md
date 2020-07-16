@@ -193,6 +193,7 @@ export default {
                     // 隐藏某些列，接受列号的数组
                     columns: []
                 },
+                columnSorting: true, // 开启排序
                 wordWrap: false, // 不换行
                 nestedHeaders: [ // 合并表头
                     ['A', {label: 'B', colspan: 8}, 'C'],
@@ -239,6 +240,11 @@ export default {
                         column: 0,
                         sortOrder: 'desc' // 反序
                     }]
+                },
+                customValidate: ({isValid,value,row,key}) => {
+                    // 全局自定义校验回调函数
+                    // isValid：当前单元格校验状态,value：当前单元格值,row：当前单元格行号,key：当前单元格字段名
+                    return true // true即校验通过，false即校验失败
                 }
             },
             core: Object, // https://handsontable.com/docs/7.4.2/Core.html
@@ -274,8 +280,8 @@ export default {
                 filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是true，即过滤
                 changes,
                 keys: ['你需要监听的字段名1', '你需要监听的字段名2'],
-                callback: ({ row, key, oldVal, newVal, changeCurrentCell }) => {
-                    console.log(row, key, oldVal, newVal)
+                callback: ({ row, key, oldVal, newVal, changeCurrentCell, index }) => {
+                    console.log(row, key, oldVal, newVal, index)
                     // changeCurrentCell[3] = 'maple test'
                 }
             })
@@ -287,6 +293,7 @@ export default {
          * @description getData方法是一个promise，该方法会去遍历table数据，在遍历到每一个item，都会触发一个回调函数，该回调函数会提供两个参数（item,index），并接受一个对象，该对象会被浅合并到当前item。
         */
         getData() {
+            // 如果不需要任何校验，可以不需要调用该函数
             this.$refs.handsontableRef.getData((item, index)=>{
                 item = {
                     ...item,
@@ -302,8 +309,12 @@ export default {
         /**
          * @description  单元格双击事件
          */
-        cellDblClick({ row, col, $el }) {
-            console.log(row, col, $el)
+        cellDblClick({ coord,mouseEvent,$el }) {
+            console.log(coord,mouseEvent,$el)
+        },
+        utils() {
+            // 工具方法 https://github.com/hf0913/vue-handsontable-element/blob/master/src/utils/index.js
+            return utils;
         }
     }
 }
@@ -318,7 +329,8 @@ export default {
 5. 折叠行，https://handsontable.com/docs/7.4.2/demo-nested-rows.html
 6. 设置某一个单元格的值：this.core.setDataAtCell(row, col, value, '标记')
 7. 关于 core 获取，可以通过@getCore 方法，查看上面的示例代码，change 方法和 click 方法也会返回 core 对象
-8. 请不要在 change 事件中使用 setTimeout 来达到视图层更新
+8. 请勿使用 setTimeout 来达到视图层更新
+9. 修改数组某一项，如果视图没有响应式渲染，请调用 this.core.render()
 
 ##### 建议
 

@@ -174,7 +174,7 @@ export default {
                         if (item.subType === "handle") {
                             item = {
                                 ...item,
-                                renderer: function (
+                                renderer: function(
                                     instance,
                                     td,
                                     row,
@@ -485,7 +485,7 @@ export default {
                             data: field,
                             type: "autocomplete",
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceOptimize({
                                     query,
                                     options,
@@ -518,7 +518,7 @@ export default {
                             type: "autocomplete",
                             data: field,
                             options,
-                            source: function (query, process) {
+                            source: function(query, process) {
                                 debounceAjax({
                                     ajaxConfig,
                                     query,
@@ -779,14 +779,14 @@ export default {
                             if (valueType === "label") {
                                 o = {
                                     ...o,
-                                    [k]: Object.values(res),
-                                    [extraField]: Object.keys(res)
+                                    [k]: res.map(({ label }) => label),
+                                    [extraField]: res.map(({ value }) => value)
                                 };
                             } else {
                                 o = {
                                     ...o,
-                                    [k]: Object.keys(res),
-                                    [extraField]: Object.values(res)
+                                    [k]: res.map(({ value }) => value),
+                                    [extraField]: res.map(({ label }) => label)
                                 };
                             }
                         } else if (subType !== "handle" && k) {
