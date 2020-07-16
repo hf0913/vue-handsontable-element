@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div id="maple-table">
         <hot-table :settings="settings" ref="mapleTable" />
         <MapleDatePicker ref="datePickerRef" />
         <MapleCascader ref="cascaderRef" />
@@ -879,7 +879,7 @@ export default {
             callback,
             filterSummaryRow = true
         }) {
-            for (let item of changes.values()) {
+            for (let [index, item] of changes.entries()) {
                 const [row, key, oldVal, newVal] = item;
                 const i = keys.indexOf(key);
 
@@ -896,7 +896,8 @@ export default {
                         key,
                         oldVal,
                         newVal,
-                        changeCurrentCell: item
+                        changeCurrentCell: item,
+                        index
                     });
                 }
             }
@@ -914,6 +915,15 @@ export default {
             });
         },
         afterValidate(isValid, value, row, prop) {
+            const customValidate = this.settings.customValidate;
+            if (customValidate instanceof Function) {
+                return customValidate({
+                    isValid,
+                    value,
+                    row,
+                    key: prop
+                });
+            }
             if (this.getDataDoubled && this.settings.openEmptyValid) {
                 const hasDefaultValFileds =
                     this.settings.hasDefaultValFileds || [];
