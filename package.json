@@ -1,6 +1,6 @@
 {
     "name": "vue-handsontable-element",
-    "version": "2.2.2",
+    "version": "2.4.0",
     "description": "handsontable for vue",
     "author": "Maple <fenghu0913@gmail.com>",
     "license": "ISC",
@@ -33,7 +33,7 @@
         "mapCoverage": true
     },
     "devDependencies": {
-        "@handsontable/vue": "^4.1.1",
+        "@handsontable/vue": "^5.0.1",
         "@vue/test-utils": "^1.0.0-beta.16",
         "awe-dnd": "^0.3.4",
         "babel-core": "^6.26.3",
@@ -50,12 +50,9 @@
         "css-loader": "^0.25.0",
         "element-ui": "^2.13.2",
         "file-loader": "^0.9.0",
-        "handsontable": "^7.4.2",
+        "handsontable": "^8.0.0",
         "jest": "^22.4.4",
         "jest-serializer-vue": "^0.3.0",
-        "moment": "^2.24.0",
-        "node-sass": "^4.9.0",
-        "sass-loader": "^6.0.7",
         "style-loader": "^1.2.1",
         "url-loader": "^0.5.8",
         "vue": "^2.6.10",

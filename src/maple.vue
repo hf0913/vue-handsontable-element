@@ -37,6 +37,10 @@ export default {
         checkBox: {
             type: Object,
             default: () => ({ key: "checked", col: 0 })
+        },
+        fixViewTime: {
+            type: Number,
+            default: 128
         }
     },
     data() {
@@ -107,6 +111,7 @@ export default {
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
+            if (this.settings.columns[col] == null) return;
             let {
                 subType,
                 readOnly = false,
@@ -122,6 +127,20 @@ export default {
                 ((this.hasColumnSummary && row !== this.core.countRows() - 1) ||
                     !this.hasColumnSummary)
             ) {
+                const customCellDblClick = this.settings.customCellDblClick;
+                if (customCellDblClick instanceof Function) {
+                    if (
+                        customCellDblClick({
+                            row,
+                            col,
+                            $el,
+                            core: this.core
+                        })
+                    ) {
+                        return;
+                    }
+                }
+
                 this.$refs[`${subType}Ref`].controlOpen({
                     col,
                     row,
@@ -198,6 +217,23 @@ export default {
                                     $el.style.justifyContent = "space-around";
                                     $el.style.alignItems = "center";
 
+                                    const hasColumnSummary =
+                                        vm.options &&
+                                        vm.options.columnSummary &&
+                                        vm.options.columnSummary.length;
+
+                                    if (
+                                        hasColumnSummary &&
+                                        row === instance.countRows() - 1
+                                    ) {
+                                        maple.dom.empty(td);
+                                        td.innerHTML = "合计";
+                                        td.setAttribute(
+                                            "class",
+                                            "maple-table-total"
+                                        );
+                                        return td;
+                                    }
                                     item.options.map(
                                         ({ name, color }, index) => {
                                             let $btn = document.createElement(
@@ -238,7 +274,6 @@ export default {
                         }
                         return item;
                     }),
-                    colWidths: columns.map(({ width = 200 }) => width),
                     afterOnCellMouseDown: this.afterOnCellMouseDown,
                     afterChange: this.afterChange,
                     afterRemoveRow: this.afterRemoveRow,
@@ -727,10 +762,6 @@ export default {
                         if (opts instanceof Function) {
                             opts = opts() || [];
                         }
-                        opts =
-                            this.selectOpts[j] && this.selectOpts[j].length
-                                ? this.selectOpts[j]
-                                : opts;
                         if (
                             (type === "dropdown" || type === "autocomplete") &&
                             opts &&
@@ -856,7 +887,7 @@ export default {
             this.core.getPlugin("filters").clearConditions();
             this.core.getPlugin("filters").filter();
         },
-        getKeyChange(key, changes, filterSummaryRow = true) {
+        getKeyChange(key, changes, filterSummaryRow = true, precise = true) {
             let o = [];
 
             for (let item of changes.values()) {
@@ -867,7 +898,11 @@ export default {
                 ) {
                     return o;
                 }
-                if (item[1] === key) {
+                if (precise) {
+                    if (item[1] === key && item[2] !== item[3]) {
+                        o.push(item);
+                    }
+                } else if (item[1] === key) {
                     o.push(item);
                 }
             }
@@ -877,7 +912,8 @@ export default {
             keys,
             changes,
             callback,
-            filterSummaryRow = true
+            filterSummaryRow = true,
+            precise = true // 精确过滤
         }) {
             for (let [index, item] of changes.entries()) {
                 const [row, key, oldVal, newVal] = item;
@@ -890,7 +926,18 @@ export default {
                 ) {
                     return;
                 }
-                if (keys[i] === key) {
+                if (precise) {
+                    if (keys[i] === key && oldVal !== newVal) {
+                        callback({
+                            row,
+                            key,
+                            oldVal,
+                            newVal,
+                            changeCurrentCell: item,
+                            index
+                        });
+                    }
+                } else if (keys[i] === key) {
                     callback({
                         row,
                         key,
@@ -902,8 +949,15 @@ export default {
                 }
             }
         },
-        fixView(t = 60) {
+        fixView(t) {
+            if (t === -1208) return;
             let t1, t2;
+            const fixedColumnsLeft = this.settings.fixedColumnsLeft;
+
+            this.settings = Object.assign({}, this.settings, {
+                fixedColumnsLeft: 0
+            });
+            t = t || this.fixViewTime;
             t1 = setTimeout(() => {
                 this.core.scrollViewportTo(
                     this.core.countRows() - 1,
@@ -914,19 +968,19 @@ export default {
                     clearTimeout(t1);
                     clearTimeout(t2);
                     t1 = t2 = null;
+                    if (this.settings.fixViewComplete instanceof Function) {
+                        this.settings.fixViewComplete();
+                    } else {
+                        this.settings = Object.assign({}, this.settings, {
+                            fixedColumnsLeft
+                        });
+                    }
                 }, t);
             });
         },
         afterValidate(isValid, value, row, prop) {
             const customValidate = this.settings.customValidate;
-            if (customValidate instanceof Function) {
-                return customValidate({
-                    isValid,
-                    value,
-                    row,
-                    key: prop
-                });
-            }
+
             if (this.getDataDoubled && this.settings.openEmptyValid) {
                 const hasDefaultValFileds =
                     this.settings.hasDefaultValFileds || [];
@@ -974,6 +1028,15 @@ export default {
                         isValid = true;
                     }
                 }
+            }
+
+            if (customValidate instanceof Function) {
+                return customValidate({
+                    isValid,
+                    value,
+                    row,
+                    key: prop
+                });
             }
 
             return isValid;

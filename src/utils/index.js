@@ -49,7 +49,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function() {
+        xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
@@ -91,12 +91,12 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
 function debounce(fn, delay = 128) {
     let t = null;
 
-    return function() {
+    return function () {
         let self = this;
         let args = arguments;
 
         t && clearTimeout(t);
-        t = setTimeout(function() {
+        t = setTimeout(function () {
             fn.apply(self, args);
             t = null;
         }, delay);
@@ -123,10 +123,10 @@ function checkType({
     index,
     options
 }) {
-    let opts =
-        (vm.selectOpts[index] && vm.selectOpts[index].length
-            ? vm.selectOpts[index]
-            : item.options) || [];
+    // let opts =
+    //     (vm.selectOpts[index] && vm.selectOpts[index].length
+    //         ? vm.selectOpts[index]
+    //         : item.options) || [];
     let state = true;
     let isLeapYear = false;
     let year,
@@ -154,7 +154,7 @@ function checkType({
     if (options instanceof Function) {
         options = options() || [];
     }
-    opts = (opts.length ? opts : options) || [];
+    let opts = options || [];
     if (value === "" || value == null) return allowEmpty;
 
     switch (type) {
@@ -302,36 +302,39 @@ function elClick($el) {
     }
 }
 /**
- * @description 处理三级级联返回的数据
+ * @description 整理普通级联数据
  * @param {Array} data 后端返回的数组数据
  * @param {Array} valueFields 指定选项的值为选项对象的某个属性值，值字段名集合
  * @param {Array} labelFields 指定选项标签为选项对象的某个属性值，标签字段名集合
  * @param {Array} childrenFields 指定选项的子选项为选项对象的某个属性值，子选项字段名集合
  * @param {Function} changeItemData 修改每一项的方法，入参是每一项，必须返回一个需要修改的对象
  */
-function exchangeCascaderData({
+function collageCascaderData({
     data = [],
     valueFields = ["value"],
     labelFields = ["label"],
     childrenFields = ["children"],
     changeItemData = () => {}
 }) {
-    let arr = JSON.parse(JSON.stringify(data));
     const fn = children => {
         children.map(item => {
+            const { value } = getHasValue(item, childrenFields);
             item = Object.assign(
                 item,
                 {
-                    label: getHasValue(item, labelFields),
-                    value: getHasValue(item, valueFields)
+                    label: getHasValue(item, labelFields).value,
+                    value: getHasValue(item, valueFields).value,
+                    children: value || null
                 },
                 changeItemData(item)
             );
-            if (getHasValue(item, childrenFields)) fn(item.children);
+            if (value) {
+                fn(value);
+            }
         });
     };
-    fn(arr);
-    return arr;
+    fn(data);
+    return data;
 }
 /**
  * @description 处理级联数据，提供value，返回label
@@ -389,20 +392,24 @@ function getCascaderLabelValue({
  * @param {Array} atrs 属性名集合
  */
 function getHasValue(o, atrs) {
-    let v;
+    let v = { value: "", key: "" };
 
     for (let i = atrs.length - 1; i >= 0; i--) {
         let f = atrs[i];
 
         if (o[f]) {
             v = o[f];
+            v = {
+                value: o[f],
+                key: f
+            };
             break;
         }
     }
     return v;
 }
 /**
- * @description 整理级联数据
+ * @description 整理级联地址数据
  * @param {Array} address 地址集合
  */
 function collageAddress(address) {
@@ -443,7 +450,7 @@ const maple = {
     debounce,
     checkType,
     elClick,
-    exchangeCascaderData,
+    collageCascaderData,
     getCascaderLabelValue,
     getHasValue,
     collageAddress,
