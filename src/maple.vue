@@ -67,7 +67,6 @@ export default {
                     "redo",
                     "copy"
                 ],
-                colWidths: 200,
                 className: "htCenter htMiddle",
                 manualColumnResize: true,
                 manualRowResize: false,
@@ -82,7 +81,6 @@ export default {
             mapleHeaderCheckboxCol: 0,
             width: 0,
             height: 0,
-            selectOpts: [],
             getDataDoubled: false,
             hasColumnSummary: false,
             showEmpty: !this.data.length
@@ -90,17 +88,13 @@ export default {
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
     destroyed() {
-        this.$el.removeEventListener("dblclick", e => {
-            this.cellDblClick(e);
-        });
+        this.$el.removeEventListener("dblclick", this.cellDblClick);
     },
     mounted() {
         this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
-        this.$el.addEventListener("dblclick", e => {
-            this.cellDblClick(e);
-        });
+        this.$el.addEventListener("dblclick", this.cellDblClick);
         this.init("mounted");
     },
     activated() {
@@ -175,7 +169,11 @@ export default {
             } else {
                 return `
                     <div id="maple-fliter">
-                        <span>${item.title}</span>
+                        <span id="${
+                            item.allowEmpty === false
+                                ? "maple-required-title"
+                                : "maple-common-title"
+                        }">${item.title}</span>
                         <a style="display: ${
                             item.openCustomFiter ? "inline" : "none"
                         };margin-left: 4px;" href="javascript:;" class="el-icon-s-operation cursor" id="maple-fliter"></a>
@@ -408,7 +406,8 @@ export default {
                     maxMatchLen,
                     labelName,
                     index,
-                    process
+                    process,
+                    key
                 }) => {
                     let opts = [];
 
@@ -419,7 +418,12 @@ export default {
                     if (query === "") {
                         opts = options.slice(0, maxMatchLen);
                         process(opts.map(m => m[labelName]));
-                        vm.selectOpts[index] = opts;
+                        vm.$emit("getSelectOpts", {
+                            index,
+                            query,
+                            key,
+                            options: opts
+                        });
                     } else {
                         let i = 0;
 
@@ -435,12 +439,17 @@ export default {
                             }
                         }
                         process(opts.map(m => m[labelName]));
-                        vm.selectOpts[index] = opts;
+                        vm.$emit("getSelectOpts", {
+                            index,
+                            query,
+                            key,
+                            options: opts
+                        });
                     }
                 }
             );
             const debounceAjax = _.debounce(
-                ({ ajaxConfig, query, labelName, index, process }) => {
+                ({ ajaxConfig, query, labelName, index, process, key }) => {
                     let { queryField, data, param } = ajaxConfig;
                     const fn = (k, v) => {
                         if (v && Reflect.has(v, queryField)) {
@@ -458,7 +467,12 @@ export default {
                     fn("param", param);
                     _.ajax(ajaxConfig).then(v => {
                         process(v.map(m => m[labelName]));
-                        vm.selectOpts[index] = v;
+                        vm.$emit("getSelectOpts", {
+                            index,
+                            query,
+                            key,
+                            options: v
+                        });
                     });
                 }
             );
@@ -527,7 +541,8 @@ export default {
                                     maxMatchLen,
                                     labelName,
                                     index,
-                                    process
+                                    process,
+                                    key: field
                                 });
                             }
                         });
@@ -559,7 +574,8 @@ export default {
                                     query,
                                     labelName,
                                     index,
-                                    process
+                                    process,
+                                    key: field
                                 });
                             }
                         });
@@ -950,6 +966,7 @@ export default {
             }
         },
         fixView(t) {
+            t = t || this.fixViewTime;
             if (t === -1208) return;
             let t1, t2;
             const fixedColumnsLeft = this.settings.fixedColumnsLeft;
@@ -957,7 +974,6 @@ export default {
             this.settings = Object.assign({}, this.settings, {
                 fixedColumnsLeft: 0
             });
-            t = t || this.fixViewTime;
             t1 = setTimeout(() => {
                 this.core.scrollViewportTo(
                     this.core.countRows() - 1,
@@ -1053,6 +1069,9 @@ export default {
         options() {
             this.init("options");
         }
+    },
+    beforeDestroy() {
+        Object.assign(this.$data, this.$options.data());
     }
 };
 </script>

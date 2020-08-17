@@ -119,14 +119,8 @@ function checkType({
     timeFormat = "",
     allowEmpty,
     item,
-    vm,
-    index,
     options
 }) {
-    // let opts =
-    //     (vm.selectOpts[index] && vm.selectOpts[index].length
-    //         ? vm.selectOpts[index]
-    //         : item.options) || [];
     let state = true;
     let isLeapYear = false;
     let year,

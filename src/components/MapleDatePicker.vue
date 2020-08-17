@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import { DatePicker } from "element-ui";
+
 export default {
     name: "MapleDatePicker",
     props: {
@@ -30,6 +32,7 @@ export default {
             default: true
         }
     },
+    components: { "el-date-picker": DatePicker },
     data() {
         return {
             value: null,
@@ -116,6 +119,9 @@ export default {
                 }, 333);
             }
         }
+    },
+    beforeDestroy() {
+        Object.assign(this.$data, this.$options.data());
     }
 };
 </script>

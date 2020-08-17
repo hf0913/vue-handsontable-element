@@ -23,6 +23,7 @@
 
 <script>
 import _ from "../utils/index";
+import { Cascader } from "element-ui";
 
 export default {
     name: "MapleCascader",
@@ -32,6 +33,7 @@ export default {
             default: true
         }
     },
+    components: { "el-cascader": Cascader },
     data() {
         return {
             options: [],
@@ -158,6 +160,9 @@ export default {
                 }, 60);
             }
         }
+    },
+    beforeDestroy() {
+        Object.assign(this.$data, this.$options.data());
     }
 };
 </script>
