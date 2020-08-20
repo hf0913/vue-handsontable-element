@@ -1,12 +1,17 @@
 <template>
     <div id="maple-table">
-        <hot-table :settings="settings" ref="mapleTable" />
+        <hot-table
+            :settings="mySettings"
+            :data="data"
+            :columns="myColumns"
+            ref="mapleTable"
+        />
         <MapleDatePicker ref="datePickerRef" />
         <MapleCascader ref="cascaderRef" />
         <div
             class="empty"
-            v-show="showEmpty"
-            :style="{ height: `${settings.height - 30}px` }"
+            v-show="!data.length && !mySettings.minRows"
+            :style="{ height: `${mySettings.height - 30}px` }"
         >
             暂无数据
         </div>
@@ -43,47 +48,149 @@ export default {
             default: 128
         }
     },
-    data() {
-        return {
-            settings: {
-                data: [],
-                columns: [],
-                comments: true,
-                rowHeaders: true,
-                licenseKey: "non-commercial-and-evaluation",
-                language: "zh-CN",
+    computed: {
+        mySettings() {
+            const defaultOpts = {
+                manualColumnMove: true,
+                height: "auto",
                 filters: true,
-                fillHandle: {
-                    autoInsertRow: false,
-                    direction: "vertical"
-                },
-                dropdownMenu: null,
-                contextMenu: [
-                    "row_above",
-                    "row_below",
-                    "remove_row",
-                    "clear_column",
-                    "undo",
-                    "redo",
-                    "copy"
+                rowHeaders: true,
+                dropdownMenu: [
+                    "filter_by_condition",
+                    "filter_operators",
+                    "filter_by_condition2",
+                    "filter_by_value",
+                    "filter_action_bar"
                 ],
+                contextMenu: {
+                    items: {
+                        row_above: {},
+                        row_below: {},
+                        remove_row: {},
+                        clear_column: {},
+                        undo: {},
+                        redo: {},
+                        copy: {},
+                        hidden_columns_hide: {
+                            name: "隐藏列"
+                        },
+                        hidden_columns_show: {
+                            name: "展示列"
+                        }
+                    }
+                },
                 className: "htCenter htMiddle",
                 manualColumnResize: true,
-                manualRowResize: false,
-                renderAllRows: false,
-                maxRows: 12080,
-                height: 1208,
+                manualRowResize: true,
+                language: "zh-CN",
+                licenseKey: "non-commercial-and-evaluation",
                 readOnlyCellClassName: "maple-readOnly",
-                openEmptyValid: true
-            },
+                openEmptyValid: true,
+                colHeaders: col => this.customHeader(col)
+            };
+            const eventOpts = {
+                afterOnCellMouseDown: this.afterOnCellMouseDown,
+                afterChange: this.afterChange,
+                afterRemoveRow: this.afterRemoveRow,
+                afterCreateRow: this.afterCreateRow,
+                afterValidate: this.afterValidate,
+                beforeChange: this.beforeChange,
+                afterScrollHorizontally: this.afterScrollHorizontally,
+                afterScrollVertically: this.afterScrollVertically
+            };
+            return {
+                ...defaultOpts,
+                ...this.options,
+                ...eventOpts
+            };
+        },
+        myColumns() {
+            return this.collageColumns().map(item => {
+                if (item.subType === "handle" && this.data.length) {
+                    item = {
+                        ...item,
+                        renderer: (
+                            instance,
+                            td,
+                            row,
+                            col,
+                            prop,
+                            value,
+                            // eslint-disable-next-line no-unused-vars
+                            cellProperties
+                        ) => {
+                            cellProperties = Object.assign(cellProperties, {
+                                readOnly: true,
+                                editor: true
+                            });
+
+                            let $el = document.createElement("DIV");
+                            $el.style.height = "100%";
+                            $el.style.display = "flex";
+                            $el.style.justifyContent = "space-around";
+                            $el.style.alignItems = "center";
+
+                            const hasColumnSummary =
+                                this.options &&
+                                this.options.columnSummary &&
+                                this.options.columnSummary.length;
+                            if (
+                                hasColumnSummary &&
+                                row === instance.countRows() - 1
+                            ) {
+                                maple.dom.empty(td);
+                                td.innerHTML = "合计";
+                                td.setAttribute("class", "maple-table-total");
+                                td.parentElement &&
+                                    td.parentElement.setAttribute(
+                                        "class",
+                                        "maple-table-total-tr"
+                                    );
+                                return td;
+                            }
+                            item.options.map(({ name, color }, index) => {
+                                let $btn = document.createElement("DIV");
+                                $btn.innerHTML = name;
+                                $btn.style.color = color;
+                                $btn.style.cursor = "pointer";
+                                $el.append($btn);
+
+                                maple.dom.addEvent($btn, "mousedown", event => {
+                                    this.$emit("click", {
+                                        row,
+                                        col,
+                                        index,
+                                        $el: $btn,
+                                        event,
+                                        core: instance,
+                                        name
+                                    });
+                                    event.stopPropagation &&
+                                        event.stopPropagation();
+                                    event.cancelBubble = true;
+                                });
+                            });
+
+                            maple.dom.empty(td);
+                            td.appendChild($el);
+
+                            return td;
+                        }
+                    };
+                }
+                return item;
+            });
+        }
+    },
+    data() {
+        return {
             core: {},
             checkAllabled: false,
-            mapleHeaderCheckboxCol: 0,
+            mapleHeaderCheckboxCol: -1208,
             width: 0,
             height: 0,
             getDataDoubled: false,
-            hasColumnSummary: false,
-            showEmpty: !this.data.length
+            hasColumnSummary: false
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
@@ -91,11 +198,10 @@ export default {
         this.$el.removeEventListener("dblclick", this.cellDblClick);
     },
     mounted() {
-        this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
+        this.$el.style = "border: 1px solid #ccc;";
         this.core = this.$refs.mapleTable.hotInstance;
         this.$el.addEventListener("dblclick", this.cellDblClick);
-        this.init("mounted");
     },
     activated() {
         this.fixView();
@@ -105,12 +211,10 @@ export default {
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
-            if (this.settings.columns[col] == null) return;
-            let {
-                subType,
-                readOnly = false,
-                editor = true
-            } = this.settings.columns[col];
+            if (this.myColumns[col] == null) return;
+            let { subType, readOnly = false, editor = true } = this.myColumns[
+                col
+            ];
 
             if (subType === "address") subType = "cascader";
             if (
@@ -121,7 +225,7 @@ export default {
                 ((this.hasColumnSummary && row !== this.core.countRows() - 1) ||
                     !this.hasColumnSummary)
             ) {
-                const customCellDblClick = this.settings.customCellDblClick;
+                const customCellDblClick = this.mySettings.customCellDblClick;
                 if (customCellDblClick instanceof Function) {
                     if (
                         customCellDblClick({
@@ -180,121 +284,6 @@ export default {
                     </div>
                     `;
             }
-        },
-        init(t) {
-            const vm = this;
-            const columns = this.collageColumns(t);
-
-            if (t === "mounted" || t === "columns") {
-                this.settings = Object.assign(this.settings, {
-                    columns: columns.map(item => {
-                        if (item.subType === "handle") {
-                            item = {
-                                ...item,
-                                renderer: function (
-                                    instance,
-                                    td,
-                                    row,
-                                    col,
-                                    prop,
-                                    value,
-                                    // eslint-disable-next-line no-unused-vars
-                                    cellProperties
-                                ) {
-                                    cellProperties = Object.assign(
-                                        cellProperties,
-                                        {
-                                            readOnly: true,
-                                            editor: true
-                                        }
-                                    );
-
-                                    let $el = document.createElement("DIV");
-                                    $el.style.height = "100%";
-                                    $el.style.display = "flex";
-                                    $el.style.justifyContent = "space-around";
-                                    $el.style.alignItems = "center";
-
-                                    const hasColumnSummary =
-                                        vm.options &&
-                                        vm.options.columnSummary &&
-                                        vm.options.columnSummary.length;
-
-                                    if (
-                                        hasColumnSummary &&
-                                        row === instance.countRows() - 1
-                                    ) {
-                                        maple.dom.empty(td);
-                                        td.innerHTML = "合计";
-                                        td.setAttribute(
-                                            "class",
-                                            "maple-table-total"
-                                        );
-                                        return td;
-                                    }
-                                    item.options.map(
-                                        ({ name, color }, index) => {
-                                            let $btn = document.createElement(
-                                                "DIV"
-                                            );
-                                            $btn.innerHTML = name;
-                                            $btn.style.color = color;
-                                            $btn.style.cursor = "pointer";
-                                            $el.append($btn);
-
-                                            maple.dom.addEvent(
-                                                $btn,
-                                                "mousedown",
-                                                event => {
-                                                    vm.$emit("click", {
-                                                        row,
-                                                        col,
-                                                        index,
-                                                        $el: $btn,
-                                                        event,
-                                                        core: instance,
-                                                        name
-                                                    });
-                                                    event.stopPropagation &&
-                                                        event.stopPropagation();
-                                                    event.cancelBubble = true;
-                                                }
-                                            );
-                                        }
-                                    );
-
-                                    maple.dom.empty(td);
-                                    td.appendChild($el);
-
-                                    return td;
-                                }
-                            };
-                        }
-                        return item;
-                    }),
-                    afterOnCellMouseDown: this.afterOnCellMouseDown,
-                    afterChange: this.afterChange,
-                    afterRemoveRow: this.afterRemoveRow,
-                    afterCreateRow: this.afterCreateRow,
-                    afterValidate: this.afterValidate,
-                    beforeChange: this.beforeChange,
-                    afterScrollHorizontally: this.afterScrollHorizontally,
-                    afterScrollVertically: this.afterScrollVertically
-                });
-            }
-            if (t === "mounted" || t === "data") {
-                this.settings = Object.assign(this.settings, {
-                    data: this.data,
-                    colHeaders: col => this.customHeader(col)
-                });
-            }
-            if (t === "mounted" || t === "options") {
-                this.settings = Object.assign(this.settings, this.options);
-            }
-            this.hasColumnSummary =
-                this.settings.columnSummary &&
-                this.settings.columnSummary.length > 0;
-            maple.dom.addEvent(this.$el, "mousedown", this.eventListener);
         },
         afterOnCellMouseDown(event, coords, $el) {
             const { row, col } = coords;
@@ -395,8 +384,7 @@ export default {
                 source
             });
         },
-        collageColumns(t) {
-            if (t !== "mounted" && t !== "columns") return;
+        collageColumns() {
             const c = [];
             const vm = this;
             const debounceOptimize = _.debounce(
@@ -749,12 +737,11 @@ export default {
                 const data = [];
                 let columns = [];
                 let addressOtps = [];
-
                 m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
                 d.map((ele, i) => {
                     let o = this.data[i] || {};
                     const dItem = d[i];
-                    const keys = this.settings.columns;
+                    const keys = this.myColumns;
 
                     for (let [
                         j,
@@ -867,7 +854,10 @@ export default {
             const { countRows, setDataAtCell } = this.core;
             let type = "checkbox";
 
-            if (event.realTarget.id === "maple-header-checkbox") {
+            if (
+                event.realTarget &&
+                event.realTarget.id === "maple-header-checkbox"
+            ) {
                 const checkAllableds = [];
 
                 this.checkAllabled = !this.checkAllabled;
@@ -877,7 +867,7 @@ export default {
                     }
                     checkAllableds.push([i, col, this.checkAllabled]);
                 }
-                setDataAtCell(checkAllableds);
+                if (checkAllableds.length) setDataAtCell(checkAllableds);
                 type = "allCheckbox";
                 this.$emit("change", {
                     type,
@@ -888,7 +878,6 @@ export default {
                     filterKeysChanges: this.filterKeysChanges
                 });
             }
-
             this.$emit("click", {
                 col,
                 row,
@@ -969,11 +958,6 @@ export default {
             t = t || this.fixViewTime;
             if (t === -1208) return;
             let t1, t2;
-            const fixedColumnsLeft = this.settings.fixedColumnsLeft;
-
-            this.settings = Object.assign({}, this.settings, {
-                fixedColumnsLeft: 0
-            });
             t1 = setTimeout(() => {
                 this.core.scrollViewportTo(
                     this.core.countRows() - 1,
@@ -984,22 +968,18 @@ export default {
                     clearTimeout(t1);
                     clearTimeout(t2);
                     t1 = t2 = null;
-                    if (this.settings.fixViewComplete instanceof Function) {
-                        this.settings.fixViewComplete();
-                    } else {
-                        this.settings = Object.assign({}, this.settings, {
-                            fixedColumnsLeft
-                        });
+                    if (this.mySettings.fixViewComplete instanceof Function) {
+                        this.mySettings.fixViewComplete();
                     }
                 }, t);
             });
         },
         afterValidate(isValid, value, row, prop) {
-            const customValidate = this.settings.customValidate;
+            const customValidate = this.mySettings.customValidate;
 
-            if (this.getDataDoubled && this.settings.openEmptyValid) {
+            if (this.getDataDoubled && this.mySettings.openEmptyValid) {
                 const hasDefaultValFileds =
-                    this.settings.hasDefaultValFileds || [];
+                    this.mySettings.hasDefaultValFileds || [];
                 const index = hasDefaultValFileds.indexOf(prop);
 
                 if (
@@ -1024,7 +1004,7 @@ export default {
                     for (let [
                         j,
                         { data: k = "maple" }
-                    ] of this.settings.columns.entries()) {
+                    ] of this.myColumns.entries()) {
                         const i = hasDefaultValFileds.indexOf(k);
                         const key = hasDefaultValFileds[i];
                         const v = rowData[j];
@@ -1058,20 +1038,8 @@ export default {
             return isValid;
         }
     },
-    watch: {
-        columns() {
-            this.init("columns");
-        },
-        data(v) {
-            this.showEmpty = !v.length;
-            this.init("data");
-        },
-        options() {
-            this.init("options");
-        }
-    },
     beforeDestroy() {
-        Object.assign(this.$data, this.$options.data());
+        Object.assign(this.$data, {});
     }
 };
 </script>
