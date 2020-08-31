@@ -88,9 +88,15 @@ if (process.env.NODE_ENV === "production") {
             minimize: true
         }),
         new webpack.optimize.UglifyJsPlugin({
-            sourceMap: true,
+            //删除注释
+            output: {
+                comments: false
+            },
+            //删除console 和 debugger  删除警告
             compress: {
-                warnings: false
+                warnings: false,
+                drop_debugger: true,
+                drop_console: true
             }
         })
     ]);

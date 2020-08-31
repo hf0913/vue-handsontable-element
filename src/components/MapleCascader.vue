@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import _ from "../utils/index";
+import utils from "../utils/index";
 import { Cascader } from "element-ui";
 
 export default {
@@ -49,7 +49,8 @@ export default {
             $body: null,
             $input: null,
             cascaderAbled: false,
-            address: []
+            address: [],
+            cascaderVals: {}
         };
     },
     mounted() {
@@ -63,20 +64,39 @@ export default {
         change(v) {
             const { col } = this.coords;
             const { subType } = this.columns[col];
+            const key = this.columns[col].key || this.columns[col].data;
+            const value = v;
 
             if (subType === "address" || subType === "cascader") {
-                v = _.getCascaderLabelValue({
-                    data: this.options,
-                    value: v
-                })
-                    .map(({ label }) => label)
-                    .join("/");
+                if (this.cascaderVals[`key-${key}-value-${value}`]) {
+                    v = this.cascaderVals[`key-${key}-value-${value}`].label;
+                } else {
+                    v = utils
+                        .getCascaderLabelValue({
+                            data: this.options,
+                            value: v
+                        })
+                        .map(({ label }) => label)
+                        .join("/");
+                }
+                this.cascaderVals = {
+                    ...this.cascaderVals,
+                    [`key-${key}-value-${v}`]: {
+                        value,
+                        label: v
+                    },
+                    [`key-${key}-value-${value}`]: {
+                        value,
+                        label: v
+                    }
+                };
+                this.$emit("getCascaderVals", this.cascaderVals);
             }
             this.controlPickerPanel(false);
             this.changeDate(v);
         },
         changeDate(v) {
-            const { col, row } = this.coords;
+            const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 this.core.setDataAtCell(row, col, v, "changeDate");
@@ -102,6 +122,7 @@ export default {
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 const { subType = "", props = {}, type } = columns[col];
+                const key = columns[col].key || columns[col].data;
 
                 if (!type) {
                     let opts =
@@ -113,25 +134,38 @@ export default {
                         if (this.address.length) {
                             this.options = this.address;
                         } else {
-                            this.options = _.collageAddress(_.address);
+                            this.options = utils.collageAddress(utils.address);
                             this.address = this.options;
                         }
                     }
                     if (subType === "address" || subType === "cascader") {
                         this.value = this.core.getDataAtCell(row, col);
+                        const value = this.value;
                         if (this.value) {
-                            this.value = _.getCascaderLabelValue({
-                                data: this.options,
-                                value: this.value.split("/"),
-                                matchFieldName: "label"
-                            }).map(({ value }) => value);
-                            if (!this.value.length)
+                            if (
+                                this.cascaderVals[`key-${key}-value-${value}`]
+                            ) {
+                                this.value = this.cascaderVals[
+                                    `key-${key}-value-${value}`
+                                ].value;
+                            } else {
+                                this.value = utils
+                                    .getCascaderLabelValue({
+                                        data: this.options,
+                                        value: this.value.split("/"),
+                                        matchFieldName: "label"
+                                    })
+                                    .map(({ value }) => value);
+                            }
+
+                            if (!this.value.length) {
                                 this.core.setDataAtCell(
                                     row,
                                     col,
                                     "",
                                     "changeDate"
                                 );
+                            }
                         }
                         this.show = !open;
                         this.controlPickerPanel(open);

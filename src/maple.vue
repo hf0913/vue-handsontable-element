@@ -2,7 +2,10 @@
     <div id="maple-table">
         <hot-table :settings="settings" ref="mapleTable" />
         <MapleDatePicker ref="datePickerRef" />
-        <MapleCascader ref="cascaderRef" />
+        <MapleCascader
+            ref="cascaderRef"
+            @getCascaderVals="o => (cascaderVals = o)"
+        />
         <div
             class="empty"
             v-show="showEmpty"
@@ -15,10 +18,10 @@
 
 <script>
 import { HotTable } from "@handsontable/vue";
-import maple from "handsontable";
 import _ from "./utils";
 import MapleCascader from "./components/MapleCascader";
 import MapleDatePicker from "./components/MapleDatePicker";
+import { colHeaders, customColumns, getColumns } from "./utils/handsontable";
 
 export default {
     name: "MapleHandsontable",
@@ -41,6 +44,9 @@ export default {
         fixViewTime: {
             type: Number,
             default: 128
+        },
+        widthAuto: {
+            type: Boolean
         }
     },
     data() {
@@ -48,33 +54,47 @@ export default {
             settings: {
                 data: [],
                 columns: [],
-                comments: true,
-                rowHeaders: true,
-                licenseKey: "non-commercial-and-evaluation",
-                language: "zh-CN",
+                trimRows: true,
                 filters: true,
+                manualColumnResize: true,
                 fillHandle: {
                     autoInsertRow: false,
                     direction: "vertical"
                 },
                 dropdownMenu: null,
-                contextMenu: [
-                    "row_above",
-                    "row_below",
-                    "remove_row",
-                    "clear_column",
-                    "undo",
-                    "redo",
-                    "copy"
-                ],
-                className: "htCenter htMiddle",
-                manualColumnResize: true,
                 manualRowResize: false,
                 renderAllRows: false,
                 maxRows: 12080,
                 height: 1208,
                 readOnlyCellClassName: "maple-readOnly",
-                openEmptyValid: true
+                openEmptyValid: true,
+                hiddenColumns: true,
+                viewportColumnRenderingOffset: 128,
+                licenseKey: "non-commercial-and-evaluation",
+                language: "zh-CN",
+                className: "htCenter htMiddle",
+                bindRowsWithHeaders: true,
+                rowHeaders: true,
+                comments: true,
+                manualRowResizeboolean: true,
+                contextMenu: {
+                    items: {
+                        row_above: {},
+                        row_below: {},
+                        remove_row: {},
+                        clear_column: {},
+                        hidden_columns_hide: {
+                            name: "隐藏列"
+                        },
+                        hidden_columns_show: {
+                            name: "展示列"
+                        },
+                        undo: {},
+                        redo: {},
+                        cut: {},
+                        copy: {}
+                    }
+                }
             },
             core: {},
             checkAllabled: false,
@@ -83,14 +103,15 @@ export default {
             height: 0,
             getDataDoubled: false,
             hasColumnSummary: false,
-            showEmpty: !this.data.length
+            showEmpty: !this.data.length,
+            keyOpts: {},
+            selectVals: {},
+            cascaderVals: {},
+            myColumns: [],
+            hiddenColumns: []
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
-    destroyed() {
-        Object.assign(this.$data, {});
-        this.$el.removeEventListener("dblclick", this.cellDblClick);
-    },
     mounted() {
         this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
@@ -103,15 +124,12 @@ export default {
     },
     methods: {
         cellDblClick(mouseEvent) {
+            const columns = getColumns.call(this, "no");
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
-            if (this.settings.columns[col] == null) return;
-            let {
-                subType,
-                readOnly = false,
-                editor = true
-            } = this.settings.columns[col];
+            if (columns[col] == null) return;
+            let { subType, readOnly = false, editor = true } = columns[col];
 
             if (subType === "address") subType = "cascader";
             if (
@@ -145,7 +163,7 @@ export default {
                     left,
                     open: true,
                     core: this.core,
-                    columns: this.columns
+                    columns
                 });
             }
             this.$emit("cellDblClick", {
@@ -157,173 +175,67 @@ export default {
                 }
             });
         },
-        customHeader(col) {
-            const item = this.columns[col];
-
-            if (item.subType === "selection" && item.type === "checkbox") {
-                this.mapleHeaderCheckboxCol = col;
-                return `<input type='checkbox' ${
-                    this.checkAllabled ? "checked" : ""
-                } id="maple-header-checkbox" style="margin-right: 6px" ${
-                    this.data.length ? "" : "disabled"
-                }/>`;
-            } else {
-                return `
-                    <div id="maple-fliter">
-                        <span id="${
-                            item.allowEmpty === false
-                                ? "maple-required-title"
-                                : "maple-common-title"
-                        }">${item.title}</span>
-                        <a style="display: ${
-                            item.openCustomFiter ? "inline" : "none"
-                        };margin-left: 4px;" href="javascript:;" class="el-icon-s-operation cursor" id="maple-fliter"></a>
-                    </div>
-                    `;
+        init() {
+            let hiddCols = [];
+            if (this.options.cacheId && this.options.openCache) {
+                hiddCols = JSON.parse(
+                    localStorage.getItem(
+                        `${this.options.cacheId}-hiddenColumns`
+                    ) || "[]"
+                );
             }
-        },
-        init(t) {
-            const vm = this;
-            const columns = this.collageColumns(t);
-
-            if (t === "mounted" || t === "columns") {
-                this.settings = Object.assign(this.settings, {
-                    columns: columns.map(item => {
-                        if (item.subType === "handle") {
-                            item = {
-                                ...item,
-                                renderer: function (
-                                    instance,
-                                    td,
-                                    row,
-                                    col,
-                                    prop,
-                                    value,
-                                    // eslint-disable-next-line no-unused-vars
-                                    cellProperties
-                                ) {
-                                    cellProperties = Object.assign(
-                                        cellProperties,
-                                        {
-                                            readOnly: true,
-                                            editor: true
-                                        }
-                                    );
-
-                                    let $el = document.createElement("DIV");
-                                    $el.style.height = "100%";
-                                    $el.style.display = "flex";
-                                    $el.style.justifyContent = "space-around";
-                                    $el.style.alignItems = "center";
-
-                                    const hasColumnSummary =
-                                        vm.options &&
-                                        vm.options.columnSummary &&
-                                        vm.options.columnSummary.length;
-
-                                    if (
-                                        hasColumnSummary &&
-                                        row === instance.countRows() - 1
-                                    ) {
-                                        maple.dom.empty(td);
-                                        td.innerHTML = "合计";
-                                        td.setAttribute(
-                                            "class",
-                                            "maple-table-total"
-                                        );
-                                        td.parentElement &&
-                                            td.parentElement.setAttribute(
-                                                "class",
-                                                "maple-table-total-tr"
-                                            );
-                                        return td;
-                                    }
-                                    item.options.map(
-                                        ({ name, color }, index) => {
-                                            let $btn = document.createElement(
-                                                "DIV"
-                                            );
-                                            $btn.innerHTML = name;
-                                            $btn.style.color = color;
-                                            $btn.style.cursor = "pointer";
-                                            $el.append($btn);
-
-                                            maple.dom.addEvent(
-                                                $btn,
-                                                "mousedown",
-                                                event => {
-                                                    vm.$emit("click", {
-                                                        row,
-                                                        col,
-                                                        index,
-                                                        $el: $btn,
-                                                        event,
-                                                        core: instance,
-                                                        name
-                                                    });
-                                                    event.stopPropagation &&
-                                                        event.stopPropagation();
-                                                    event.cancelBubble = true;
-                                                }
-                                            );
-                                        }
-                                    );
-
-                                    maple.dom.empty(td);
-                                    td.appendChild($el);
-
-                                    return td;
-                                }
-                            };
-                        }
-                        return item;
-                    }),
-                    afterOnCellMouseDown: this.afterOnCellMouseDown,
-                    afterChange: this.afterChange,
-                    afterRemoveRow: this.afterRemoveRow,
-                    afterCreateRow: this.afterCreateRow,
-                    afterValidate: this.afterValidate,
-                    beforeChange: this.beforeChange,
-                    afterScrollHorizontally: this.afterScrollHorizontally,
-                    afterScrollVertically: this.afterScrollVertically
-                });
-            }
-            if (t === "mounted" || t === "data") {
-                this.settings = Object.assign(this.settings, {
-                    data: this.data,
-                    colHeaders: col => this.customHeader(col)
-                });
-            }
-            if (t === "mounted" || t === "options") {
-                this.settings = Object.assign(this.settings, this.options);
-            }
+            this.settings = Object.assign(this.settings, this.options, {
+                columns: customColumns.call(this),
+                data: this.data,
+                colHeaders: colHeaders.bind(this),
+                hiddenColumns: {
+                    columns: hiddCols,
+                    indicators: true
+                },
+                persistentState: false,
+                manualColumnMove:
+                    this.options.cacheId && this.options.openCache,
+                afterOnCellMouseDown: this.afterOnCellMouseDown,
+                afterChange: this.afterChange,
+                afterRemoveRow: this.afterRemoveRow,
+                afterCreateRow: this.afterCreateRow,
+                afterValidate: this.afterValidate,
+                beforeChange: this.beforeChange,
+                afterScrollHorizontally: this.afterScrollHorizontally,
+                afterScrollVertically: this.afterScrollVertically,
+                afterHideColumns: this.afterHideColumns,
+                afterUnhideColumns: this.afterUnhideColumns,
+                afterColumnMove: this.afterColumnMove
+            });
             this.hasColumnSummary =
                 this.settings.columnSummary &&
                 this.settings.columnSummary.length > 0;
-            maple.dom.addEvent(this.$el, "mousedown", this.eventListener);
+            this.core.updateSettings(this.settings);
         },
         afterOnCellMouseDown(event, coords, $el) {
-            const { row, col } = coords;
+            if (coords) {
+                const { row, col } = coords;
 
-            if (event.target.id === "maple-fliter") {
-                this.$emit("controlCustomFilter", {
-                    event,
-                    coords,
-                    $el
-                });
-            }
-            if (col === this.mapleHeaderCheckboxCol) {
-                this.checkAllBox(event, coords, $el);
-            } else {
-                this.$emit("click", {
-                    col,
-                    row,
-                    $el,
-                    core: this.core,
-                    name: "cells",
-                    event,
-                    type: "click"
-                });
+                if (event.target.id === "maple-fliter") {
+                    this.$emit("controlCustomFilter", {
+                        event,
+                        coords,
+                        $el
+                    });
+                }
+                if (col === this.mapleHeaderCheckboxCol) {
+                    this.checkAllBox(event, coords, $el);
+                } else {
+                    this.$emit("click", {
+                        col,
+                        row,
+                        $el,
+                        core: this.core,
+                        name: "cells",
+                        event,
+                        type: "click"
+                    });
+                }
             }
         },
         afterScrollVertically() {
@@ -336,7 +248,7 @@ export default {
             this.$refs.cascaderRef.controlOpen();
             this.$emit("afterScrollHorizontally");
         },
-        beforeChange: change => {
+        beforeChange(change) {
             if (
                 change.length &&
                 change[0] &&
@@ -344,6 +256,9 @@ export default {
                 change[0].filter(value => Number.isNaN(value)).length
             ) {
                 return false;
+            }
+            if (this.settings.changeBefore instanceof Function) {
+                return this.settings.changeBefore(change);
             }
             return true;
         },
@@ -401,452 +316,157 @@ export default {
                 source
             });
         },
-        collageColumns(t) {
-            if (t !== "mounted" && t !== "columns") return;
-            const c = [];
-            const vm = this;
-            const debounceOptimize = _.debounce(
-                ({
-                    query,
-                    options = [],
-                    maxMatchLen,
-                    labelName,
-                    index,
-                    process,
-                    key
-                }) => {
-                    let opts = [];
+        getData(callback = () => {}) {
+            if (this.getDataDoubled) {
+                return Promise.resolve({
+                    value: [],
+                    valid: false
+                });
+            }
+            this.getDataDoubled = true;
+            return new Promise(resolve => {
+                const d = this.core.getData();
+                const data = [];
+                let addressOtps = [];
+                let keyVals = {};
 
-                    query = query.replace(/(^\s*)|(\s*$)/g, "");
-                    if (options instanceof Function) {
-                        options = options() || [];
-                    }
-                    if (query === "") {
-                        opts = options.slice(0, maxMatchLen);
-                        process(opts.map(m => m[labelName]));
-                        vm.$emit("getSelectOpts", {
-                            index,
-                            query,
-                            key,
-                            options: opts
-                        });
-                    } else {
-                        let i = 0;
+                d.map((ele, i) => {
+                    let o = this.data[i] || {};
+                    const dItem = d[i];
+                    const keys = getColumns.call(this, "no");
 
-                        for (let m of options.values()) {
-                            let v = m[labelName];
+                    for (let [j, itemData] of keys.entries()) {
+                        const v = dItem[j];
+                        const k = itemData.key || itemData.data;
+                        let newItem = {};
 
-                            if (v.includes(query)) {
-                                opts.push(m);
-                                i++;
-                                if (i >= maxMatchLen) {
+                        if (newItem[k]) {
+                            newItem = keyVals[k];
+                        } else {
+                            for (let [, w] of this.columns.entries()) {
+                                if (w.key === k || w.data === k) {
+                                    newItem = w;
+                                    keyVals[k] = w;
                                     break;
                                 }
                             }
                         }
-                        process(opts.map(m => m[labelName]));
-                        vm.$emit("getSelectOpts", {
-                            index,
-                            query,
-                            key,
-                            options: opts
-                        });
-                    }
-                }
-            );
-            const debounceAjax = _.debounce(
-                ({ ajaxConfig, query, labelName, index, process, key }) => {
-                    let { queryField, data, param } = ajaxConfig;
-                    const fn = (k, v) => {
-                        if (v && Reflect.has(v, queryField)) {
-                            ajaxConfig = {
-                                ...ajaxConfig,
-                                [k]: {
-                                    ...v,
-                                    [queryField]: query
-                                }
-                            };
-                        }
-                    };
 
-                    fn("data", data);
-                    fn("param", param);
-                    _.ajax(ajaxConfig).then(v => {
-                        process(v.map(m => m[labelName]));
-                        vm.$emit("getSelectOpts", {
-                            index,
-                            query,
-                            key,
-                            options: v
-                        });
-                    });
-                }
-            );
-
-            this.columns.map((item, index) => {
-                const options = item.options || item.source;
-                const labelName = item.labelName || "label";
-                const maxMatchLen = item.maxMatchLen || 8;
-                const allowEmpty = item.allowEmpty == false ? false : true;
-                const field = item.key || item.data;
-                let ajaxConfig = item.ajaxConfig;
-
-                item = {
-                    ...item,
-                    title: null
-                };
-                switch (true) {
-                    case item.type === "autocomplete":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "autocomplete",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            options,
-                            data: field
-                        });
-                        break;
-                    case item.subType === "optimize" &&
-                        item.type === "dropdown":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "autocomplete",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field,
-                            type: "autocomplete",
-                            options,
-                            source: function (query, process) {
-                                debounceOptimize({
-                                    query,
-                                    options,
-                                    maxMatchLen,
-                                    labelName,
-                                    index,
-                                    process,
-                                    key: field
-                                });
-                            }
-                        });
-                        break;
-                    case item.subType === "ajax" && item.type === "dropdown":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "autocomplete",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            type: "autocomplete",
-                            data: field,
-                            options,
-                            source: function (query, process) {
-                                debounceAjax({
-                                    ajaxConfig,
-                                    query,
-                                    labelName,
-                                    index,
-                                    process,
-                                    key: field
-                                });
-                            }
-                        });
-                        break;
-                    case item.type === "dropdown":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "dropdown",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            source: options
-                                ? options.map(ele => ele[labelName])
-                                : undefined,
-                            data: field,
-                            options
-                        });
-                        break;
-                    case item.type === "numeric":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "numeric",
-                                        value,
-                                        allowEmpty,
-                                        dateFormat: item.dateFormat,
-                                        timeFormat: item.timeFormat,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field,
-                            options
-                        });
-                        break;
-                    case item.type === "checkbox":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "checkbox",
-                                        value,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field
-                        });
-                        break;
-                    case item.subType === "datePicker":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "datePicker",
-                                        value,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field
-                        });
-                        break;
-                    case item.subType === "address":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "address",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            options,
-                            data: field
-                        });
-                        break;
-                    case item.subType === "cascader":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "cascader",
-                                        value,
-                                        labelName,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index,
-                                        options
-                                    })
-                                );
-                            },
-                            ...item,
-                            options,
-                            data: field
-                        });
-                        break;
-                    case item.type == null || item.type == "text":
-                        c.push({
-                            validator: (value, callback) => {
-                                callback(
-                                    _.checkType({
-                                        type: "text",
-                                        value,
-                                        allowEmpty,
-                                        item,
-                                        vm,
-                                        field,
-                                        index
-                                    })
-                                );
-                            },
-                            ...item,
-                            data: field
-                        });
-                        break;
-                    default:
-                        c.push({
-                            ...item,
-                            data: field,
-                            options
-                        });
-                }
-            });
-            return c;
-        },
-        getData(callback = () => {}) {
-            if (this.getDataDoubled) return;
-            this.getDataDoubled = true;
-            return new Promise(resolve => {
-                const { getData, getSourceDataAtRow } = this.core;
-                const d = getData();
-                const m = this.core.getPlugin("trimRows").trimmedRows;
-                const data = [];
-                let columns = [];
-                let addressOtps = [];
-
-                m.map(i => d.splice(i, 0, getSourceDataAtRow(i)));
-                d.map((ele, i) => {
-                    let o = this.data[i] || {};
-                    const dItem = d[i];
-                    const keys = this.settings.columns;
-
-                    for (let [
-                        j,
-                        {
-                            data: k,
+                        let {
                             options: opts,
                             valueType,
                             labelName = "label",
                             valueName = "value",
                             extraField = "maple_extra_field",
                             subType,
-                            type
-                        }
-                    ] of keys.entries()) {
-                        const v = dItem[j];
+                            type,
+                            exchange
+                        } = newItem;
 
-                        columns[j] = {
-                            ...this.columns[j],
-                            width: this.core.getColWidth(j)
-                        };
-                        if (opts instanceof Function) {
-                            opts = opts() || [];
-                        }
-                        if (
-                            (type === "dropdown" || type === "autocomplete") &&
-                            opts &&
-                            opts.length &&
-                            k
-                        ) {
-                            valueType = valueType || valueName;
-
-                            if (valueType === valueName) {
-                                o = {
-                                    ...o,
-                                    [k]: _.exchange({
-                                        data: opts,
-                                        currentValue: v,
-                                        currentKey: labelName
-                                    })[valueName],
-                                    [extraField]: v
-                                };
-                            } else {
-                                o = {
-                                    ...o,
-                                    [k]: v,
-                                    [extraField]: _.exchange({
-                                        data: opts,
-                                        currentValue: v,
-                                        currentKey: labelName
-                                    })[valueName]
-                                };
-                            }
-                        } else if (
-                            subType === "cascader" ||
-                            subType === "address"
-                        ) {
-                            if (
-                                addressOtps.length === 0 &&
-                                subType === "address"
-                            ) {
-                                addressOtps = _.collageAddress(_.address);
-                            }
-                            const res = _.getCascaderLabelValue({
-                                data:
-                                    subType === "address" ? addressOtps : opts,
-                                value: (v + "").split("/"),
-                                matchFieldName: "label"
-                            });
-                            if (valueType === "label") {
-                                o = {
-                                    ...o,
-                                    [k]: res.map(({ label }) => label),
-                                    [extraField]: res.map(({ value }) => value)
-                                };
-                            } else {
-                                o = {
-                                    ...o,
-                                    [k]: res.map(({ value }) => value),
-                                    [extraField]: res.map(({ label }) => label)
-                                };
-                            }
-                        } else if (subType !== "handle" && k) {
+                        if (exchange === false) {
                             o = {
                                 ...o,
                                 [k]: v
                             };
+                        } else {
+                            if (opts instanceof Function) {
+                                opts = opts() || [];
+                            }
+                            if (
+                                (type === "dropdown" ||
+                                    type === "autocomplete") &&
+                                opts &&
+                                opts.length &&
+                                k
+                            ) {
+                                let currentValue,
+                                    selectVals = this.selectVals[
+                                        `key-${k}value-${v}`
+                                    ];
+                                valueType = valueType || valueName;
+                                if (selectVals) {
+                                    currentValue = selectVals[valueName];
+                                } else {
+                                    currentValue = _.exchange({
+                                        data: opts,
+                                        currentValue: v,
+                                        currentKey: labelName
+                                    })[valueName];
+                                }
+
+                                if (valueType === valueName) {
+                                    o = {
+                                        ...o,
+                                        [k]: currentValue,
+                                        [extraField]: v
+                                    };
+                                } else {
+                                    o = {
+                                        ...o,
+                                        [k]: v,
+                                        [extraField]: currentValue
+                                    };
+                                }
+                            } else if (
+                                subType === "cascader" ||
+                                subType === "address"
+                            ) {
+                                if (
+                                    addressOtps.length === 0 &&
+                                    subType === "address"
+                                ) {
+                                    addressOtps = _.collageAddress(_.address);
+                                }
+                                if (this.cascaderVals[`key-${k}-value-${v}`]) {
+                                    const cascaderVals = this.cascaderVals[
+                                        `key-${k}-value-${v}`
+                                    ];
+                                    if (valueType === "label") {
+                                        o = {
+                                            ...o,
+                                            [k]: cascaderVals.label,
+                                            [extraField]: cascaderVals.value
+                                        };
+                                    } else {
+                                        o = {
+                                            ...o,
+                                            [k]: cascaderVals.value,
+                                            [extraField]: cascaderVals.label
+                                        };
+                                    }
+                                } else {
+                                    const res = _.getCascaderLabelValue({
+                                        data:
+                                            subType === "address"
+                                                ? addressOtps
+                                                : opts,
+                                        value: (v + "").split("/"),
+                                        matchFieldName: "label"
+                                    });
+                                    if (valueType === "label") {
+                                        o = {
+                                            ...o,
+                                            [k]: res.map(({ label }) => label),
+                                            [extraField]: res.map(
+                                                ({ value }) => value
+                                            )
+                                        };
+                                    } else {
+                                        o = {
+                                            ...o,
+                                            [k]: res.map(({ value }) => value),
+                                            [extraField]: res.map(
+                                                ({ label }) => label
+                                            )
+                                        };
+                                    }
+                                }
+                            } else if (subType !== "handle" && k) {
+                                o = {
+                                    ...o,
+                                    [k]: v
+                                };
+                            }
                         }
                     }
                     let extraItem = callback(o, i) || {};
@@ -856,37 +476,40 @@ export default {
                         ...extraItem
                     };
                     // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (!o.notAddabled && o.mapleTotal !== "合计") data.push({
-                        ...o,
-                        notAddabled: undefined
-                    });
+                    if (!o.notAddabled && o.mapleTotal !== "合计")
+                        data.push({
+                            ...o,
+                            notAddabled: undefined
+                        });
                 });
                 this.core.validateCells(valid => {
                     resolve({
                         value: data,
-                        valid: valid,
-                        columns
+                        valid: valid
                     });
                     this.getDataDoubled = false;
                 });
             });
         },
         checkAllBox(event, coords, $el) {
+            if (!coords) return;
             const { row, col } = coords;
-            const { countRows, setDataAtCell } = this.core;
             let type = "checkbox";
 
-            if (event.realTarget.id === "maple-header-checkbox") {
+            if (event.target.id === "maple-all-checkbox") {
                 const checkAllableds = [];
 
                 this.checkAllabled = !this.checkAllabled;
-                for (let i = 0; i < countRows(); i++) {
-                    if (this.hasColumnSummary && i === countRows() - 1) {
+                for (let i = 0; i < this.core.countRows(); i++) {
+                    if (
+                        this.hasColumnSummary &&
+                        i === this.core.countRows() - 1
+                    ) {
                         continue;
                     }
                     checkAllableds.push([i, col, this.checkAllabled]);
                 }
-                setDataAtCell(checkAllableds);
+                this.core.setDataAtCell(checkAllableds);
                 type = "allCheckbox";
                 this.$emit("change", {
                     type,
@@ -897,13 +520,12 @@ export default {
                     filterKeysChanges: this.filterKeysChanges
                 });
             }
-
             this.$emit("click", {
                 col,
                 row,
                 $el,
                 core: this.core,
-                name: event.realTarget.type,
+                name: event.target.type,
                 event,
                 type
             });
@@ -1000,6 +622,7 @@ export default {
                             fixedColumnsLeft
                         });
                     }
+                    this.core.updateSettings(this.settings);
                 }, t);
             });
         },
@@ -1029,26 +652,33 @@ export default {
                 ) {
                     const rowData = this.core.getDataAtRow(row);
                     let count = 0;
+                    let noValCount = 0;
+                    let hasDefaultVal = true;
 
-                    for (let [
-                        j,
-                        { data: k = "maple" }
-                    ] of this.settings.columns.entries()) {
+                    for (let [j, item] of this.myColumns.entries()) {
+                        const k = item.data || item.key || "maple-field";
                         const i = hasDefaultValFileds.indexOf(k);
                         const key = hasDefaultValFileds[i];
                         const v = rowData[j];
 
-                        if (k !== key && v) {
-                            isValid = false;
-                            break;
+                        if (
+                            k !== key &&
+                            (v == null || v === "") &&
+                            item.allowEmpty === false
+                        ) {
+                            noValCount++;
                         }
-                        if (k !== key && (v == null || v === "")) {
+                        if (k !== key && item.allowEmpty === false) {
                             count++;
+                        }
+                        if (k === key && (v == null || v === "")) {
+                            isValid = false;
+                            hasDefaultVal = false;
                         }
                     }
                     if (
-                        count + hasDefaultValFileds.length ===
-                        this.core.countCols()
+                        (noValCount === count || noValCount === 0) &&
+                        hasDefaultVal
                     ) {
                         isValid = true;
                     }
@@ -1065,22 +695,55 @@ export default {
             }
 
             return isValid;
+        },
+        afterHideColumns(currentHideConfig, destinationHideConfig) {
+            this.hiddenColumns = destinationHideConfig;
+            this.getColumns();
+        },
+        afterUnhideColumns(currentHideConfig, destinationHideConfig) {
+            this.hiddenColumns = destinationHideConfig;
+            this.getColumns();
+        },
+        afterColumnMove() {
+            this.getColumns();
+        },
+        getColumns() {
+            if (this.settings.cacheId && this.settings.openCache) {
+                const t = this.core.getColHeader();
+                const cols = [];
+                t.map(ele => {
+                    const index = ele.slice(
+                        ele.indexOf("index=") + 6,
+                        ele.indexOf("CDC")
+                    );
+                    cols.push(this.myColumns[index]);
+                });
+                localStorage.setItem(
+                    `${this.settings.cacheId}-hiddenColumns`,
+                    JSON.stringify(this.hiddenColumns)
+                );
+                localStorage.setItem(
+                    `${this.settings.cacheId}-columns`,
+                    JSON.stringify(cols)
+                );
+            }
         }
     },
     watch: {
         columns() {
-            this.init("columns");
+            this.init();
         },
         data(v) {
             this.showEmpty = !v.length;
-            this.init("data");
+            this.init();
         },
         options() {
-            this.init("options");
+            this.init();
         }
     },
     beforeDestroy() {
-        Object.assign(this.$data, this.$options.data());
+        Object.assign(this.$data, {});
+        this.$el.removeEventListener("dblclick", this.cellDblClick);
     }
 };
 </script>

@@ -62,7 +62,7 @@ export default {
             this.changeDate(v);
         },
         changeDate(v) {
-            const { col, row } = this.coords;
+            const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 this.core.setDataAtCell(row, col, v, "changeDate");

@@ -104,92 +104,21 @@ function debounce(fn, delay = 128) {
 }
 /**
  * @description 检查数据类型
- * @param {String} type 数据类型
  * @param {Any} value 被检查值
- * @param {Array} options 下拉框的选项值集合
- * @param {String} labelName 下拉框选项值的属性名
- * @param {String} dateFormat 日期格式
- * @param {Boolean} allowEmpty 是否接受空值
+ * @param {Object} item 每一项值
  */
-function checkType({
-    type,
-    value,
-    labelName,
-    dateFormat = "",
-    timeFormat = "",
-    allowEmpty,
-    item,
-    options
-}) {
+function checkType({ value, item }) {
     let state = true;
-    let isLeapYear = false;
-    let year,
-        month,
-        day,
-        yearState,
-        monthState,
-        dayState,
-        hour,
-        minute,
-        second,
-        colon;
-    let baseMonthsDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-    const yearIndex = dateFormat.indexOf("YYYY");
-    const monthIndex = dateFormat.indexOf("MM");
-    const dayIndex = dateFormat.indexOf("DD");
-    const yearReg = /^(1949|19[5-9]\d|20\d{2}|2128)$/;
-    const monthReg = /^(?:(?:0[1-9])|(?:1[0-2]))$/;
-    const hourIndex = timeFormat.indexOf("HH");
-    const minuteIndex = timeFormat.indexOf("MM");
-    const secondIndex = timeFormat.indexOf("SS");
-    const { numericFormat = {}, subType } = item;
+    let { numericFormat = {}, subType, type, options } = item;
 
     if (options instanceof Function) {
         options = options() || [];
     }
     let opts = options || [];
-    if (value === "" || value == null) return allowEmpty;
+    if (value === "" || value == null) return !!item.allowEmpty;
 
-    switch (type) {
-        case "autocomplete":
-            opts = opts.filter(m => m[labelName] === value);
-            state = !!opts.length;
-            break;
-        case "dropdown":
-            opts = opts.filter(m => m[labelName] === value);
-            state = !!opts.length;
-            break;
-        case "date":
-            if (yearIndex > -1) {
-                year = value.substr(yearIndex, 4);
-                isLeapYear =
-                    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-                yearState = yearReg.test(year);
-                if (!yearState) {
-                    state = false;
-                    break;
-                }
-            }
-            if (monthIndex > -1) {
-                month = value.substr(monthIndex, 2);
-                if (isLeapYear) baseMonthsDay[1] = 29;
-                monthState = monthReg.test(month);
-                if (!monthState) {
-                    state = false;
-                    break;
-                }
-            }
-            if (dayIndex > -1) {
-                day = value.substr(dayIndex, 2);
-                dayState = day <= baseMonthsDay[month - 1];
-                if (!dayState) {
-                    state = false;
-                    break;
-                }
-            }
-            break;
-        case "numeric":
+    switch (true) {
+        case type === "numeric":
             state = !isNaN(value - 0);
             if (state) {
                 const { min, max } = numericFormat;
@@ -204,62 +133,6 @@ function checkType({
                 }
             }
             break;
-        case "time":
-            if (value.length !== timeFormat.length) {
-                state = false;
-                break;
-            }
-            if (hourIndex > -1) {
-                hour = value.substr(hourIndex, 2);
-                colon = value.substr(hourIndex + 2, 1);
-                if (
-                    hour - 0 < 0 ||
-                    hour - 0 > 23 ||
-                    hour.includes(".") ||
-                    (colon !== ":" && hourIndex + 2 < timeFormat.length)
-                ) {
-                    state = false;
-                    break;
-                }
-            }
-            if (minuteIndex > -1) {
-                minute = value.substr(minuteIndex, 2);
-                colon = value.substr(minuteIndex + 2, 1);
-                if (
-                    minute - 0 < 0 ||
-                    minute - 0 > 59 ||
-                    minute.includes(".") ||
-                    (colon !== ":" && minuteIndex + 2 < timeFormat.length)
-                ) {
-                    state = false;
-                    break;
-                }
-            }
-            if (secondIndex > -1) {
-                second = value.substr(secondIndex, 2);
-                if (
-                    second - 0 < 0 ||
-                    second - 0 > 59 ||
-                    second.includes(".") ||
-                    (colon !== ":" && secondIndex + 2 < timeFormat.length)
-                ) {
-                    state = false;
-                    break;
-                }
-            }
-            break;
-        case "text":
-            state = value !== "" && value != null;
-            break;
-        case "checkbox":
-            state =
-                typeof value === "boolean" ||
-                value === "true" ||
-                value === "false";
-            break;
-    }
-
-    switch (true) {
         case subType === "datePicker":
             const charReg = /^[\u4e00-\u9fa5]+$/;
             const { valueFormat = "yyyy-MM-dd HH:mm:ss" } = item.props || {};
@@ -348,6 +221,7 @@ function getCascaderLabelValue({
     matchFieldName = "value",
     value = []
 }) {
+    if (!value.length) return [];
     let arr = [];
     const m = item => {
         let matchVal = item[matchFieldName];
