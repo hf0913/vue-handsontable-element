@@ -22,6 +22,7 @@
         @getCore="getCore"
         @cellDblClick="cellDblClick"
         @getSelectOpts="getSelectOpts"
+        @changeSort="changeSort"
         :options="options"
         ref="handsontableRef"
     />
@@ -253,6 +254,7 @@
                     ],
                     openEmptyValid: true, // 是否开启空行校验，默认开启
                     hasDefaultValFileds: ["字段一", "字段二"], // 是否存在默认值的字段集合，在getData数据校验空行会综合考虑是否标记单元格红色
+                    openSort: true, // 自定义排序
                     multiColumnSorting: true, // 开启排序
                     multiColumnSorting: {
                         // 排序配置
@@ -372,6 +374,10 @@
             utils() {
                 // 工具方法 https://github.com/hf0913/vue-handsontable-element/blob/master/src/utils/index.js
                 return utils;
+            },
+            changeSort(o) {
+                // 排序回调
+                this.$emit("changeSort", o);
             }
         }
     };

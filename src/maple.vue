@@ -110,7 +110,8 @@ export default {
             myColumns: [],
             hiddenColumns: [],
             sort: {},
-            sortabled: false
+            sortabled: false,
+            sortCol: -1208
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
@@ -750,15 +751,26 @@ export default {
                         t: new Date().valueOf(),
                         key:
                             this.myColumns[col].key || this.myColumns[col].data,
-                        sort: this.sort
+                        sort: this.sort,
+                        col
                     }
                 },
-                callback: () => {
-                    this.sort[col] = {
-                        type: sortType,
-                        t: new Date().valueOf()
-                    };
-                    this.core.render();
+                callback: (config = {}) => {
+                    if (config.state) {
+                        this.sort[col] = {
+                            type: sortType,
+                            t: new Date().valueOf()
+                        };
+                        if (
+                            config.clear &&
+                            this.sortCol !== -1208 &&
+                            this.sortCol !== col
+                        ) {
+                            this.sort[this.sortCol] = {};
+                        }
+                        this.core.render();
+                        this.sortCol = col;
+                    }
                     this.sortabled = false;
                 }
             });
