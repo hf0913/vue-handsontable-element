@@ -14,9 +14,9 @@ function getColumns(t) {
     return _cols;
 }
 
-function exchangeSort(col) {
+function exchangeSort(key) {
     if (!this.options.openSort) return "";
-    const { type: sortType } = this.sort[col] || {};
+    const { type: sortType } = this.sort[key] || {};
     switch (true) {
         case !sortType:
             return "";
@@ -48,7 +48,7 @@ function colHeaders(col) {
     }">
                     ${item.title}
                 </span>
-            <div class="${exchangeSort.call(this, col)}">
+            <div class="${exchangeSort.call(this, item.key || item.data)}">
             <div>
         </div>
     `;
@@ -132,7 +132,7 @@ function customColumns() {
         ) {
             item.validator = (value, callback) => {
                 callback(
-                    utils.checkType({
+                    utils.checkType.call(this, {
                         value,
                         item
                     })
@@ -155,7 +155,7 @@ function customColumns() {
         if (item.type === "numeric" && item.subType !== "text") {
             item.validator = (value, callback) => {
                 callback(
-                    utils.checkType({
+                    utils.checkType.call(this, {
                         value,
                         item
                     })

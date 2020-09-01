@@ -22,7 +22,7 @@
     height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-bottom: 12px solid #000;
+    border-bottom: 12px solid #0ad43f;
 }
 .maple-down-arrow {
     display: inline-block;
@@ -30,5 +30,5 @@
     height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 12px solid #e91e63;
+    border-top: 12px solid #000;
 }

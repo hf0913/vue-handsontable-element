@@ -111,7 +111,7 @@ export default {
             hiddenColumns: [],
             sort: {},
             sortabled: false,
-            sortCol: -1208
+            sortKey: {}
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
@@ -166,7 +166,8 @@ export default {
                     left,
                     open: true,
                     core: this.core,
-                    columns
+                    columns,
+                    orgColumns: this.columns
                 });
             }
             this.$emit("cellDblClick", {
@@ -731,9 +732,10 @@ export default {
         changeSort(o) {
             if (this.sortabled) return;
             this.sortabled = true;
-            const { col } = o;
+            const { col } = o,
+                key = this.myColumns[col].key || this.myColumns[col].data;
             let sortType = 0,
-                v = this.sort[col] || {};
+                v = this.sort[key] || {};
             if (!v.type) {
                 sortType = 1;
             }
@@ -749,31 +751,38 @@ export default {
                     currentData: {
                         type: sortType,
                         t: new Date().valueOf(),
-                        key:
-                            this.myColumns[col].key || this.myColumns[col].data,
+                        key,
                         sort: this.sort,
                         col
                     }
                 },
                 callback: (config = {}) => {
                     if (config.state) {
-                        this.sort[col] = {
+                        this.sort[key] = {
                             type: sortType,
                             t: new Date().valueOf()
                         };
-                        if (
-                            config.clear &&
-                            this.sortCol !== -1208 &&
-                            this.sortCol !== col
-                        ) {
-                            this.sort[this.sortCol] = {};
+                        if (config.clear) {
+                            for (let [k] of Object.entries(this.sortKey)) {
+                                if (key !== k) this.sort[k] = {};
+                            }
                         }
-                        this.core.render();
-                        this.sortCol = col;
+                        this.sortKey[key] = key;
+                    }
+                    if (!sortType) {
+                        this.sort[key] = {
+                            type: sortType,
+                            t: new Date().valueOf()
+                        };
                     }
                     this.sortabled = false;
+                    this.core.render();
                 }
             });
+        },
+        clearSort() {
+            this.sort = {};
+            this.core.render();
         }
     },
     watch: {

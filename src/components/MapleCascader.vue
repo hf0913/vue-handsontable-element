@@ -110,7 +110,8 @@ export default {
             top = 0,
             left = 0,
             core = {},
-            columns = []
+            columns = [],
+            orgColumns = []
         } = {}) {
             if (!open) {
                 return (this.cascaderAbled = false);
@@ -121,12 +122,22 @@ export default {
                 row
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                const { subType = "", props = {}, type } = columns[col];
+                let list = [];
                 const key = columns[col].key || columns[col].data;
+                for (let [, w] of orgColumns.entries()) {
+                    if (w.key === key || w.data === key) {
+                        const wOptions = w.options || w.source || [];
+                        list =
+                            wOptions instanceof Function
+                                ? wOptions()
+                                : wOptions;
+                        break;
+                    }
+                }
+                const { subType = "", props = {}, type } = columns[col];
 
                 if (!type) {
-                    let opts =
-                        columns[col].source || columns[col].options || [];
+                    let opts = list;
                     if (opts instanceof Function) opts = opts();
                     this.options = opts;
                     this.columns = columns;

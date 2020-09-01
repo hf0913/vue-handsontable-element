@@ -49,7 +49,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function() {
+        xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
@@ -91,12 +91,12 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
 function debounce(fn, delay = 128) {
     let t = null;
 
-    return function() {
+    return function () {
         let self = this;
         let args = arguments;
 
         t && clearTimeout(t);
-        t = setTimeout(function() {
+        t = setTimeout(function () {
             fn.apply(self, args);
             t = null;
         }, delay);
@@ -110,11 +110,16 @@ function debounce(fn, delay = 128) {
 function checkType({ value, item }) {
     let state = true;
     let { numericFormat = {}, subType, type, options } = item;
-
-    if (options instanceof Function) {
-        options = options() || [];
+    let opts = [];
+    const key = item.key || item.data;
+    for (let [, w] of this.columns.entries()) {
+        if (w.key === key || w.data === key) {
+            const wOptions = w.options || w.source || [];
+            opts = wOptions instanceof Function ? wOptions() : wOptions;
+            break;
+        }
     }
-    let opts = options || [];
+
     if (value === "" || value == null || value === false) {
         return item.allowEmpty !== false;
     }
