@@ -108,7 +108,9 @@ export default {
             selectVals: {},
             cascaderVals: {},
             myColumns: [],
-            hiddenColumns: []
+            hiddenColumns: [],
+            sort: {},
+            sortabled: false
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker },
@@ -117,7 +119,7 @@ export default {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
         this.$el.addEventListener("dblclick", this.cellDblClick);
-        this.init("mounted");
+        this.init();
     },
     activated() {
         this.fixView();
@@ -215,7 +217,17 @@ export default {
         afterOnCellMouseDown(event, coords, $el) {
             if (coords) {
                 const { row, col } = coords;
-
+                if (event.target.className.includes("maple-sort")) {
+                    this.changeSort({
+                        col,
+                        row,
+                        $el,
+                        core: this.core,
+                        name: "titleCells",
+                        event,
+                        type: "sort"
+                    });
+                }
                 if (event.target.id === "maple-fliter") {
                     this.$emit("controlCustomFilter", {
                         event,
@@ -353,11 +365,10 @@ export default {
                         }
 
                         let {
-                            options: opts,
                             valueType,
                             labelName = "label",
                             valueName = "value",
-                            extraField = "maple_extra_field",
+                            extraField,
                             subType,
                             type,
                             exchange
@@ -369,6 +380,7 @@ export default {
                                 [k]: v
                             };
                         } else {
+                            let opts = newItem.options || newItem.source;
                             if (opts instanceof Function) {
                                 opts = opts() || [];
                             }
@@ -632,7 +644,6 @@ export default {
             if (this.getDataDoubled && this.settings.openEmptyValid) {
                 const hasDefaultValFileds =
                     this.settings.hasDefaultValFileds || [];
-                const index = hasDefaultValFileds.indexOf(prop);
 
                 if (
                     this.hasColumnSummary &&
@@ -645,40 +656,28 @@ export default {
 
                 if (isEmptyRow) {
                     isValid = true;
-                } else if (
-                    !isValid &&
-                    prop !== hasDefaultValFileds[index] &&
-                    (value == null || value === "")
-                ) {
+                } else {
                     const rowData = this.core.getDataAtRow(row);
-                    let count = 0;
-                    let noValCount = 0;
-                    let hasDefaultVal = true;
-
+                    let itemData = {};
+                    let emptyCount = 0;
                     for (let [j, item] of this.myColumns.entries()) {
                         const k = item.data || item.key || "maple-field";
                         const i = hasDefaultValFileds.indexOf(k);
                         const key = hasDefaultValFileds[i];
                         const v = rowData[j];
 
+                        if (k === prop) itemData = item;
                         if (
                             k !== key &&
-                            (v == null || v === "") &&
-                            item.allowEmpty === false
+                            (v === "" || v == null || v === false)
                         ) {
-                            noValCount++;
-                        }
-                        if (k !== key && item.allowEmpty === false) {
-                            count++;
-                        }
-                        if (k === key && (v == null || v === "")) {
-                            isValid = false;
-                            hasDefaultVal = false;
+                            emptyCount++;
                         }
                     }
                     if (
-                        (noValCount === count || noValCount === 0) &&
-                        hasDefaultVal
+                        emptyCount + hasDefaultValFileds.length ===
+                            this.core.countCols() &&
+                        itemData.allowEmpty === false
                     ) {
                         isValid = true;
                     }
@@ -727,6 +726,33 @@ export default {
                     JSON.stringify(cols)
                 );
             }
+        },
+        changeSort(o) {
+            if (this.sortabled) return;
+            this.sortabled = true;
+            const { col } = o;
+            let sortType = 0,
+                v = this.sort[col] || {};
+            if (!v.type) {
+                sortType = 1;
+            }
+            if (v.type === 1) {
+                sortType = -1;
+            }
+            if (v.type === -1) {
+                sortType = 0;
+            }
+            this.$emit("changeSort", {
+                data: o,
+                callback: () => {
+                    this.sort[col] = {
+                        type: sortType,
+                        t: new Date().valueOf()
+                    };
+                    this.core.render();
+                    this.sortabled = false;
+                }
+            });
         }
     },
     watch: {

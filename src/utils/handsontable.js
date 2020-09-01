@@ -14,6 +14,19 @@ function getColumns(t) {
     return _cols;
 }
 
+function exchangeSort(col) {
+    if (!this.options.openSort) return "";
+    const { type: sortType } = this.sort[col] || {};
+    switch (true) {
+        case !sortType:
+            return "";
+        case sortType === 1:
+            return "maple-up-arrow";
+        case sortType === -1:
+            return "maple-down-arrow";
+    }
+}
+
 function colHeaders(col) {
     const item = this.myColumns[col];
     if (item.subType === "selection" && item.type === "checkbox") {
@@ -23,13 +36,21 @@ function colHeaders(col) {
         }/>`;
     }
     return `
-        <span index=${col}CDC class="${
+        <div style="display: flex" class="${
+            item.subType !== "handle" ? "maple-sort" : ""
+        }">
+            <span index=${col}CDC class="${
+        item.subType !== "handle" ? "maple-sort" : ""
+    } ${
         item.allowEmpty === false
             ? `maple-required-title maple-required-title-${col}`
             : `maple-title maple-title-${col}`
     }">
-            ${item.title}
-        </span>
+                    ${item.title}
+                </span>
+            <div class="${exchangeSort.call(this, col)}">
+            <div>
+        </div>
     `;
 }
 
