@@ -743,7 +743,16 @@ export default {
                 sortType = 0;
             }
             this.$emit("changeSort", {
-                data: o,
+                data: {
+                    ...o,
+                    currentData: {
+                        type: sortType,
+                        t: new Date().valueOf(),
+                        key:
+                            this.myColumns[col].key || this.myColumns[col].data,
+                        sort: this.sort
+                    }
+                },
                 callback: () => {
                     this.sort[col] = {
                         type: sortType,
