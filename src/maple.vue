@@ -786,6 +786,30 @@ export default {
         clearSort() {
             this.sort = {};
             this.core.render();
+        },
+        sum(o) {
+            if (this.settings.summaryColumn instanceof Array) {
+                let sumKey = [];
+                this.settings.summaryColumn.forEach(item => {
+                    if (item.type === "sum") {
+                        sumKey.push(item.key);
+                    }
+                });
+                o.filterKeysChanges({
+                    filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是true，即过滤
+                    changes: o.changes,
+                    keys: sumKey,
+                    callback: ({ key, oldVal, newVal }) => {
+                        let diff = 0,
+                            lastData = this.value[this.value.length - 1];
+
+                        newVal = newVal - 0 || 0;
+                        oldVal = oldVal - 0 || 0;
+                        diff = newVal - oldVal;
+                        lastData[key] = (lastData[key] - 0 || 0) + diff;
+                    }
+                });
+            }
         }
     },
     watch: {
