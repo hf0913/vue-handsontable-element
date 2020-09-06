@@ -1,6 +1,6 @@
 <template>
     <div id="maple-table">
-        <hot-table :settings="settings" ref="mapleTable" />
+        <hot-table :settings="settings" ref="mapleTable" :style="customStyle" />
         <MapleDatePicker ref="datePickerRef" />
         <MapleCascader
             ref="cascaderRef"
@@ -47,6 +47,9 @@ export default {
         },
         widthAuto: {
             type: Boolean
+        },
+        customStyle: {
+            type: Object
         }
     },
     data() {
