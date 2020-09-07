@@ -68,6 +68,7 @@ function customColumns() {
             item.source = (query, process) => {
                 const optionsTotal = item.optionsTotal || 6,
                     labelName = item.labelName || "label";
+                let mnemonicCode = item.mnemonicCode || [];
                 let options = [],
                     j = 1,
                     processOpts = [],
@@ -80,6 +81,7 @@ function customColumns() {
                             wOptions instanceof Function
                                 ? wOptions()
                                 : wOptions;
+                        mnemonicCode = w.mnemonicCode || [];
                         break;
                     }
                 }
@@ -95,18 +97,29 @@ function customColumns() {
                     options = list;
                 }
                 for (let [, v] of options.entries()) {
-                    const val = v[labelName];
+                    const val = v[labelName] || "";
                     if (!query) {
                         processOpts.push(val);
                         opts.push(v);
                         if (optionsTotal === j) break;
                         j++;
                     }
-                    if (query && val.includes(query)) {
-                        processOpts.push(val);
-                        opts.push(v);
-                        if (optionsTotal === j) break;
-                        j++;
+                    if (query) {
+                        let addAbled = val.includes(query);
+                        let allow = false;
+                        if (mnemonicCode instanceof Array) {
+                            mnemonicCode.map(code => {
+                                if (v[code] && v[code].includes(query)) {
+                                    allow = true;
+                                }
+                            });
+                        }
+                        if (addAbled || allow) {
+                            processOpts.push(val);
+                            opts.push(v);
+                            if (optionsTotal === j) break;
+                            j++;
+                        }
                     }
                     if (query === val) {
                         this.selectVals[`key-${k}value-${val}`] = v;
