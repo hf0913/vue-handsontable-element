@@ -22,68 +22,6 @@ function exchange({ data, currentValue, currentKey }) {
     return o;
 }
 /**
- * @description 发送数据给后端，使用原生的ajax请求
- * @param {String} url 请求后端的完整路径
- * @param {String} method 请求方式，默认GET
- * @param {Object} header 请求头
- * @param {Object} data 发送body数据
- * @param {Object} param 以查询方式发送数据
- * @param {String} result 根据后端返回数据的结构，给出一个链结构，来表示可以根据这个链结构找到数据，举例：后端返回数据结构为{data:{data:[],message:null}},则result赋值为data.data
- */
-function ajax({ url, method = "GET", header, data, param, result = "" }) {
-    let d = "";
-
-    header = header || {};
-    data = data || {};
-    method = method.toLocaleUpperCase();
-    result = result.split(".");
-    if (param || method === "GET") {
-        for (let [k, v] of Object.entries(data)) {
-            d += `${k}=${v}&`;
-        }
-        url = `${url}?${d.slice(0, d.length - 1)}`;
-    }
-
-    return new Promise(resolve => {
-        const xmlhttp = window.XMLHttpRequest
-            ? new window.XMLHttpRequest()
-            : new window.ActiveXObject("Microsoft.XMLHTTP");
-
-        xmlhttp.onreadystatechange = function () {
-            if (xmlhttp.readyState == 4) {
-                if (xmlhttp.status == 200) {
-                    const responseText = JSON.parse(xmlhttp.responseText);
-                    let res = "mapleLoveCDC";
-
-                    for (let k of result.values()) {
-                        if (res == null) break;
-                        if (res === "mapleLoveCDC") {
-                            res = responseText[k];
-                        } else res = res[k];
-                    }
-                    res = res === "mapleLoveCDC" || res == null ? [] : res;
-                    resolve(res);
-                } else {
-                    resolve([]);
-                }
-            }
-        };
-        xmlhttp.open(method, url, true);
-        if (method === "POST") {
-            header = {
-                "Content-Type": "application/json",
-                ...header
-            };
-        }
-        for (let [k, v] of Object.entries(header)) {
-            xmlhttp.setRequestHeader(k, v);
-        }
-        param || method === "GET"
-            ? xmlhttp.send()
-            : xmlhttp.send(JSON.stringify(data));
-    });
-}
-/**
  * @description 防抖函数
  * @param {*} fn 接受
  * @param {*} delay
@@ -321,7 +259,6 @@ function collageAddress(address) {
 
 const maple = {
     exchange,
-    ajax,
     debounce,
     checkType,
     elClick,

@@ -228,55 +228,6 @@ function customColumns() {
                 return td;
             };
         }
-        if (item.subType === "ajax" && item.type === "dropdown") {
-            let opts = [];
-            let processOpts = [];
-            item.source = (query, process) => {
-                if (
-                    this.keyOpts[k] &&
-                    this.keyOpts[k].query === query &&
-                    this.keyOpts[k].key === k
-                ) {
-                    return process(this.keyOpts[k].processOpts);
-                }
-                let { queryField, data, param } = item.ajaxConfig;
-                const fn = (k, v) => {
-                    if (v && Reflect.has(v, queryField)) {
-                        item.ajaxConfig = {
-                            ...item.ajaxConfig,
-                            [k]: {
-                                ...v,
-                                [queryField]: query
-                            }
-                        };
-                    }
-                };
-
-                fn("data", data);
-                fn("param", param);
-                utils.ajax(item.ajaxConfig).then(v => {
-                    processOpts = v.map(m => {
-                        const val = m[item.labelName];
-                        opts.push(m);
-                        if (query === val) {
-                            this.selectVals[`key-${k}value-${val}`] = v;
-                        }
-                        return val;
-                    });
-                    process(processOpts);
-                    this.keyOpts[k] = {
-                        opts,
-                        processOpts,
-                        query,
-                        key: k
-                    };
-                    this.$emit("getSelectOpts", {
-                        keyOpts: this.keyOpts,
-                        selectVals: this.selectVals
-                    });
-                });
-            };
-        }
 
         item = {
             ...item,
