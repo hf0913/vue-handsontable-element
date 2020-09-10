@@ -674,7 +674,10 @@ export default {
                         if (k === prop) itemData = item;
                         if (
                             k !== key &&
-                            (v === "" || v == null || v === false)
+                            (v === "" ||
+                                v == null ||
+                                v === false ||
+                                v === item.uncheckedTemplate)
                         ) {
                             emptyCount++;
                         }
