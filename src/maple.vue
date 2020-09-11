@@ -222,7 +222,11 @@ export default {
         afterOnCellMouseDown(event, coords, $el) {
             if (coords) {
                 const { row, col } = coords;
-                if (event.target.className.includes("maple-sort")) {
+                const className = event.target.className;
+                if (
+                    className.includes("maple-up-arrow") ||
+                    className.includes("maple-down-arrow")
+                ) {
                     this.changeSort({
                         col,
                         row,
@@ -230,7 +234,10 @@ export default {
                         core: this.core,
                         name: "titleCells",
                         event,
-                        type: "sort"
+                        type: "sort",
+                        direction: className.includes("maple-up-arrow")
+                            ? "up"
+                            : "down"
                     });
                 }
                 if (event.target.id === "maple-fliter") {
@@ -738,17 +745,20 @@ export default {
         changeSort(o) {
             if (this.sortabled) return;
             this.sortabled = true;
-            const { col } = o,
+            const { col, direction } = o,
                 key = this.myColumns[col].key || this.myColumns[col].data;
             let sortType = 0,
                 v = this.sort[key] || {};
-            if (!v.type) {
+            if ((!v.type || v.type === -1) && direction === "up") {
                 sortType = 1;
             }
-            if (v.type === 1) {
+            if (v.type === 1 && direction === "up") {
+                sortType = 0;
+            }
+            if ((!v.type || v.type === 1) && direction === "down") {
                 sortType = -1;
             }
-            if (v.type === -1) {
+            if (v.type === -1 && direction === "down") {
                 sortType = 0;
             }
             this.$emit("changeSort", {
@@ -766,7 +776,8 @@ export default {
                     if (config.state) {
                         this.sort[key] = {
                             type: sortType,
-                            t: new Date().valueOf()
+                            t: new Date().valueOf(),
+                            direction
                         };
                         if (config.clear) {
                             for (let [k] of Object.entries(this.sortKey)) {
@@ -778,7 +789,8 @@ export default {
                     if (!sortType) {
                         this.sort[key] = {
                             type: sortType,
-                            t: new Date().valueOf()
+                            t: new Date().valueOf(),
+                            direction
                         };
                     }
                     this.sortabled = false;

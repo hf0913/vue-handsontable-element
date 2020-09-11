@@ -47,7 +47,7 @@ function debounce(fn, delay = 128) {
  */
 function checkType({ value, item }) {
     let state = true;
-    let { numericFormat = {}, subType, type, options } = item;
+    let { numericFormat = {}, subType, type } = item;
     let opts = [];
     const key = item.key || item.data;
     for (let [, w] of this.columns.entries()) {

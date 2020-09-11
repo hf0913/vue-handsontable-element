@@ -16,19 +16,59 @@
 .cursor {
     cursor: pointer;
 }
-.maple-up-arrow {
-    display: inline-block;
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 12px solid #0ad43f;
+.maple-title,
+.maple-sort {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-.maple-down-arrow {
+.maple-arrow {
+    display: flex;
+    flex-direction: column;
+    margin: 0 4px;
+}
+.maple-no-arrow {
+    height: 28px;
+}
+.maple-up-arrow,
+.maple-up-arrow-select,
+.maple-up-arrow-default {
     display: inline-block;
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 12px solid #000;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid #636363;
+}
+.maple-down-arrow,
+.maple-down-arrow-select,
+.maple-down-arrow-default {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #636363;
+    margin-top: 2px;
+}
+.maple-down-arrow-select {
+    border-top: 4px solid #f44336;
+}
+.maple-up-arrow-select {
+    border-bottom: 4px solid #f44336;
+}
+.maple-public-title:hover,
+.maple-down-arrow:hover,
+.maple-up-arrow:hover {
+    cursor: pointer;
+}
+.maple-public-title:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+.maple-down-arrow:hover {
+    border-top: 4px solid #2196f3;
+}
+.maple-up-arrow:hover {
+    border-bottom: 4px solid #2196f3;
 }

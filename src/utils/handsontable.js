@@ -14,21 +14,24 @@ function getColumns(t) {
     return _cols;
 }
 
-function exchangeSort(key) {
+function exchangeSort(key, n) {
     if (!this.options.openSort) return "";
-    const { type: sortType } = this.sort[key] || {};
+    const { type: sortType, direction } = this.sort[key] || {};
     switch (true) {
-        case !sortType:
-            return "";
+        case sortType === 0:
+            return direction === n ? `maple-${n}-arrow-default` : "";
         case sortType === 1:
-            return "maple-up-arrow";
+            return direction === n ? `maple-${n}-arrow-select` : "";
         case sortType === -1:
-            return "maple-down-arrow";
+            return direction === n ? `maple-${n}-arrow-select` : "";
     }
 }
 
 function colHeaders(col) {
     const item = this.myColumns[col];
+    const key = item.key || item.data;
+    const { openSort } = this.options || {};
+
     if (item.subType === "selection" && item.type === "checkbox") {
         this.checkboxAllIndex = col;
         return `<input type="checkbox" id="maple-all-checkbox" index=${col}CDC ${
@@ -37,19 +40,42 @@ function colHeaders(col) {
     }
     return `
         <div style="display: flex" class="${
-            item.subType !== "handle" ? "maple-sort" : ""
+            item.subType !== "handle" && !item.noSort ? "maple-sort" : ""
         }">
-            <span index=${col}CDC class="${
+            <div index=${col}CDC class="${
         item.subType !== "handle" ? "maple-sort" : ""
     } ${
         item.allowEmpty === false
-            ? `maple-required-title maple-required-title-${col}`
-            : `maple-title maple-title-${col}`
+            ? `maple-required-title maple-required-title-${key}`
+            : `maple-title maple-title-${key}`
+    } ${
+        item.subType !== "handle" && !item.noSort && openSort
+            ? "maple-public-title"
+            : ""
     }">
                     ${item.title}
-                </span>
-            <div class="${exchangeSort.call(this, item.key || item.data)}">
-            <div>
+                </div>
+            <div class="maple-arrow" style="display: ${
+                item.subType !== "handle" && !item.noSort && openSort
+                    ? ""
+                    : "none"
+            }">
+                <div class="maple-up-arrow ${exchangeSort.call(
+                    this,
+                    key,
+                    "up"
+                )}"></div>
+                <div class="maple-down-arrow ${exchangeSort.call(
+                    this,
+                    key,
+                    "down"
+                )}"></div>
+            </div>
+            <div class="maple-no-arrow" style="display: ${
+                item.subType !== "handle" && !item.noSort && openSort
+                    ? "none"
+                    : ""
+            }"></div>
         </div>
     `;
 }
