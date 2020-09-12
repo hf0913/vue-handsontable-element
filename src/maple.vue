@@ -191,6 +191,7 @@ export default {
                     ) || "[]"
                 );
             }
+            if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
                 data: this.data,

@@ -188,7 +188,12 @@ function customColumns() {
             item.type = "numeric";
             item.subType = "text";
             item.validator = (value, callback) => {
-                item.allowEmpty === false ? callback(!!value) : callback(true);
+                const vaild = item.allowEmpty === false ? !!value : true;
+                if (vaild && item.maxLength) {
+                    value = value + "";
+                    return callback(value.length <= item.maxLength);
+                }
+                callback(vaild);
             };
         }
         if (item.type === "numeric" && item.subType !== "text") {

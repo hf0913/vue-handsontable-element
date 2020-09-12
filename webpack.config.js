@@ -95,8 +95,8 @@ if (process.env.NODE_ENV === "production") {
             //删除console 和 debugger  删除警告
             compress: {
                 warnings: false,
-                drop_debugger: true,
-                drop_console: true
+                drop_debugger: true
+                // drop_console: true
             }
         })
     ]);
