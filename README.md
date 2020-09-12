@@ -41,6 +41,22 @@
                 tableData: [],
                 columns: [
                     {
+                        //公共属性解释
+                        title: "表头名", // 表格表头名
+                        key: "common", // 表格渲染字段名
+                        _width: 200, // 表格宽度
+                        readOnly: true, // 是否只读，控制单元格是否支持下拉填充、粘贴赋值，true开启，false关闭，默认false
+                        allowEmpty: false, // 是否必填，false必填，true非必填，默认true
+                        type: "checkbox", // 模式类型，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），默认text
+                        subType: "selection", // 扩展模式类型，仅支持：selection（表头复选框）、address（地址级联选择器）、cascader（普通级联选择器）、datePicker（日期时间选择器）、posInt（正整数类型）、optimize（下拉框优化模式）、handle（操作）
+                        editor: false, // 是否可以编辑，false不可以编辑，但是可以被下拉填充或者粘贴，true可以编辑，默认true
+                        validator: (value, callback) => {
+                            // 自定义校验，value为单元格值，callback回调函数，入参为boolean类型。
+                            callback(true); // true校验通过,false校验失败，单元格背景色标记红色
+                        },
+                        className: "htLeft htMiddle" // 对齐方式，仅支持：htRight htLeft htMiddle htBottom
+                    },
+                    {
                         key: "checked", // 设置后端字段名
                         type: "checkbox", // 复选框
                         width: 200, // 表格宽度

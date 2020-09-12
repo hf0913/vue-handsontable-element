@@ -101,7 +101,6 @@ export default {
             },
             core: {},
             checkAllabled: false,
-            mapleHeaderCheckboxCol: 0,
             width: 0,
             height: 0,
             getDataDoubled: false,
@@ -248,7 +247,7 @@ export default {
                         $el
                     });
                 }
-                if (col === this.mapleHeaderCheckboxCol) {
+                if (event.target.id === "maple-all-checkbox") {
                     this.checkAllBox(event, coords, $el);
                 } else {
                     this.$emit("click", {
