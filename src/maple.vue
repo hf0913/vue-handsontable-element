@@ -257,7 +257,8 @@ export default {
                         core: this.core,
                         name: "cells",
                         event,
-                        type: "click"
+                        type: "click",
+                        columns: this.myColumns
                     });
                 }
             }
@@ -321,7 +322,8 @@ export default {
                 type: "change",
                 getKeyChange: this.getKeyChange,
                 filterKeysChanges: this.filterKeysChanges,
-                checked
+                checked,
+                columns: this.myColumns
             });
         },
         afterRemoveRow(index, amount, physicalRows, source) {
@@ -541,7 +543,8 @@ export default {
                     core: this.core,
                     checkAllabled: this.checkAllabled,
                     getKeyChange: this.getKeyChange,
-                    filterKeysChanges: this.filterKeysChanges
+                    filterKeysChanges: this.filterKeysChanges,
+                    columns: this.myColumns
                 });
             }
             this.$emit("click", {
@@ -551,7 +554,8 @@ export default {
                 core: this.core,
                 name: event.target.type,
                 event,
-                type
+                type,
+                columns: this.myColumns
             });
         },
         clearFilters() {
@@ -825,6 +829,9 @@ export default {
                     }
                 });
             }
+        },
+        changeCheckAllabled(bl) {
+            this.checkAllabled = bl;
         }
     },
     watch: {
