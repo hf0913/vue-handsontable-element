@@ -148,7 +148,7 @@ function customColumns() {
                         }
                     }
                     if (query === val) {
-                        this.selectVals[`key-${k}value-${val}`] = v;
+                        this.selectVals[`key-${k}-value-${val}`] = v;
                     }
                 }
                 this.keyOpts[k] = {
