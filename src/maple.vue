@@ -6,13 +6,7 @@
             ref="cascaderRef"
             @getCascaderVals="o => (cascaderVals = o)"
         />
-        <div
-            class="empty"
-            v-show="showEmpty"
-            :style="{ height: `${settings.height - 30}px` }"
-        >
-            暂无数据
-        </div>
+        <div class="empty" v-show="showEmpty">暂无数据</div>
     </div>
 </template>
 
