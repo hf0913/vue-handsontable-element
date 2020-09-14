@@ -189,6 +189,12 @@ export default {
             }
         },
         controlPickerPanel(bl) {
+            if (!bl) {
+                this.$nextTick(() => {
+                    const $pop = document.querySelector(".el-popper");
+                    $pop && $pop.remove();
+                });
+            }
             this.cascaderAbled = false;
             if (bl) {
                 let t1 = setTimeout(() => {

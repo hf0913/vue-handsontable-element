@@ -180,6 +180,7 @@ function getCascaderLabelValue({
 
         if (matchVal === k) {
             arr.push(item);
+            if (arr.length === value.length) return false;
             if (item[childrenName]) fn(item.children);
             return true;
         }
