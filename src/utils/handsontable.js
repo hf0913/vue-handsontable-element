@@ -82,6 +82,7 @@ function colHeaders(col) {
 
 function customColumns() {
     const columns = [];
+    const debounceTime = this.settings.debounceTime;
 
     getColumns.call(this);
     this.myColumns.map(item => {
@@ -90,8 +91,7 @@ function customColumns() {
             item.subType === "optimize" &&
             (item.type === "autocomplete" || item.type === "dropdown")
         ) {
-            // 下拉框静态优化模式
-            item.source = (query, process) => {
+            const sourceFn = (query, process) => {
                 const optionsTotal = item.optionsTotal || 6,
                     labelName = item.labelName || "label";
                 let mnemonicCode = item.mnemonicCode || [];
@@ -162,6 +162,14 @@ function customColumns() {
                     selectVals: this.selectVals
                 });
                 process(processOpts);
+            };
+            const debounce = utils.debounce(
+                sourceFn,
+                item.debounceTime || debounceTime || 800
+            );
+            // 下拉框静态优化模式
+            item.source = (query, process) => {
+                debounce.call(this, query, process);
             };
         }
         if (
