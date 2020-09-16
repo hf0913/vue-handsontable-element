@@ -91,7 +91,7 @@ function customColumns() {
             item.subType === "optimize" &&
             (item.type === "autocomplete" || item.type === "dropdown")
         ) {
-            const sourceFn = (query, process) => {
+            const sourceFn = (query, process, item, k) => {
                 const optionsTotal = item.optionsTotal || 6,
                     labelName = item.labelName || "label";
                 let mnemonicCode = item.mnemonicCode || [];
@@ -110,14 +110,6 @@ function customColumns() {
                         mnemonicCode = w.mnemonicCode || [];
                         break;
                     }
-                }
-                if (
-                    query &&
-                    this.keyOpts[k] &&
-                    this.keyOpts[k].query === query &&
-                    this.keyOpts[k].key === k
-                ) {
-                    return process(this.keyOpts[k].processOpts);
                 }
                 if (list.length) {
                     options = list;
@@ -169,7 +161,16 @@ function customColumns() {
             );
             // 下拉框静态优化模式
             item.source = (query, process) => {
-                debounce.call(this, query, process);
+                if (
+                    query &&
+                    this.keyOpts[k] &&
+                    this.keyOpts[k].query === query &&
+                    this.keyOpts[k].key === k
+                ) {
+                    process(this.keyOpts[k].processOpts);
+                } else if (this.getDataDoubled) {
+                    sourceFn(query, process, item, k);
+                } else debounce.call(this, query, process, item, k);
             };
         }
         if (
@@ -293,27 +294,6 @@ function beforeChange(changes, source) {
     this.$emit("change", o);
 }
 
-function afterValidate(isValid, value, row, prop) {
-    const k = `row-${row}-key-${prop}`;
-    const customValidate = this.settings.customValidate;
-    let state = isValid;
-    if (customValidate instanceof Function) {
-        state = customValidate({
-            isValid,
-            value,
-            row,
-            key: prop
-        });
-    }
-    if (!state) {
-        this.validate[k] = false;
-    }
-    if (Reflect.has(this.validate, k) && state && !this.validate[k]) {
-        delete this.validate[k];
-    }
-    return state;
-}
-
 function afterOnCellMouseDown(event, coords, $el) {
     const { row, col } = coords;
 
@@ -332,7 +312,6 @@ export {
     colHeaders,
     customColumns,
     beforeChange,
-    afterValidate,
     afterOnCellMouseDown,
     getColumns
 };

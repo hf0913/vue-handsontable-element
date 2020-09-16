@@ -96,7 +96,7 @@ if (process.env.NODE_ENV === "production") {
             compress: {
                 warnings: false,
                 drop_debugger: true,
-                drop_console: true
+                drop_console: false
             }
         })
     ]);

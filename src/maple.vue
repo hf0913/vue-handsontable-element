@@ -349,17 +349,14 @@ export default {
                 const data = [];
                 let addressOtps = [];
                 let keyVals = {};
-
                 d.map((ele, i) => {
                     let o = this.data[i] || {};
                     const dItem = d[i];
                     const keys = getColumns.call(this, "no");
-
                     for (let [j, itemData] of keys.entries()) {
                         const v = dItem[j];
                         const k = itemData.key || itemData.data;
                         let newItem = {};
-
                         if (newItem[k]) {
                             newItem = keyVals[k];
                         } else {
@@ -496,11 +493,12 @@ export default {
                         ...extraItem
                     };
                     // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (!o.notAddabled && o.mapleTotal !== "合计")
+                    if (!o.notAddabled && o.mapleTotal !== "合计") {
                         data.push({
                             ...o,
                             notAddabled: undefined
                         });
+                    }
                 });
                 this.core.validateCells(valid => {
                     resolve({
@@ -705,7 +703,6 @@ export default {
                     key: prop
                 });
             }
-
             return isValid;
         },
         afterHideColumns(currentHideConfig, destinationHideConfig) {
