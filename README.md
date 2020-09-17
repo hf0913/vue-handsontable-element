@@ -166,30 +166,50 @@
                         maxMatchLen: 8
                     },
                     {
-                        title: "下拉框(自定义请求ajax)",
-                        data: "selectAjax",
-                        type: "dropdown",
-                        source: [],
-                        width: 300,
-                        extraField: "maple_love",
-                        valueType: "id",
-                        labelName: "test",
-                        valueName: "id",
-                        subType: "ajax", // 自定义ajax请求，在编辑业务场景中数据回显，请必须请求一次数据，并将数据赋值给source属性。
+                        title: "下拉框（ajax远程搜索）",
+                        data: "select-maple",
+                        subType: "select",
+                        options: [
+                            {
+                                unitId: 1,
+                                unitName: "maple1",
+                                test: "ok"
+                            },
+                            {
+                                unitId: 2,
+                                unitName: "mtt1",
+                                test: "tt"
+                            }
+                        ],
+                        _width: 200,
+                        mnemonicCode: ["test"],
+                        extraField: "maple_select",
+                        valueType: "unitId", // 配合extraField属性使用，默认等于valueName
+                        labelName: "unitName", // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
+                        valueName: "unitId", // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
                         ajaxConfig: {
                             // ajax请求配置
-                            url: "http://www.maplehu.com.cn/api/login", // 请求后端的完整地址，切记不能携带任何请求参数。
+                            url:
+                                "http://47.110.56.139:8008/api/foundation/unit/component", // 请求后端的完整地址，切记不能携带任何请求参数。
                             method: "post", // 请求方式
-                            queryField: "query", // 查询字段名，动态获取查询值value
+                            queryField: "param", // 查询字段名，动态获取查询值value
                             data: {
                                 // 请求参数以body形式发送，如果不需要请设置data属性。
-                                login_name: "admin",
-                                password: "123456",
-                                query: "test"
+                                pageNum: 1,
+                                pageSize: 10,
+                                param: ""
+                            },
+                            header: {
+                                Authorization:
+                                    "eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiIzMGZlYjk4YTViMTI0NTZhOTkwZGQ3ZWYzOTkyNDRkMSIsImlhdCI6MTYwMDI0MTk1MSwic3ViIjoiVTEwMDAwMDMyMyIsImRhdGEiOnsidXNlclJvbGVzIjpbeyJyb2xlSWQiOiIxIiwicm9sZUNvZGUiOiJzeXN0ZW0iLCJyb2xlTmFtZSI6Iuezu-e7n-euoeeQhuWRmCJ9LHsicm9sZUlkIjoiMjQ2NGEyMGMxZDhhNGQ5NGE0NWZhYjUyNmFhZmQwZWQiLCJyb2xlQ29kZSI6IjAwMSIsInJvbGVOYW1lIjoi566h55CG5ZGYIn0seyJyb2xlSWQiOiI1NzJlZjY4N2E3N2U0MzE4YTA0ZWQ1YzkzMzhjYjIzNCIsInJvbGVDb2RlIjoiYXBwcm92YWwiLCJyb2xlTmFtZSI6IuWuoeaJuSJ9XSwib3BlcmF0ZUlkIjoiNWY3OTExNmEtZGQ5Mi00YTYyLTgwNzAtMDU1NWQxOWY2NDY1Iiwibmlja05hbWUiOm51bGwsInVzZXJObyI6IlUxMDAwMDAzMjMiLCJvcGVyYXRlUmVsTmFtZSI6IuiDoeaeqyIsInVzZXJDb21wYW55SWQiOiI4Yjc4NDQxZS1jMzNiLTQ5YzctYjY1ZC02OTE0ZWQzYzI5OGYsYjg2YjIwMTItZGFiNy00YWNmLWE2ZWItZmVjNDhiMzE4MWRhIiwiY3VzdG9tZXJJZCI6IjVmNzkxMTZhLWRkOTItNGE2Mi04MDcwLTA1NTVkMTlmNjQ2NSIsIm9wZXJhdGVOYW1lIjoiaGYiLCJhdmF0YXJJbWdQYXRoIjoiIiwiY3VzdG9tZXJOYW1lIjoiIiwidXNlck9yZ0lkIjoiZWVlMTY0MjYtYWVlZC00NWY3LWJlM2ItNDEzMGRjOWUwZTI3LEQxMDAwMDAxNDMiLCJ1c2VyT3JnQ29kZSI6IkQxMDAwMDAwNTEsVTEwMDAwMDExMSJ9LCJleHAiOjE2MDAzMjgzNTF9.T_ziyZt8twOAlOGnGZVYzMZmep6sX4nStAN1HDc0oJPHc7PyEv0oQSvPiB3INsbjPbcTGHgek2H4QszMFufSBA"
                             },
                             // param:{} // 请求参数从url携带发送，查询参数，场景业务场景如get请求
-                            result: "res.data.data" // 根据后端返回关于下拉框选项集合的数据结构，给出一个字段访问链。必须滴。
-                        }
+                            result: "data" // 根据后端返回关于下拉框选项集合的数据结构，给出一个字段访问链。必须滴。
+                        },
+                        props: {
+                            remote: true, // 是否开启远程搜索
+                            placeholder: "输入即搜索"
+                        } // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
                     },
                     {
                         title: "操作",

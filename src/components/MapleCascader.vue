@@ -189,12 +189,6 @@ export default {
             }
         },
         controlPickerPanel(bl) {
-            if (!bl) {
-                this.$nextTick(() => {
-                    const $pop = document.querySelector(".el-popper");
-                    $pop && $pop.remove();
-                });
-            }
             this.cascaderAbled = false;
             if (bl) {
                 let t1 = setTimeout(() => {
@@ -209,6 +203,11 @@ export default {
                     clearTimeout(t1);
                     t1 = null;
                 }, 60);
+            } else {
+                this.$nextTick(() => {
+                    const $pop = document.querySelector(".el-popper");
+                    $pop && $pop.remove();
+                });
             }
         }
     },

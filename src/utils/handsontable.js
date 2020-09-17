@@ -176,7 +176,8 @@ function customColumns() {
         if (
             item.subType === "datePicker" ||
             item.subType === "cascader" ||
-            item.subType === "address"
+            item.subType === "address" ||
+            item.subType === "select"
         ) {
             item.validator = (value, callback) => {
                 callback(
@@ -192,7 +193,8 @@ function customColumns() {
             item.subType !== "datePicker" &&
             item.subType !== "cascader" &&
             item.subType !== "address" &&
-            item.subType !== "handle"
+            item.subType !== "handle" &&
+            item.subType !== "select"
         ) {
             item.type = "numeric";
             item.subType = "text";

@@ -1,6 +1,7 @@
 /* eslint-disable no-case-declarations */
 import address from "./address";
 let addressOtps = [];
+let timer;
 /**
  * @description 根据键名和键值，在数组中查询并返回item
  * @param {Array} data 查询数据集合
@@ -10,15 +11,15 @@ let addressOtps = [];
  */
 function exchange({ data, currentValue, currentKey }) {
     let o = {};
-
-    if (currentValue == "" || currentValue == null) return o;
-    for (let item of data.values()) {
-        if (item[currentKey] == currentValue) {
-            o = item;
-            break;
+    if (data instanceof Array) {
+        if (currentValue == "" || currentValue == null) return o;
+        for (let item of data.values()) {
+            if (item[currentKey] == currentValue) {
+                o = item;
+                break;
+            }
         }
     }
-
     return o;
 }
 /**
@@ -27,16 +28,13 @@ function exchange({ data, currentValue, currentKey }) {
  * @param {*} delay
  */
 function debounce(fn, delay = 128) {
-    let t = null;
-
     return function () {
         let self = this;
         let args = arguments;
 
-        t && clearTimeout(t);
-        t = setTimeout(function () {
+        timer && clearTimeout(timer);
+        timer = setTimeout(function () {
             fn.apply(self, args);
-            t = null;
         }, delay);
     };
 }
@@ -101,19 +99,6 @@ function checkType({ value, item }) {
     return state;
 }
 /**
- * @description js点击DOM
- * @param {Element} $el DOM
- */
-function elClick($el) {
-    if (document.all) {
-        $el.click();
-    } else {
-        const evt = document.createEvent("MouseEvents");
-        evt.initEvent("click", true, true);
-        $el.dispatchEvent(evt);
-    }
-}
-/**
  * @description 整理普通级联数据
  * @param {Array} data 后端返回的数组数据
  * @param {Array} valueFields 指定选项的值为选项对象的某个属性值，值字段名集合
@@ -147,6 +132,69 @@ function collageCascaderData({
     };
     fn(data);
     return data;
+}
+/**
+ * @description 发送数据给后端，使用原生的ajax请求
+ * @param {String} url 请求后端的完整路径
+ * @param {String} method 请求方式，默认GET
+ * @param {Object} header 请求头
+ * @param {Object} data 发送body数据
+ * @param {Object} param 以查询方式发送数据
+ * @param {String} result 根据后端返回数据的结构，给出一个链结构，来表示可以根据这个链结构找到数据，举例：后端返回数据结构为{data:{data:[],message:null}},则result赋值为data.data
+ */
+function ajax({ url, method = "GET", header, data, param, result = "" }) {
+    let d = "";
+
+    clearTimeout(timer);
+    header = header || {};
+    data = data || {};
+    method = method.toLocaleUpperCase();
+    result = result.split(".");
+    if (param || method === "GET") {
+        for (let [k, v] of Object.entries(data)) {
+            d += `${k}=${v}&`;
+        }
+        url = `${url}?${d.slice(0, d.length - 1)}`;
+    }
+
+    return new Promise(resolve => {
+        const xmlhttp = window.XMLHttpRequest
+            ? new window.XMLHttpRequest()
+            : new window.ActiveXObject("Microsoft.XMLHTTP");
+
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                    const responseText = JSON.parse(xmlhttp.responseText);
+                    let res = "mapleLoveCDC";
+
+                    for (let k of result.values()) {
+                        if (res == null) break;
+                        if (res === "mapleLoveCDC") {
+                            res = responseText[k];
+                        } else res = res[k];
+                    }
+                    res = res === "mapleLoveCDC" || res == null ? [] : res;
+                    resolve(res);
+                } else {
+                    resolve([]);
+                }
+            }
+        };
+        xmlhttp.open(method, url, true);
+        if (method === "POST") {
+            header = {
+                "Content-Type": "application/json",
+                ...header
+            };
+        }
+        for (let [k, v] of Object.entries(header)) {
+            xmlhttp.setRequestHeader(k, v);
+        }
+        param || method === "GET"
+            ? xmlhttp.send()
+            : xmlhttp.send(JSON.stringify(data));
+    });
 }
 /**
  * @description 处理级联数据，提供value，返回label
@@ -262,12 +310,12 @@ const maple = {
     exchange,
     debounce,
     checkType,
-    elClick,
     collageCascaderData,
     getCascaderLabelValue,
     getHasValue,
     collageAddress,
-    address
+    address,
+    ajax
 };
 
 export default maple;

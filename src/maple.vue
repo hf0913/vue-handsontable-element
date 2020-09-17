@@ -6,6 +6,7 @@
             ref="cascaderRef"
             @getCascaderVals="o => (cascaderVals = o)"
         />
+        <MapleSelect ref="selectRef" @getSelectOpts="getSelectOpts" />
         <div class="empty" v-show="showEmpty">暂无数据</div>
     </div>
 </template>
@@ -15,6 +16,7 @@ import { HotTable } from "@handsontable/vue";
 import _ from "./utils";
 import MapleCascader from "./components/MapleCascader";
 import MapleDatePicker from "./components/MapleDatePicker";
+import MapleSelect from "./components/MapleSelect";
 import { colHeaders, customColumns, getColumns } from "./utils/handsontable";
 
 export default {
@@ -110,7 +112,7 @@ export default {
             sortKey: {}
         };
     },
-    components: { HotTable, MapleCascader, MapleDatePicker },
+    components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
     mounted() {
         this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
@@ -122,6 +124,11 @@ export default {
         this.fixView();
     },
     methods: {
+        getSelectOpts(o) {
+            this.$emit("getSelectOpts", o);
+            this.selectVals = o.selectVals;
+            this.keyOpts = o.keyOpts;
+        },
         cellDblClick(mouseEvent) {
             const columns = getColumns.call(this, "no");
             const $el = mouseEvent.target;
@@ -152,7 +159,6 @@ export default {
                         return;
                     }
                 }
-
                 this.$refs[`${subType}Ref`].controlOpen({
                     col,
                     row,
@@ -206,7 +212,12 @@ export default {
                 afterScrollVertically: this.afterScrollVertically,
                 afterHideColumns: this.afterHideColumns,
                 afterUnhideColumns: this.afterUnhideColumns,
-                afterColumnMove: this.afterColumnMove
+                afterColumnMove: this.afterColumnMove,
+                beforeKeyDown: event => {
+                    if (!this.options.stopImmediatePropagation) {
+                        event.stopImmediatePropagation();
+                    }
+                }
             });
             this.hasColumnSummary =
                 this.settings.columnSummary &&
@@ -390,15 +401,16 @@ export default {
                                 opts = opts() || [];
                             }
                             if (
-                                (type === "dropdown" ||
+                                (((type === "dropdown" ||
                                     type === "autocomplete") &&
-                                opts &&
-                                opts.length &&
+                                    ((opts && opts.length) ||
+                                        subType === "ajax")) ||
+                                    subType === "select") &&
                                 k
                             ) {
                                 let currentValue,
                                     selectVals = this.selectVals[
-                                        `key-${k}value-${v}`
+                                        `key-${k}-value-${v}`
                                     ];
                                 valueType = valueType || valueName;
                                 if (selectVals) {
