@@ -110,7 +110,11 @@ export default {
                     keyOpts: this.keyOpts,
                     selectVals: this.selectVals
                 });
-                this.core.setDataAtCell(row, col, value, "changeCells");
+                let t = setTimeout(() => {
+                    this.core.setDataAtCell(row, col, value, "changeCells");
+                    clearTimeout(t);
+                    t = null;
+                }, 128);
             }
         },
         controlOpen({
