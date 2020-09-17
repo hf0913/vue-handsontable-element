@@ -420,7 +420,7 @@ export default {
                                         data: opts,
                                         currentValue: v,
                                         currentKey: labelName
-                                    })[valueName];
+                                    })[valueName] || v;
                                 }
 
                                 if (valueType === valueName) {

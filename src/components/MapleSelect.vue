@@ -253,7 +253,15 @@ export default {
                     ) {
                         this.value = v[0][this.labelName];
                     } else {
-                        this.isOK = false;
+                        for (let [i, item] of v.entries()) {
+                            if (item[this.labelName] === query) {
+                                this.value = item[this.labelName];
+                                break;
+                            }
+                            if (i === v.length - 1) {
+                                this.isOK = false;
+                            }
+                        }
                     }
                     this.loading = false;
                 });
