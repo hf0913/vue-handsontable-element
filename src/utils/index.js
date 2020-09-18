@@ -149,9 +149,6 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
     data = data || {};
     method = method.toLocaleUpperCase();
     result = result.split(".");
-    if (header instanceof Function) {
-        header = header();
-    }
     header = header || {};
     if (param || method === "GET") {
         for (let [k, v] of Object.entries(data)) {
