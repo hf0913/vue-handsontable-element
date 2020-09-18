@@ -109,7 +109,8 @@ export default {
             hiddenColumns: [],
             sort: {},
             sortabled: false,
-            sortKey: {}
+            sortKey: {},
+            fixViewAbled: false
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -121,7 +122,8 @@ export default {
         this.init();
     },
     activated() {
-        this.fixView();
+        if (this.fixViewAbled) this.fixView();
+        this.fixViewAbled = true;
     },
     methods: {
         getSelectOpts(o) {
@@ -416,11 +418,12 @@ export default {
                                 if (selectVals) {
                                     currentValue = selectVals[valueName];
                                 } else {
-                                    currentValue = _.exchange({
-                                        data: opts,
-                                        currentValue: v,
-                                        currentKey: labelName
-                                    })[valueName] || v;
+                                    currentValue =
+                                        _.exchange({
+                                            data: opts,
+                                            currentValue: v,
+                                            currentKey: labelName
+                                        })[valueName] || v;
                                 }
 
                                 if (valueType === valueName) {
@@ -632,28 +635,17 @@ export default {
             t = t || this.fixViewTime;
             if (t === -1208) return;
             let t1, t2;
-            const fixedColumnsLeft = this.settings.fixedColumnsLeft;
-
-            this.settings = Object.assign({}, this.settings, {
-                fixedColumnsLeft: 0
-            });
             t1 = setTimeout(() => {
                 this.core.scrollViewportTo(
                     this.core.countRows() - 1,
                     this.core.countCols() - 1
                 );
                 t2 = setTimeout(() => {
-                    this.core.scrollViewportTo(0, 0);
                     clearTimeout(t1);
+                    t1 = null;
+                    this.core.scrollViewportTo(0, 0);
                     clearTimeout(t2);
-                    t1 = t2 = null;
-                    if (this.settings.fixViewComplete instanceof Function) {
-                        this.settings.fixViewComplete();
-                    } else {
-                        this.settings = Object.assign({}, this.settings, {
-                            fixedColumnsLeft
-                        });
-                    }
+                    t2 = null;
                     this.core.updateSettings(this.settings);
                 }, t);
             });
