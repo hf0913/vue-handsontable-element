@@ -82,7 +82,6 @@ function colHeaders(col) {
 
 function customColumns() {
     const columns = [];
-    const debounceTime = this.settings.debounceTime;
 
     getColumns.call(this);
     this.myColumns.map(item => {
@@ -92,7 +91,7 @@ function customColumns() {
             (item.type === "autocomplete" || item.type === "dropdown")
         ) {
             const sourceFn = (query, process, item, k) => {
-                const optionsTotal = item.optionsTotal || 6,
+                const optionsTotal = item.optionsTotal || 12,
                     labelName = item.labelName || "label";
                 let mnemonicCode = item.mnemonicCode || [];
                 let options = [],
@@ -155,10 +154,6 @@ function customColumns() {
                 });
                 process(processOpts);
             };
-            const debounce = utils.debounce(
-                sourceFn,
-                item.debounceTime || debounceTime || 800
-            );
             // 下拉框静态优化模式
             item.source = (query, process) => {
                 if (
@@ -168,9 +163,9 @@ function customColumns() {
                     this.keyOpts[k].key === k
                 ) {
                     process(this.keyOpts[k].processOpts);
-                } else if (this.getDataDoubled) {
+                } else {
                     sourceFn(query, process, item, k);
-                } else debounce.call(this, query, process, item, k);
+                }
             };
         }
         if (
@@ -276,7 +271,8 @@ function customColumns() {
             data: item.key || item.data,
             width: this.widthAuto ? item._width : item.width,
             myTitle: item.title,
-            title: null
+            title: null,
+            visibleRows: item.visibleRows || 6
         };
         columns.push(item);
     });
