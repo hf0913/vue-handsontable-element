@@ -146,10 +146,13 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
     let d = "";
 
     clearTimeout(timer);
-    header = header || {};
     data = data || {};
     method = method.toLocaleUpperCase();
     result = result.split(".");
+    if (header instanceof Function) {
+        header = header();
+    }
+    header = header || {};
     if (param || method === "GET") {
         for (let [k, v] of Object.entries(data)) {
             d += `${k}=${v}&`;
