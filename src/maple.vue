@@ -2,10 +2,7 @@
     <div id="maple-table">
         <hot-table :settings="settings" ref="mapleTable" :style="customStyle" />
         <MapleDatePicker ref="datePickerRef" />
-        <MapleCascader
-            ref="cascaderRef"
-            @getCascaderVals="o => (cascaderVals = o)"
-        />
+        <MapleCascader ref="cascaderRef" @getCascaderVals="getCascaderVals" />
         <MapleSelect ref="selectRef" @getSelectOpts="getSelectOpts" />
         <div class="empty" v-show="showEmpty">暂无数据</div>
     </div>
@@ -126,6 +123,10 @@ export default {
         this.fixViewAbled = true;
     },
     methods: {
+        getCascaderVals(o) {
+            this.$emit("getCascaderVals", o);
+            this.cascaderVals = o.data;
+        },
         getSelectOpts(o) {
             this.$emit("getSelectOpts", o);
             this.selectVals = o.selectVals;

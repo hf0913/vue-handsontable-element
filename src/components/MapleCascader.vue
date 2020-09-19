@@ -62,8 +62,8 @@ export default {
             this.show = !v;
         },
         change(v) {
-            const { col } = this.coords;
-            const { subType } = this.columns[col];
+            const { row, col } = this.coords;
+            const { subType, valueName, labelName } = this.columns[col];
             const key = this.columns[col].key || this.columns[col].data;
             const value = v;
 
@@ -74,7 +74,9 @@ export default {
                     v = utils
                         .getCascaderLabelValue({
                             data: this.options,
-                            value: v
+                            value: v,
+                            valueName,
+                            labelName
                         })
                         .map(({ label }) => label)
                         .join("/");
@@ -90,7 +92,11 @@ export default {
                         label: v
                     }
                 };
-                this.$emit("getCascaderVals", this.cascaderVals);
+                this.$emit("getCascaderVals", {
+                    data: this.cascaderVals,
+                    row,
+                    col
+                });
             }
             this.controlPickerPanel(false);
             this.changeDate(v);

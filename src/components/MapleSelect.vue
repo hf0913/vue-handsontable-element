@@ -108,7 +108,11 @@ export default {
                 }
                 this.$emit("getSelectOpts", {
                     keyOpts: this.keyOpts,
-                    selectVals: this.selectVals
+                    selectVals: this.selectVals,
+                    row,
+                    col,
+                    valueName,
+                    labelName
                 });
                 let t = setTimeout(() => {
                     this.core.setDataAtCell(row, col, value, "changeCells");
@@ -176,6 +180,12 @@ export default {
                     }
                     if (this.prop.remote && ajaxConfig && ajaxConfig.url) {
                         this.ajaxConfig = ajaxConfig;
+                        for (let [, w] of orgColumns.entries()) {
+                            if (w.key === this.key || w.data === this.key) {
+                                this.ajaxConfig = w.ajaxConfig;
+                                break;
+                            }
+                        }
                         this.debounceAjax = utils.debounce(
                             this.search,
                             debounceTime
@@ -233,11 +243,13 @@ export default {
             if (query) {
                 this.loading = true;
                 let ajaxConfig = this.ajaxConfig;
-                let { queryField, data, param } = ajaxConfig;
+                let { queryField, data, param, header } = ajaxConfig;
                 const fn = (k, v) => {
                     if (v && Reflect.has(v, queryField)) {
                         ajaxConfig = {
                             ...ajaxConfig,
+                            header:
+                                header instanceof Function ? header() : header,
                             [k]: {
                                 ...v,
                                 [queryField]: query.replace(/\s+/g, "")
