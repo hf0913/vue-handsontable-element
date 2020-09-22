@@ -106,8 +106,7 @@ export default {
             hiddenColumns: [],
             sort: {},
             sortabled: false,
-            sortKey: {},
-            fixViewAbled: false
+            sortKey: {}
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -119,8 +118,7 @@ export default {
         this.init();
     },
     activated() {
-        if (this.fixViewAbled) this.fixView();
-        this.fixViewAbled = true;
+        this.$nextTick(() => this.fixView());
     },
     methods: {
         getCascaderVals(o) {
@@ -387,119 +385,143 @@ export default {
                             valueType,
                             labelName = "label",
                             valueName = "value",
-                            extraField,
+                            extraField = "_extraField_",
                             subType,
                             type,
                             exchange
                         } = newItem;
 
-                        if (exchange === false) {
+                        let opts = newItem.options || newItem.source;
+                        if (opts instanceof Function) {
+                            opts = opts() || [];
+                        }
+                        if (
+                            (((type === "dropdown" ||
+                                type === "autocomplete") &&
+                                ((opts && opts.length) ||
+                                    subType === "ajax")) ||
+                                subType === "select") &&
+                            k
+                        ) {
+                            let currentValue,
+                                selectVals = this.selectVals[
+                                    `key-${k}-value-${v}`
+                                ];
+                            valueType = valueType || valueName;
+                            if (selectVals) {
+                                currentValue = selectVals[valueName];
+                            } else {
+                                currentValue =
+                                    _.exchange({
+                                        data: opts,
+                                        currentValue: v,
+                                        currentKey: labelName
+                                    })[valueName] || v;
+                            }
+                            const isEx =
+                                exchange === false &&
+                                o[k] &&
+                                o[k] !== 0 &&
+                                o[extraField] &&
+                                o[extraField] !== 0;
+                            if (valueType === valueName) {
+                                o = {
+                                    ...o,
+                                    [k]: isEx ? o[k] : currentValue,
+                                    [extraField]: isEx ? o[extraField] : v
+                                };
+                            } else {
+                                o = {
+                                    ...o,
+                                    [k]: isEx ? o[k] : v,
+                                    [extraField]: isEx
+                                        ? o[extraField]
+                                        : currentValue
+                                };
+                            }
+                        } else if (
+                            subType === "cascader" ||
+                            subType === "address"
+                        ) {
+                            const isExchange =
+                                exchange === false &&
+                                o[k] &&
+                                o[k] !== 0 &&
+                                o[extraField] &&
+                                o[extraField] !== 0;
+                            if (
+                                addressOtps.length === 0 &&
+                                subType === "address"
+                            ) {
+                                addressOtps = _.collageAddress(_.address);
+                            }
+                            if (this.cascaderVals[`key-${k}-value-${v}`]) {
+                                const cascaderVals = this.cascaderVals[
+                                    `key-${k}-value-${v}`
+                                ];
+                                if (valueType === "label") {
+                                    o = {
+                                        ...o,
+                                        [k]: isExchange
+                                            ? o[k]
+                                            : cascaderVals.label,
+                                        [extraField]: isExchange
+                                            ? o[extraField]
+                                            : cascaderVals.value
+                                    };
+                                } else {
+                                    o = {
+                                        ...o,
+                                        [k]: isExchange
+                                            ? o[k]
+                                            : cascaderVals.value,
+                                        [extraField]: isExchange
+                                            ? o[extraField]
+                                            : cascaderVals.label
+                                    };
+                                }
+                            } else {
+                                const res = _.getCascaderLabelValue({
+                                    data:
+                                        subType === "address"
+                                            ? addressOtps
+                                            : opts,
+                                    value: (v + "").split("/"),
+                                    matchFieldName: "label"
+                                });
+                                const isExCascader =
+                                    exchange === false &&
+                                    o[k] &&
+                                    o[k] !== 0 &&
+                                    o[extraField] &&
+                                    o[extraField] !== 0;
+                                if (valueType === "label") {
+                                    o = {
+                                        ...o,
+                                        [k]: isExCascader
+                                            ? o[k]
+                                            : res.map(({ label }) => label),
+                                        [extraField]: isExCascader
+                                            ? o[extraField]
+                                            : res.map(({ value }) => value)
+                                    };
+                                } else {
+                                    o = {
+                                        ...o,
+                                        [k]: extraField
+                                            ? o[k]
+                                            : res.map(({ value }) => value),
+                                        [extraField]: isExCascader
+                                            ? o[extraField]
+                                            : res.map(({ label }) => label)
+                                    };
+                                }
+                            }
+                        } else if (subType !== "handle" && k) {
                             o = {
                                 ...o,
                                 [k]: v
                             };
-                        } else {
-                            let opts = newItem.options || newItem.source;
-                            if (opts instanceof Function) {
-                                opts = opts() || [];
-                            }
-                            if (
-                                (((type === "dropdown" ||
-                                    type === "autocomplete") &&
-                                    ((opts && opts.length) ||
-                                        subType === "ajax")) ||
-                                    subType === "select") &&
-                                k
-                            ) {
-                                let currentValue,
-                                    selectVals = this.selectVals[
-                                        `key-${k}-value-${v}`
-                                    ];
-                                valueType = valueType || valueName;
-                                if (selectVals) {
-                                    currentValue = selectVals[valueName];
-                                } else {
-                                    currentValue =
-                                        _.exchange({
-                                            data: opts,
-                                            currentValue: v,
-                                            currentKey: labelName
-                                        })[valueName] || v;
-                                }
-
-                                if (valueType === valueName) {
-                                    o = {
-                                        ...o,
-                                        [k]: currentValue,
-                                        [extraField]: v
-                                    };
-                                } else {
-                                    o = {
-                                        ...o,
-                                        [k]: v,
-                                        [extraField]: currentValue
-                                    };
-                                }
-                            } else if (
-                                subType === "cascader" ||
-                                subType === "address"
-                            ) {
-                                if (
-                                    addressOtps.length === 0 &&
-                                    subType === "address"
-                                ) {
-                                    addressOtps = _.collageAddress(_.address);
-                                }
-                                if (this.cascaderVals[`key-${k}-value-${v}`]) {
-                                    const cascaderVals = this.cascaderVals[
-                                        `key-${k}-value-${v}`
-                                    ];
-                                    if (valueType === "label") {
-                                        o = {
-                                            ...o,
-                                            [k]: cascaderVals.label,
-                                            [extraField]: cascaderVals.value
-                                        };
-                                    } else {
-                                        o = {
-                                            ...o,
-                                            [k]: cascaderVals.value,
-                                            [extraField]: cascaderVals.label
-                                        };
-                                    }
-                                } else {
-                                    const res = _.getCascaderLabelValue({
-                                        data:
-                                            subType === "address"
-                                                ? addressOtps
-                                                : opts,
-                                        value: (v + "").split("/"),
-                                        matchFieldName: "label"
-                                    });
-                                    if (valueType === "label") {
-                                        o = {
-                                            ...o,
-                                            [k]: res.map(({ label }) => label),
-                                            [extraField]: res.map(
-                                                ({ value }) => value
-                                            )
-                                        };
-                                    } else {
-                                        o = {
-                                            ...o,
-                                            [k]: res.map(({ value }) => value),
-                                            [extraField]: res.map(
-                                                ({ label }) => label
-                                            )
-                                        };
-                                    }
-                                }
-                            } else if (subType !== "handle" && k) {
-                                o = {
-                                    ...o,
-                                    [k]: v
-                                };
-                            }
                         }
                     }
                     let extraItem = callback(o, i) || {};
@@ -512,7 +534,8 @@ export default {
                     if (!o.notAddabled && o.mapleTotal !== "合计") {
                         data.push({
                             ...o,
-                            notAddabled: undefined
+                            notAddabled: undefined,
+                            _extraField_: undefined
                         });
                     }
                 });
