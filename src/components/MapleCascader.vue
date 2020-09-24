@@ -210,10 +210,10 @@ export default {
                     t1 = null;
                 }, 60);
             } else {
-                this.$nextTick(() => {
-                    const $pop = document.querySelector(".el-popper");
+                this.$nextTick(()=>{
+                    const $pop = document.querySelector(".el-cascader__dropdown");
                     $pop && $pop.remove();
-                });
+                })
             }
         }
     },

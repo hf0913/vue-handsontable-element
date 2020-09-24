@@ -118,7 +118,7 @@ export default {
         this.init();
     },
     activated() {
-        this.$nextTick(() => this.fixView());
+        this.fixView();
     },
     methods: {
         getCascaderVals(o) {

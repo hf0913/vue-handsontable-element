@@ -191,8 +191,6 @@ function customColumns() {
             item.subType !== "handle" &&
             item.subType !== "select"
         ) {
-            item.type = "numeric";
-            item.subType = "text";
             item.validator = (value, callback) => {
                 const vaild = item.allowEmpty === false ? !!value : true;
                 if (vaild && item.maxLength) {
