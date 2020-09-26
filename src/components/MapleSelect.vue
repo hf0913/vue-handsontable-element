@@ -71,7 +71,9 @@ export default {
             keyOpts: {},
             selectVals: {},
             mnemonicCode: null,
-            isOK: true
+            isOK: true,
+            valueType: "value",
+            extraField: null
         };
     },
     mounted() {
@@ -114,7 +116,8 @@ export default {
                     valueName,
                     labelName,
                     key: this.key,
-                    extraField: this.extraField
+                    extraField: this.extraField,
+                    valueType: this.valueType
                 });
                 let t = setTimeout(() => {
                     this.core.setDataAtCell(row, col, value, "changeCells");
@@ -154,13 +157,15 @@ export default {
                     key,
                     data,
                     mnemonicCode = [],
-                    extraField
+                    extraField,
+                    valueType
                 } = columns[col];
                 this.isOK = true;
                 this.columns = columns;
                 if (subType === "select" && !type) {
                     this.key = data || key;
                     this.extraField = extraField;
+                    this.valueType = valueType;
                     let v = core.getDataAtCell(row, col);
                     const itemData = this.selectVals[
                         `key-${this.key}-value-${v}`

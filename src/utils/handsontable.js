@@ -144,13 +144,12 @@ function customColumns() {
                 }
                 this.keyOpts[k] = {
                     opts,
-                    processOpts,
-                    query,
-                    key: k
+                    processOpts
                 };
                 this.$emit("getSelectOpts", {
                     keyOpts: this.keyOpts,
-                    selectVals: this.selectVals
+                    selectVals: this.selectVals,
+                    orgSelect: true
                 });
                 process(processOpts);
             };
