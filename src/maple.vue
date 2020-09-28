@@ -144,6 +144,7 @@ export default {
                 row >= 0 &&
                 !readOnly &&
                 editor &&
+                !this.settings.readOnly &&
                 ((this.hasColumnSummary && row !== this.core.countRows() - 1) ||
                     !this.hasColumnSummary)
             ) {
