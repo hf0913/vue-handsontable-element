@@ -417,20 +417,19 @@ export default {
                                         data: opts,
                                         currentValue: v,
                                         currentKey: labelName
-                                    })[valueName] || v;
+                                    })[valueName] || undefined;
                             }
                             const isEx =
-                                exchange === false &&
-                                o[k] &&
-                                o[k] !== 0 &&
-                                o[extraField] &&
-                                o[extraField] !== 0;
+                                exchange === false && o[k] && o[extraField];
                             if (valueType === valueName) {
                                 o = {
                                     ...o,
                                     [k]: isEx ? o[k] : currentValue,
                                     [extraField]: isEx ? o[extraField] : v
                                 };
+                                if (extraField === "_extraField_") {
+                                    o[k] = isEx ? o[k] : currentValue || v;
+                                }
                             } else {
                                 o = {
                                     ...o,
@@ -445,11 +444,7 @@ export default {
                             subType === "address"
                         ) {
                             const isExchange =
-                                exchange === false &&
-                                o[k] &&
-                                o[k] !== 0 &&
-                                o[extraField] &&
-                                o[extraField] !== 0;
+                                exchange === false && o[k] && o[extraField];
                             if (
                                 addressOtps.length === 0 &&
                                 subType === "address"
