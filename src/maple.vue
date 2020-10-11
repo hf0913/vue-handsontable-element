@@ -270,15 +270,17 @@ export default {
                 }
             }
         },
-        afterScrollVertically() {
+        hiddenPopup(type, e) {
             this.$refs.datePickerRef.controlOpen();
             this.$refs.cascaderRef.controlOpen();
-            this.$emit("afterScrollVertically");
+            this.$refs.selectRef.controlOpen();
+            this.$emit(type, e);
         },
-        afterScrollHorizontally() {
-            this.$refs.datePickerRef.controlOpen();
-            this.$refs.cascaderRef.controlOpen();
-            this.$emit("afterScrollHorizontally");
+        afterScrollVertically(e) {
+            this.hiddenPopup("afterScrollVertically", e);
+        },
+        afterScrollHorizontally(e) {
+            this.hiddenPopup("afterScrollHorizontally", e);
         },
         beforeChange(change) {
             if (

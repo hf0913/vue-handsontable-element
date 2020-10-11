@@ -82,11 +82,13 @@ export default {
     },
     methods: {
         blur() {
-            this.show = true;
-            if (!this.isOK) {
-                const { row, col } = this.coords;
-                this.core.setDataAtCell(row, col, null, "changeCells");
-            }
+            this.$nextTick(() => {
+                this.show = true;
+                if (!this.isOK) {
+                    const { row, col } = this.coords;
+                    this.core.setDataAtCell(row, col, null, "changeCells");
+                }
+            });
         },
         change(v) {
             this.controlPickerPanel(false);

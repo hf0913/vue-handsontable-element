@@ -72,12 +72,6 @@
 .maple-up-arrow:hover {
     border-bottom: 4px solid #2196f3;
 }
-.el-select .el-input__suffix {
-    display: none;
-}
-.el-select input {
-    padding: 0 4px !important;
-}
 #maple-select-dropdown-item {
     height: auto;
     line-height: normal;
