@@ -127,7 +127,7 @@ function checkType({ value, item }) {
                 }
             } else {
                 for (const ele of opts.values()) {
-                    const val = ele[item.labelName];
+                    const val = ele[item.labelName || "label"];
                     if (val === value) {
                         selectVals[`key-${key}-value-${value}`] = ele;
                         keyOpts[key] = Object.assign(keyOptions, {
