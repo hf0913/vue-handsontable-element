@@ -117,9 +117,10 @@ function checkType({ value, item }) {
             if (processOpts.length) {
                 for (const [i, ele] of processOpts.entries()) {
                     if (ele === value) {
-                        selectVals[`key-${key}-value-${value}`] = value;
-                        keyOpts[key].processOpts = [processOpts[i]];
-                        keyOpts[key].opts = keyOptions.opts[i];
+                        const d = keyOptions.opts[i];
+                        selectVals[`key-${key}-value-${value}`] = d;
+                        keyOpts[key].processOpts = [d];
+                        keyOpts[key].opts = d;
                         commit();
                         return (state = true);
                     }
@@ -127,8 +128,8 @@ function checkType({ value, item }) {
             } else {
                 for (const ele of opts.values()) {
                     const val = ele[item.labelName];
-                    if (val === value || ele === value) {
-                        selectVals[`key-${key}-value-${value}`] = value;
+                    if (val === value) {
+                        selectVals[`key-${key}-value-${value}`] = ele;
                         keyOpts[key] = Object.assign(keyOptions, {
                             processOpts: [val],
                             opts: [ele]
