@@ -146,11 +146,13 @@ function customColumns() {
                     opts,
                     processOpts
                 };
-                this.$emit("getSelectOpts", {
-                    keyOpts: this.keyOpts,
-                    selectVals: this.selectVals,
-                    orgSelect: true
-                });
+                if (item.type !== "autocomplete") {
+                    this.$emit("getSelectOpts", {
+                        keyOpts: this.keyOpts,
+                        selectVals: this.selectVals,
+                        orgSelect: true
+                    });
+                }
                 process(processOpts);
             };
             // 下拉框静态优化模式
@@ -165,6 +167,14 @@ function customColumns() {
                 } else {
                     sourceFn(query, process, item, k);
                 }
+            };
+            item.validator = (value, callback) => {
+                callback(
+                    utils.checkType.call(this, {
+                        value,
+                        item
+                    })
+                );
             };
         }
         if (

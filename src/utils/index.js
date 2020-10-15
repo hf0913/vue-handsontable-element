@@ -48,6 +48,8 @@ function checkType({ value, item }) {
     let { numericFormat = {}, subType, type } = item;
     let opts = [];
     const key = item.key || item.data;
+    const { keyOpts, selectVals, getDataDoubled } = this;
+
     for (let [, w] of this.columns.entries()) {
         if (w.key === key || w.data === key) {
             const wOptions = w.options || w.source || [];
@@ -93,6 +95,48 @@ function checkType({ value, item }) {
             });
             v = v.map(({ label }) => label).join("/");
             state = value === v;
+            break;
+        case type === "autocomplete":
+            state = false;
+            const keyOptions = keyOpts[key] || {};
+            const processOpts = keyOptions.processOpts || [];
+            const commit = () => {
+                if (!getDataDoubled) {
+                    this.$emit("getSelectOpts", {
+                        keyOpts,
+                        selectVals,
+                        orgSelect: true
+                    });
+                }
+            };
+
+            if (selectVals[`key-${key}-value-${value}`]) {
+                commit();
+                return (state = true);
+            }
+            if (processOpts.length) {
+                for (const [i, ele] of processOpts.entries()) {
+                    if (ele === value) {
+                        selectVals[`key-${key}-value-${value}`] = value;
+                        keyOpts[key].processOpts = [processOpts[i]];
+                        keyOpts[key].opts = keyOptions.opts[i];
+                        commit();
+                        return (state = true);
+                    }
+                }
+            } else {
+                for (const ele of opts.values()) {
+                    const val = ele[item.labelName];
+                    if (val === value || ele === value) {
+                        selectVals[`key-${key}-value-${value}`] = value;
+                        keyOpts[key] = Object.assign(keyOptions, {
+                            processOpts: [val],
+                            opts: [ele]
+                        });
+                        return (state = true);
+                    }
+                }
+            }
             break;
     }
 

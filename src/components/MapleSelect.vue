@@ -248,9 +248,9 @@ export default {
             }
         },
         remoteMethod(v) {
-            this.debounceAjax.call(this, v);
+            this.debounceAjax.call(this, v, "remoteMethod");
         },
-        search(query) {
+        search(query, source) {
             if (query) {
                 this.loading = true;
                 let ajaxConfig = this.ajaxConfig;
@@ -282,7 +282,8 @@ export default {
                     } else {
                         for (let [i, item] of v.entries()) {
                             if (item[this.labelName] === query) {
-                                this.value = item[this.labelName];
+                                if (source !== "remoteMethod")
+                                    this.value = item[this.labelName];
                                 break;
                             }
                             if (i === v.length - 1) {
