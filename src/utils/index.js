@@ -114,28 +114,25 @@ function checkType({ value, item }) {
                 commit();
                 return (state = true);
             }
-            if (processOpts.length) {
-                for (const [i, ele] of processOpts.entries()) {
-                    if (ele === value) {
-                        const d = keyOptions.opts[i];
-                        selectVals[`key-${key}-value-${value}`] = d;
-                        keyOpts[key].processOpts = [d];
-                        keyOpts[key].opts = d;
-                        commit();
-                        return (state = true);
-                    }
+            for (const [i, ele] of processOpts.entries()) {
+                if (ele === value) {
+                    const d = keyOptions.opts[i];
+                    selectVals[`key-${key}-value-${value}`] = d;
+                    keyOpts[key].processOpts = [d];
+                    keyOpts[key].opts = d;
+                    commit();
+                    return (state = true);
                 }
-            } else {
-                for (const ele of opts.values()) {
-                    const val = ele[item.labelName || "label"];
-                    if (val === value) {
-                        selectVals[`key-${key}-value-${value}`] = ele;
-                        keyOpts[key] = Object.assign(keyOptions, {
-                            processOpts: [val],
-                            opts: [ele]
-                        });
-                        return (state = true);
-                    }
+            }
+            for (const ele of opts.values()) {
+                const val = ele[item.labelName || "label"];
+                if (val === value) {
+                    selectVals[`key-${key}-value-${value}`] = ele;
+                    keyOpts[key] = Object.assign(keyOptions, {
+                        processOpts: [val],
+                        opts: [ele]
+                    });
+                    return (state = true);
                 }
             }
             break;
