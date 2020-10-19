@@ -60,6 +60,7 @@ export default {
     methods: {
         visible(v) {
             this.show = !v;
+            this.$emit("change", v);
         },
         change(v) {
             const { row, col } = this.coords;
@@ -120,6 +121,7 @@ export default {
             orgColumns = []
         } = {}) {
             if (!open) {
+                this.$emit("change", false);
                 return (this.cascaderAbled = false);
             }
             this.core = core;
@@ -195,6 +197,7 @@ export default {
             }
         },
         controlPickerPanel(bl) {
+            this.$emit("change", bl);
             this.cascaderAbled = false;
             if (bl) {
                 let t1 = setTimeout(() => {
@@ -210,10 +213,12 @@ export default {
                     t1 = null;
                 }, 60);
             } else {
-                this.$nextTick(()=>{
-                    const $pop = document.querySelector(".el-cascader__dropdown");
+                this.$nextTick(() => {
+                    const $pop = document.querySelector(
+                        ".el-cascader__dropdown"
+                    );
                     $pop && $pop.remove();
-                })
+                });
             }
         }
     },

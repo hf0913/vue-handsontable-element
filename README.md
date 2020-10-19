@@ -14,7 +14,7 @@
 ```html
 <template>
     <Handsontable
-        :checkBox="checkBox"
+        :selectBoxConfig="selectBoxConfig"
         :columns="columns"
         v-model="tableData"
         @click="handsontableClick"
@@ -43,10 +43,10 @@
                     {
                         //公共属性解释
                         title: '表头名', // 表格表头名
-                        key: 'common', // 表格渲染字段名
+                        key: 'common', // 表格渲染字段名，可以支持data或者key属性名
                         _width: 200, // 表格宽度
                         readOnly: true, // 是否只读，控制单元格是否支持下拉填充、粘贴赋值，true开启，false关闭，默认false
-                        allowEmpty: false, // 是否必填，false必填，true非必填，默认true
+                        allowEmpty: false, // 是否必填，false必填，true非必填，默认text，同type属性
                         type: 'checkbox', // 模式类型，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），autocomplete（懒加载下拉框，相比dropdown不会自动填充值），默认text
                         subType: 'selection', // 扩展模式类型，仅支持：selection（表头复选框）、address（地址级联选择器）、cascader（普通级联选择器）、datePicker（日期时间选择器）、posInt（正整数类型）、optimize（下拉框优化模式）、handle（操作）
                         editor: false, // 是否可以编辑，false不可以编辑，但是可以被下拉填充或者粘贴，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），false
@@ -57,7 +57,7 @@
                         className: "htLeft htMiddle" // 对齐方式，仅支持：htRight htLeft htMiddle htBottom
                     },
                     {
-                        title:'普通复选框‘,
+                        title:'普通复选框',
                         key: 'checked',
                         type: 'checkbox',
                         checkedTemplate: '1', // true翻译成字符串1
@@ -67,8 +67,6 @@
                         key: 'checked',
                         type: 'checkbox',
                         subType: 'selection', // 表头复选框
-                        checkedTemplate: '1', // true翻译成字符串1
-                        uncheckedTemplate: '0', // false翻译成字符串0
                     },
                     {
                         title: '普通文本',
@@ -268,7 +266,7 @@
                         }
                     ],
                     openEmptyValid: true, // 是否开启空行校验，默认开启
-                    hasDefaultValFileds: ["字段一", "字段二"], // 是否存在默认值的字段集合，在getData数据校验空行会综合考虑是否标记单元格红色
+                    hasDefaultValFileds: ["字段一", "字段二"], // 是否存在默认值的字段集合，在getData数据校验空行会综合考虑是否标记单元格红色，如果默认字段有值且符合单元格校验规则，则被视为空单元格
                     openSort: true, // 自定义排序
                     multiColumnSorting: true, // 开启排序
                     multiColumnSorting: {
@@ -296,8 +294,8 @@
                     }
                 },
                 core: Object, // https://handsontable.com/docs/7.4.2/Core.html
-                checkBox: {
-                    // 表头中全选checkBox必须配置
+                selectBoxConfig: {
+                    // 表头中全选checkBox辅助配置，没有配置该属性，change事件返回的checked属性值为空
                     key: "checkbox", // 复选框字段名
                     col: 0 // 复选框行号
                 }

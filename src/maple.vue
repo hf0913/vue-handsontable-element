@@ -1,9 +1,20 @@
 <template>
     <div id="maple-table">
         <hot-table :settings="settings" ref="mapleTable" :style="customStyle" />
-        <MapleDatePicker ref="datePickerRef" />
-        <MapleCascader ref="cascaderRef" @getCascaderVals="getCascaderVals" />
-        <MapleSelect ref="selectRef" @getSelectOpts="getSelectOpts" />
+        <MapleDatePicker
+            ref="datePickerRef"
+            @change="v => (stopKeyEvent = v)"
+        />
+        <MapleCascader
+            ref="cascaderRef"
+            @getCascaderVals="getCascaderVals"
+            @change="v => (stopKeyEvent = v)"
+        />
+        <MapleSelect
+            ref="selectRef"
+            @getSelectOpts="getSelectOpts"
+            @change="v => (stopKeyEvent = v)"
+        />
         <div class="empty" v-show="showEmpty">暂无数据</div>
     </div>
 </template>
@@ -30,9 +41,9 @@ export default {
         options: {
             type: Object
         },
-        checkBox: {
+        selectBoxConfig: {
             type: Object,
-            default: () => ({ key: "checked", col: 0 })
+            default: () => ({ key: "mapleChecked", col: 0 })
         },
         fixViewTime: {
             type: Number,
@@ -43,6 +54,10 @@ export default {
         },
         customStyle: {
             type: Object
+        },
+        lazyLoadAbled: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -106,7 +121,9 @@ export default {
             hiddenColumns: [],
             sort: {},
             sortabled: false,
-            sortKey: {}
+            sortKey: {},
+            stopKeyEvent: false,
+            autoRowSizePlugin: null
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -115,6 +132,7 @@ export default {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
         this.$el.addEventListener("dblclick", this.cellDblClick);
+        this.autoRowSizePlugin = this.core.getPlugin("autoRowSize");
         this.init();
     },
     activated() {
@@ -216,7 +234,7 @@ export default {
                 afterUnhideColumns: this.afterUnhideColumns,
                 afterColumnMove: this.afterColumnMove,
                 beforeKeyDown: event => {
-                    if (!this.options.stopImmediatePropagation) {
+                    if (this.stopKeyEvent) {
                         event.stopImmediatePropagation();
                     }
                 }
@@ -276,11 +294,19 @@ export default {
             this.$refs.selectRef.controlOpen();
             this.$emit(type, e);
         },
-        afterScrollVertically(e) {
-            this.hiddenPopup("afterScrollVertically", e);
+        lazyLoadData() {
+            const { autoRowSizePlugin, lazyLoadAbled } = this;
+            if (lazyLoadAbled) {
+                const lastIndex = autoRowSizePlugin.getLastVisibleRow();
+                console.log(lastIndex, "lastIndex");
+            }
         },
-        afterScrollHorizontally(e) {
-            this.hiddenPopup("afterScrollHorizontally", e);
+        afterScrollVertically() {
+            this.hiddenPopup("afterScrollVertically");
+            if (this.lazyLoadAbled) this.lazyLoadData();
+        },
+        afterScrollHorizontally() {
+            this.hiddenPopup("afterScrollHorizontally");
         },
         beforeChange(change) {
             if (
@@ -298,7 +324,8 @@ export default {
         },
         afterChange(changes, source) {
             if (!changes) return;
-            const { key = "checked", col = 0 } = this.checkBox || {};
+            const { key = "mapleChecked", col = 0 } =
+                this.selectBoxConfig || {};
             const checkBoxVal = this.getKeyChange(key, changes);
             let checked = [];
 
@@ -694,6 +721,7 @@ export default {
                     const rowData = this.core.getDataAtRow(row);
                     let itemData = {};
                     let emptyCount = 0;
+
                     for (let [j, item] of this.myColumns.entries()) {
                         const k = item.data || item.key || "maple-field";
                         const i = hasDefaultValFileds.indexOf(k);

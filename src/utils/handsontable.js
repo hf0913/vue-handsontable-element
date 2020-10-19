@@ -91,7 +91,7 @@ function customColumns() {
             (item.type === "autocomplete" || item.type === "dropdown")
         ) {
             const sourceFn = (query, process, item, k) => {
-                const optionsTotal = item.optionsTotal || 12,
+                const optionsTotal = item.maxMatchLen || 12,
                     labelName = item.labelName || "label";
                 let mnemonicCode = item.mnemonicCode || [];
                 let options = [],

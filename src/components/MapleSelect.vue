@@ -89,6 +89,7 @@ export default {
                     this.core.setDataAtCell(row, col, null, "changeCells");
                 }
             });
+            this.$emit("change", false);
         },
         change(v) {
             this.controlPickerPanel(false);
@@ -140,6 +141,7 @@ export default {
             orgColumns = []
         } = {}) {
             if (!open) {
+                this.$emit("change", false);
                 return (this.selectAbled = false);
             }
             this.selectAbled = true;
@@ -237,6 +239,7 @@ export default {
             }
         },
         controlPickerPanel(bl) {
+            this.$emit("change", bl);
             if (bl) {
                 let t = setTimeout(() => {
                     this.$refs.selectRef.focus();
