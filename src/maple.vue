@@ -45,10 +45,6 @@ export default {
             type: Object,
             default: () => ({ key: "mapleChecked", col: 0 })
         },
-        fixViewTime: {
-            type: Number,
-            default: 128
-        },
         widthAuto: {
             type: Boolean
         },
@@ -556,7 +552,10 @@ export default {
                         ...extraItem
                     };
                     // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (!o.notAddabled && !(o.mapleTotal === "合计" && i === d.length - 1)) {
+                    if (
+                        !o.notAddabled &&
+                        !(o.mapleTotal === "合计" && i === d.length - 1)
+                    ) {
                         data.push({
                             ...o,
                             notAddabled: undefined,
@@ -680,24 +679,9 @@ export default {
                 }
             }
         },
-        fixView(t) {
-            t = t || this.fixViewTime;
-            if (t === -1208) return;
-            let t1, t2;
-            t1 = setTimeout(() => {
-                this.core.scrollViewportTo(
-                    this.core.countRows() - 1,
-                    this.core.countCols() - 1
-                );
-                t2 = setTimeout(() => {
-                    clearTimeout(t1);
-                    t1 = null;
-                    this.core.scrollViewportTo(0, 0);
-                    clearTimeout(t2);
-                    t2 = null;
-                    this.core.updateSettings(this.settings);
-                }, t);
-            });
+        fixView() {
+            const { core } = this;
+            core && core.render();
         },
         afterValidate(isValid, value, row, prop) {
             const customValidate = this.settings.customValidate;
