@@ -28,15 +28,16 @@ function exchangeSort(key, n) {
 }
 
 function colHeaders(col) {
-    const item = this.myColumns[col];
+    const { settings, myColumns, options, checkAllabled } = this;
+    const item = myColumns[col];
     const key = item.key || item.data;
-    const { openSort } = this.options || {};
+    const { openSort } = options || {};
 
     if (item.subType === "selection" && item.type === "checkbox") {
         this.checkboxAllIndex = col;
         return `<input type="checkbox" id="maple-all-checkbox" index=${col}CDC ${
-            this.checkAllabled ? "checked" : ""
-        }/>`;
+            checkAllabled ? "checked" : ""
+        } ${settings.readOnly ? "disabled" : ""} />`;
     }
     return `
         <div style="display: flex" class="${

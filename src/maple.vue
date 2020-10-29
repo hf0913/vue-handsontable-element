@@ -54,6 +54,10 @@ export default {
         lazyLoadAbled: {
             type: Boolean,
             default: false
+        },
+        pageSize: {
+            type: Number,
+            default: 12
         }
     },
     data() {
@@ -119,7 +123,10 @@ export default {
             sortabled: false,
             sortKey: {},
             stopKeyEvent: false,
-            autoRowSizePlugin: null
+            autoRowSizePlugin: null,
+            lastPage: null,
+            copyData: [],
+            stopLazyAbled: true
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -199,6 +206,8 @@ export default {
         },
         init() {
             let hiddCols = [];
+            let { data, lastPage, pageSize, lazyLoadAbled } = this;
+            this.copyData = data;
             if (this.options.cacheId && this.options.openCache) {
                 hiddCols = JSON.parse(
                     localStorage.getItem(
@@ -209,7 +218,10 @@ export default {
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
-                data: this.data,
+                data: this.copyData.slice(
+                    0,
+                    lazyLoadAbled ? pageSize : lastPage || undefined
+                ),
                 colHeaders: colHeaders.bind(this),
                 hiddenColumns: {
                     columns: hiddCols,
@@ -291,15 +303,47 @@ export default {
             this.$emit(type, e);
         },
         lazyLoadData() {
-            const { autoRowSizePlugin, lazyLoadAbled } = this;
-            if (lazyLoadAbled) {
+            let {
+                autoRowSizePlugin,
+                lazyLoadAbled,
+                core,
+                stopLazyAbled,
+                copyData,
+                lastPage,
+                pageSize,
+                checkAllabled,
+                selectBoxConfig
+            } = this;
+            if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow();
-                console.log(lastIndex, "lastIndex");
+                const currentLen = core.getData().length;
+
+                if (lastIndex >= currentLen - 3) {
+                    this.stopLazyAbled = false;
+                    lastPage = (lastPage || lastIndex) + pageSize;
+                    let data = copyData.slice(0, lastPage);
+                    if (checkAllabled) {
+                        const { key = "mapleChecked" } = selectBoxConfig || {};
+                        data.forEach(item => {
+                            item[key] = true;
+                        });
+                    }
+                    core.updateSettings({
+                        data
+                    });
+                    this.lastPage = lastPage;
+                    let t = setTimeout(() => {
+                        core.scrollViewportTo(lastIndex - pageSize / 2);
+                        this.stopLazyAbled = true;
+                        clearTimeout(t);
+                        t = null;
+                    }, 128);
+                }
             }
         },
         afterScrollVertically() {
             this.hiddenPopup("afterScrollVertically");
-            if (this.lazyLoadAbled) this.lazyLoadData();
+            this.lazyLoadData();
         },
         afterScrollHorizontally() {
             this.hiddenPopup("afterScrollHorizontally");
@@ -565,7 +609,7 @@ export default {
                 });
                 this.core.validateCells(valid => {
                     resolve({
-                        value: data,
+                        value: data.concat(this.copyData.slice(d.length)),
                         valid: valid
                     });
                     this.getDataDoubled = false;
