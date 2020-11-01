@@ -4,7 +4,7 @@
         ref="cascaderRef"
         v-model="value"
         :options="options"
-        clearable
+        :loading="loading"
         filterable
         size="mini"
         :style="{
@@ -50,7 +50,9 @@ export default {
             $input: null,
             cascaderAbled: false,
             address: [],
-            cascaderVals: {}
+            cascaderVals: {},
+            loading: false,
+            timer: null
         };
     },
     mounted() {
@@ -100,16 +102,16 @@ export default {
                 });
             }
             this.controlPickerPanel(false);
-            this.changeDate(v);
+            this.changeCascader(v);
         },
-        changeDate(v) {
+        changeCascader(v) {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtCell(row, col, v, "changeDate");
+                this.core.setDataAtCell(row, col, v, "changeCascader");
             }
         },
-        controlOpen({
+        async controlOpen({
             open = false,
             col = 0,
             row = 0,
@@ -131,88 +133,112 @@ export default {
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 let list = [];
-                const key = columns[col].key || columns[col].data;
+                const key = columns[col].key || columns[col].data,
+                    { subType = "", props = {}, type } = columns[col];
+                if (type) return;
+                this.controlPickerPanel(open);
+                this.show = !open;
+                this.width = width;
+                this.top = top;
+                this.left = left;
+                this.prop = Object.assign({}, props);
+                this.value = null;
                 for (let [, w] of orgColumns.entries()) {
                     if (w.key === key || w.data === key) {
-                        const wOptions = w.options || w.source || [];
+                        let wOptions = w.options || w.source || [];
+                        if (w.asyncOpts && w.asyncOpts instanceof Function) {
+                            this.loading = true;
+                            wOptions = await w.asyncOpts({ row, col });
+                            this.loading = false;
+                        }
                         list =
                             wOptions instanceof Function
-                                ? wOptions()
+                                ? wOptions({ row, col })
                                 : wOptions;
                         break;
                     }
                 }
-                const { subType = "", props = {}, type } = columns[col];
 
-                if (!type) {
-                    let opts = list;
-                    if (opts instanceof Function) opts = opts();
-                    this.options = opts;
-                    this.columns = columns;
-                    if (subType === "address") {
-                        if (this.address.length) {
-                            this.options = this.address;
-                        } else {
-                            this.options = utils.collageAddress(utils.address);
-                            this.address = this.options;
-                        }
-                    }
-                    if (subType === "address" || subType === "cascader") {
-                        this.value = this.core.getDataAtCell(row, col);
-                        const value = this.value;
-                        if (this.value) {
-                            if (
-                                this.cascaderVals[`key-${key}-value-${value}`]
-                            ) {
-                                this.value = this.cascaderVals[
-                                    `key-${key}-value-${value}`
-                                ].value;
-                            } else {
-                                this.value = utils
-                                    .getCascaderLabelValue({
-                                        data: this.options,
-                                        value: this.value.split("/"),
-                                        matchFieldName: "label"
-                                    })
-                                    .map(({ value }) => value);
-                            }
-
-                            if (!this.value.length) {
-                                this.core.setDataAtCell(
-                                    row,
-                                    col,
-                                    "",
-                                    "changeDate"
-                                );
-                            }
-                        }
-                        this.show = !open;
-                        this.controlPickerPanel(open);
-                        this.width = width;
-                        this.top = top;
-                        this.left = left;
-                        this.prop = Object.assign({}, props);
+                let opts = list;
+                this.columns = columns;
+                if (subType === "address") {
+                    if (this.address.length) {
+                        opts = this.address;
+                    } else {
+                        opts = utils.collageAddress(utils.address);
+                        this.address = opts;
                     }
                 }
+
+                if (subType === "address" || subType === "cascader") {
+                    const value = this.core.getDataAtCell(row, col);
+                    if (value) {
+                        if (this.cascaderVals[`key-${key}-value-${value}`]) {
+                            this.value = this.cascaderVals[
+                                `key-${key}-value-${value}`
+                            ].value;
+                        } else {
+                            this.value = utils
+                                .getCascaderLabelValue({
+                                    data: opts,
+                                    value: (this.value || "").split("/"),
+                                    matchFieldName: "label"
+                                })
+                                .map(({ value }) => value);
+                        }
+
+                        if (!this.value.length) {
+                            this.core.setDataAtCell(
+                                row,
+                                col,
+                                "",
+                                "changeCascader"
+                            );
+                        }
+                    }
+                }
+                this.options = opts;
+                if (opts.length) {
+                    clearTimeout(this.timer);
+                    this.$refs.cascaderRef.$refs.panel.activePath = [];
+                    this.$el.click();
+                    this.$el.querySelector("input").focus();
+                } else {
+                    clearTimeout(this.timer);
+                    this.$el.click();
+                    this.changeEmptyText("暂无数据");
+                }
             }
+        },
+        changeEmptyText(innerHTML = "加载中") {
+            let $empty = document.querySelector(
+                ".el-cascader-menu__empty-text"
+            );
+            $empty
+                ? ($empty.innerHTML = innerHTML)
+                : this.$nextTick(() => {
+                      $empty = document.querySelector(
+                          ".el-cascader-menu__empty-text"
+                      );
+                      if ($empty) $empty.innerHTML = innerHTML;
+                  });
         },
         controlPickerPanel(bl) {
             this.$emit("change", bl);
             this.cascaderAbled = false;
             if (bl) {
-                let t1 = setTimeout(() => {
-                    this.cascaderAbled = true;
-                    let t2 = setTimeout(() => {
-                        this.$el.click();
-                        this.$el.querySelector("input").focus();
-                        clearTimeout(t2);
-                        t2 = null;
-                    }, 128);
-
-                    clearTimeout(t1);
-                    t1 = null;
+                this.cascaderAbled = true;
+                this.timer = setTimeout(() => {
+                    this.options = [];
+                    this.$refs.cascaderRef.$refs.panel.activePath = [];
+                    this.$el.click();
+                    this.$el.querySelector("input").focus();
+                    this.changeEmptyText();
+                    clearTimeout(this.timer);
                 }, 60);
             } else {
+                clearTimeout(this.timer);
+                this.changeEmptyText("加载中");
                 this.$nextTick(() => {
                     const $pop = document.querySelector(
                         ".el-cascader__dropdown"

@@ -44,14 +44,16 @@ function debounce(fn, delay = 128) {
  * @param {Object} item 每一项值
  */
 function checkType({ value, item }) {
-    let state = true;
-    let { numericFormat = {}, subType, type } = item;
-    let opts = [];
-    const key = item.key || item.data;
-    const { keyOpts, selectVals, getDataDoubled } = this;
+    let state = true,
+        { numericFormat = {}, subType, type } = item,
+        opts = [],
+        asyncOpts;
+    const key = item.key || item.data,
+        { keyOpts, selectVals, getDataDoubled, cascaderVals } = this;
 
     for (let [, w] of this.columns.entries()) {
         if (w.key === key || w.data === key) {
+            asyncOpts = w.asyncOpts;
             const wOptions = w.options || w.source || [];
             opts = wOptions instanceof Function ? wOptions() : wOptions;
             break;
@@ -85,6 +87,10 @@ function checkType({ value, item }) {
             state = value.length === valueFormat.length && !charReg.test(value);
             break;
         case subType === "cascader" || subType === "address":
+            if (cascaderVals[`key-${key}-value-${value}`]) {
+                state = true;
+                break;
+            }
             if (addressOtps.length === 0 && subType === "address") {
                 addressOtps = collageAddress(address);
             }
@@ -95,6 +101,7 @@ function checkType({ value, item }) {
             });
             v = v.map(({ label }) => label).join("/");
             state = value === v;
+            if (!opts.length && asyncOpts) state = true;
             break;
         case type === "autocomplete" || subType === "select":
             state = false;
@@ -135,9 +142,8 @@ function checkType({ value, item }) {
                     return (state = true);
                 }
             }
-            if (subType === "select" && !opts.length) {
+            if (!opts.length && (asyncOpts || subType === "select"))
                 state = true;
-            }
             break;
     }
 

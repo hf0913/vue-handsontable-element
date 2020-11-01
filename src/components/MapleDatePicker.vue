@@ -4,7 +4,6 @@
         ref="datePickerRef"
         v-model="value"
         size="mini"
-        clearable
         filterable
         :style="{
             background: 'white',

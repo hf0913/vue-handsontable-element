@@ -77,14 +77,28 @@
                         title: "地址级联选择",
                         data: "address",
                         subType: "address",
+                        exchange: false, // 键值对都有值，不会转化，默认都会转化
                         extraField: "maple_address", // 额外多返回一个字段，该值由valueType属性控制
                         valueType: "label", // label || value，默认value
+                        asyncOpts: () => {
+                            // 移步赋值options
+                            return new Promiss((resolve, reject) => {
+                                resolve([]);
+                            });
+                        },
                         props: {} // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
                     },
                     {
                         title: "普通级联选择",
                         data: "cascader",
+                        exchange: false, // 键值对都有值，不会转化，默认都会转化
                         subType: "cascader",
+                        asyncOpts: () => {
+                            // 移步赋值options
+                            return new Promiss((resolve, reject) => {
+                                resolve([]);
+                            });
+                        },
                         options: [], // 也接受function,如：options: ({row, col}) => []
                         extraField: "maple_address", // 额外多返回一个字段，该值由valueType属性控制
                         valueType: "label", // label || value，默认value

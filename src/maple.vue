@@ -566,21 +566,21 @@ export default {
                                     o = {
                                         ...o,
                                         [k]: isExCascader
-                                            ? o[k]
-                                            : res.map(({ label }) => label),
+                                            ? res.map(({ label }) => label)
+                                            : o[k],
                                         [extraField]: isExCascader
-                                            ? o[extraField]
-                                            : res.map(({ value }) => value)
+                                            ? res.map(({ value }) => value)
+                                            : o[extraField]
                                     };
                                 } else {
                                     o = {
                                         ...o,
                                         [k]: extraField
-                                            ? o[k]
-                                            : res.map(({ value }) => value),
+                                            ? res.map(({ value }) => value)
+                                            : o[k],
                                         [extraField]: isExCascader
-                                            ? o[extraField]
-                                            : res.map(({ label }) => label)
+                                            ? res.map(({ label }) => label)
+                                            : o[extraField]
                                     };
                                 }
                             }
