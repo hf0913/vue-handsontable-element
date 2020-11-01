@@ -167,7 +167,7 @@ export default {
             let visible = false;
             if (this.mnemonicCode instanceof Array) {
                 visible = this.mnemonicCode.some(k => {
-                    return this.itemData[k].indexOf(query) !== -1;
+                    return (this.itemData[k] || "").indexOf(query) !== -1;
                 });
             }
             this.visible =

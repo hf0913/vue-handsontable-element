@@ -218,10 +218,12 @@ export default {
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
-                data: this.copyData.slice(
-                    0,
-                    lazyLoadAbled ? pageSize : lastPage || undefined
-                ),
+                data: lazyLoadAbled
+                    ? this.copyData.slice(
+                          0,
+                          lazyLoadAbled ? pageSize : lastPage || undefined
+                      )
+                    : data,
                 colHeaders: colHeaders.bind(this),
                 hiddenColumns: {
                     columns: hiddCols,

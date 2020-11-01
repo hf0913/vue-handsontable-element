@@ -42,106 +42,106 @@
                 columns: [
                     {
                         //公共属性解释
-                        title: '表头名', // 表格表头名
-                        key: 'common', // 表格渲染字段名，可以支持data或者key属性名
+                        title: "表头名", // 表格表头名
+                        key: "common", // 表格渲染字段名，可以支持data或者key属性名
                         _width: 200, // 表格宽度
                         readOnly: true, // 是否只读，控制单元格是否支持下拉填充、粘贴赋值，true开启，false关闭，默认false
                         allowEmpty: false, // 是否必填，false必填，true非必填，默认text，同type属性
-                        type: 'checkbox', // 模式类型，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），autocomplete（懒加载下拉框，相比dropdown不会自动填充值），默认text
-                        subType: 'selection', // 扩展模式类型，仅支持：selection（表头复选框）、address（地址级联选择器）、cascader（普通级联选择器）、datePicker（日期时间选择器）、posInt（正整数类型）、optimize（下拉框优化模式）、handle（操作）
+                        type: "checkbox", // 模式类型，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），autocomplete（懒加载下拉框，相比dropdown不会自动填充值），默认text
+                        subType: "selection", // 扩展模式类型，仅支持：selection（表头复选框）、address（地址级联选择器）、cascader（普通级联选择器）、datePicker（日期时间选择器）、posInt（正整数类型）、optimize（下拉框优化模式）、handle（操作）
                         editor: false, // 是否可以编辑，false不可以编辑，但是可以被下拉填充或者粘贴，仅支持：text（文本）、checkbox（复选框）、numeric（数字）、date（日期）、time（时间）、dropdown（下拉框），false
                         validator: (value, callback) => {
                             // 自定义校验，value为单元格值，callback回调函数，入参为boolean类型。
-                            callback(true) // true校验通过,false校验失败，单元格背景色标记红色
+                            callback(true); // true校验通过,false校验失败，单元格背景色标记红色
                         },
                         className: "htLeft htMiddle" // 对齐方式，仅支持：htRight htLeft htMiddle htBottom
                     },
                     {
-                        title:'普通复选框',
-                        key: 'checked',
-                        type: 'checkbox',
-                        checkedTemplate: '1', // true翻译成字符串1
-                        uncheckedTemplate: '0', // false翻译成字符串0
+                        title: "普通复选框",
+                        key: "checked",
+                        type: "checkbox",
+                        checkedTemplate: "1", // true翻译成字符串1
+                        uncheckedTemplate: "0" // false翻译成字符串0
                     },
                     {
-                        key: 'checked',
-                        type: 'checkbox',
-                        subType: 'selection', // 表头复选框
+                        key: "checked",
+                        type: "checkbox",
+                        subType: "selection" // 表头复选框
                     },
                     {
-                        title: '普通文本',
-                        key: 'text',
+                        title: "普通文本",
+                        key: "text",
                         maxLength: 8 // 文字最大长度
                     },
                     {
-                        title: '地址级联选择',
-                        data: 'address',
-                        subType: 'address',
-                        extraField: 'maple_address', // 额外多返回一个字段，该值由valueType属性控制
-                        valueType: 'label', // label || value，默认value
-                        props: {}, // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
+                        title: "地址级联选择",
+                        data: "address",
+                        subType: "address",
+                        extraField: "maple_address", // 额外多返回一个字段，该值由valueType属性控制
+                        valueType: "label", // label || value，默认value
+                        props: {} // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
                     },
                     {
-                        title: '普通级联选择',
-                        data: 'cascader',
-                        subType: 'cascader',
-                        options: [],
-                        extraField: 'maple_address',// 额外多返回一个字段，该值由valueType属性控制
-                        valueType: 'label', // label || value，默认value
-                        props: {}, // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
+                        title: "普通级联选择",
+                        data: "cascader",
+                        subType: "cascader",
+                        options: [], // 也接受function,如：options: ({row, col}) => []
+                        extraField: "maple_address", // 额外多返回一个字段，该值由valueType属性控制
+                        valueType: "label", // label || value，默认value
+                        props: {} // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
                     },
                     {
-                        title: '时间日期组合',
-                        key: 'datePicker',
-                        subType: 'datePicker',
+                        title: "时间日期组合",
+                        key: "datePicker",
+                        subType: "datePicker",
                         props: {
-                        // 参考 https://element.eleme.cn/#/zh-CN/component/datetime-picker
-                        type: 'datetime',
-                        format: 'yyyy-MM-dd HH:mm:ss',
-                        valueFormat: 'yyyy-MM-dd HH:mm:ss',
-                        },
+                            // 参考 https://element.eleme.cn/#/zh-CN/component/datetime-picker
+                            type: "datetime",
+                            format: "yyyy-MM-dd HH:mm:ss",
+                            valueFormat: "yyyy-MM-dd HH:mm:ss"
+                        }
                     },
                     {
-                        title: '数字',
-                        data: 'numeric',
-                        type: 'numeric',
-                        subType: 'posInt', // 正整数类型
+                        title: "数字",
+                        data: "numeric",
+                        type: "numeric",
+                        subType: "posInt", // 正整数类型
                         numericFormat: {
-                        pattern: '0.00', // 显示值类型
-                        min: 0, // 最小值
-                        max: 1208, // 最大值
-                        },
+                            pattern: "0.00", // 显示值类型
+                            min: 0, // 最小值
+                            max: 1208 // 最大值
+                        }
                     },
                     {
-                        title: '日期',
-                        data: 'date',
-                        type: 'date',
-                        dateFormat: 'YYYY-MM-DD', // 日期类型
+                        title: "日期",
+                        data: "date",
+                        type: "date",
+                        dateFormat: "YYYY-MM-DD" // 日期类型
                     },
                     {
-                        title: '时间',
-                        data: 'time',
-                        type: 'time',
-                        timeFormat: 'HH:mm', // 时间类型
-                        correctFormat: true, // 失去焦点，矫正时间格式
+                        title: "时间",
+                        data: "time",
+                        type: "time",
+                        timeFormat: "HH:mm", // 时间类型
+                        correctFormat: true // 失去焦点，矫正时间格式
                     },
                     {
                         title:
-                        '下拉框(优化模式，options属性或者source属性，接受一个回调函数，返回数据字典集合)',
-                        data: 'select',
-                        type: 'dropdown',
+                            "下拉框(优化模式，options属性或者source属性，接受一个回调函数，返回数据字典集合)",
+                        data: "select",
+                        type: "dropdown",
                         // options: () => this.selectArr, // 这种也可以哦，下拉框选项值字段名支持：source || options
                         options: () => this.selectArr, // 存放下拉框选项值集合，每一项中包含值和id，取名source或者options都可以
                         // extraField属性：调用getData方法，返回多余字段名，其值取item[valueType === valueName ? labelName : valueName]
-                        extraField: 'maple_love',
-                        valueType: 'id', // 配合extraField属性使用，默认等于valueName
-                        labelName: 'test', // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
-                        valueName: 'id', // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
-                        subType: 'optimize', // 优化模式，配合maxMatchLen属性一起使用
+                        extraField: "maple_love",
+                        valueType: "id", // 配合extraField属性使用，默认等于valueName
+                        labelName: "test", // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
+                        valueName: "id", // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
+                        subType: "optimize", // 优化模式，配合maxMatchLen属性一起使用
                         maxMatchLen: 8, // 根据source属性值，模糊匹配最大条数，默认8条，即用户点击下拉框只可以选择8条数据。
                         visibleRows: 4, // 可见列表数量
                         exchange: false, // 键值对都有值，不会转化，默认都会转化
-                        mnemonicCode: ['shorthandCode'], // 助记符
+                        mnemonicCode: ["shorthandCode"] // 助记符
                     },
                     {
                         title: "下拉框（ajax远程搜索）",
@@ -165,6 +165,12 @@
                         valueType: "unitId", // 配合extraField属性使用，默认等于valueName
                         labelName: "unitName", // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
                         valueName: "unitId", // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
+                        asyncOpts: () => {
+                            // 移步赋值options
+                            return new Promiss((resolve, reject) => {
+                                resolve([]);
+                            });
+                        },
                         ajaxConfig: {
                             // ajax请求配置
                             url:
@@ -172,15 +178,16 @@
                             method: "post", // 请求方式
                             queryField: "param", // 查询字段名，动态获取查询值value
                             data: {
-                                // 请求参数以body形式发送，如果不需要请设置data属性。
+                                // 请求参数以body形式发送，如果不需要请设置data属性。接受函数，如：data:()=>({param: ''})
                                 pageNum: 1,
                                 pageSize: 10,
                                 param: ""
                             },
-                            header: { // 接受function，举例：header:()=>({Authorization: "eyJhbGciOiJIUzUxMiJ9"})
+                            header: {
+                                // 接受function，举例：header:()=>({Authorization: "eyJhbGciOiJIUzUxMiJ9"})
                                 Authorization: "eyJhbGciOiJIUzUxMiJ9"
                             },
-                            // param:{} // 请求参数从url携带发送，查询参数，场景业务场景如get请求
+                            // param:{param: ''} // 请求参数从url携带发送，查询参数，场景业务场景如get请求, 接受函数，如：param:()=>({param: ''})
                             result: "data" // 根据后端返回关于下拉框选项集合的数据结构，给出一个字段访问链。必须滴。
                         },
                         props: {
@@ -189,24 +196,24 @@
                         } // 参考 https://element.eleme.cn/#/zh-CN/component/cascader
                     },
                     {
-                        title: '操作',
-                        subType: 'handle'
+                        title: "操作",
+                        subType: "handle",
                         _width: 140,
                         options: [
-                        {
-                            name: '复制', // 文本标题
-                            color: '#409eff', // 文本颜色
-                        },
-                        {
-                            name: '添加',
-                            color: '#67c23a',
-                        },
-                        {
-                            name: '删除',
-                            color: '#f56c6c',
-                        },
-                        ],
-                    },
+                            {
+                                name: "复制", // 文本标题
+                                color: "#409eff" // 文本颜色
+                            },
+                            {
+                                name: "添加",
+                                color: "#67c23a"
+                            },
+                            {
+                                name: "删除",
+                                color: "#f56c6c"
+                            }
+                        ]
+                    }
                 ],
                 options: {
                     // 更多options，https://handsontable.com/docs/7.4.2/Options.html
@@ -381,7 +388,7 @@
              * @description  获取下拉框列表变化
              */
             getSelectOpts(o) {
-                console.log('getSelectOpts', o);
+                console.log("getSelectOpts", o);
             },
             utils() {
                 // 工具方法 https://github.com/hf0913/vue-handsontable-element/blob/master/src/utils/index.js

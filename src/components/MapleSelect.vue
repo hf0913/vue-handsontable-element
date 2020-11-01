@@ -6,7 +6,6 @@
         v-model="value"
         size="mini"
         :loading="loading"
-        clearable
         filterable
         :style="{
             background: 'white',
@@ -120,7 +119,8 @@ export default {
                     labelName,
                     key: this.key,
                     extraField: this.extraField,
-                    valueType: this.valueType
+                    valueType: this.valueType,
+                    source: "select"
                 });
                 let t = setTimeout(() => {
                     this.core.setDataAtCell(row, col, value, "changeCells");
@@ -129,7 +129,7 @@ export default {
                 }, 128);
             }
         },
-        controlOpen({
+        async controlOpen({
             open = false,
             col = 0,
             row = 0,
@@ -216,10 +216,18 @@ export default {
                         }
                         for (let [, w] of orgColumns.entries()) {
                             if (w.key === this.key || w.data === this.key) {
-                                const wOptions = w.options || w.source || [];
+                                let wOptions = w.options || w.source || [];
+                                if (
+                                    w.asyncOpts &&
+                                    w.asyncOpts instanceof Function
+                                ) {
+                                    this.loading = true;
+                                    wOptions = await w.asyncOpts({ row, col });
+                                    this.loading = false;
+                                }
                                 const opts =
                                     wOptions instanceof Function
-                                        ? wOptions()
+                                        ? wOptions({ row, col })
                                         : wOptions;
                                 this.options = opts;
                                 for (let [i, item] of opts.entries()) {
@@ -256,18 +264,19 @@ export default {
         search(query, source) {
             if (query) {
                 this.loading = true;
-                let ajaxConfig = this.ajaxConfig;
-                let { queryField, data, param, header } = ajaxConfig;
+                let { coords, ajaxConfig } = this,
+                    { queryField, data, param, header } = ajaxConfig || {};
+                ajaxConfig.data =
+                    data instanceof Function ? data(coords) : data;
+                ajaxConfig.param =
+                    param instanceof Function ? param(coords) : param;
+                ajaxConfig.header =
+                    header instanceof Function ? header(coords) : header;
                 const fn = (k, v) => {
-                    if (v && Reflect.has(v, queryField)) {
-                        ajaxConfig = {
-                            ...ajaxConfig,
-                            header:
-                                header instanceof Function ? header() : header,
-                            [k]: {
-                                ...v,
-                                [queryField]: query.replace(/\s+/g, "")
-                            }
+                    if (queryField && v && Reflect.has(v, queryField)) {
+                        ajaxConfig[k] = {
+                            ...v,
+                            [queryField]: query.replace(/\s+/g, "")
                         };
                     }
                 };

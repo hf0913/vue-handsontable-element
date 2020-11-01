@@ -28,12 +28,12 @@ function exchange({ data, currentValue, currentKey }) {
  * @param {*} delay
  */
 function debounce(fn, delay = 128) {
-    return function() {
+    return function () {
         let self = this;
         let args = arguments;
 
         timer && clearTimeout(timer);
-        timer = setTimeout(function() {
+        timer = setTimeout(function () {
             fn.apply(self, args);
         }, delay);
     };
@@ -96,7 +96,7 @@ function checkType({ value, item }) {
             v = v.map(({ label }) => label).join("/");
             state = value === v;
             break;
-        case type === "autocomplete":
+        case type === "autocomplete" || subType === "select":
             state = false;
             const keyOptions = keyOpts[key] || {};
             const processOpts = keyOptions.processOpts || [];
@@ -134,6 +134,9 @@ function checkType({ value, item }) {
                     });
                     return (state = true);
                 }
+            }
+            if (subType === "select" && !opts.length) {
+                state = true;
             }
             break;
     }
@@ -192,8 +195,9 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
     method = method.toLocaleUpperCase();
     result = result.split(".");
     header = header || {};
-    if (param || method === "GET") {
-        for (let [k, v] of Object.entries(data)) {
+    param = param || {};
+    if (method === "GET") {
+        for (let [k, v] of Object.entries(param)) {
             d += `${k}=${v}&`;
         }
         url = `${url}?${d.slice(0, d.length - 1)}`;
@@ -204,7 +208,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function() {
+        xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
@@ -233,9 +237,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
         for (let [k, v] of Object.entries(header)) {
             xmlhttp.setRequestHeader(k, v);
         }
-        param || method === "GET"
-            ? xmlhttp.send()
-            : xmlhttp.send(JSON.stringify(data));
+        method === "GET" ? xmlhttp.send() : xmlhttp.send(JSON.stringify(data));
     });
 }
 /**
