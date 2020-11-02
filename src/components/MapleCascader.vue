@@ -152,7 +152,7 @@ export default {
                             this.loading = false;
                         }
                         list =
-                            wOptions instanceof Function
+                            (await wOptions) instanceof Function
                                 ? wOptions({ row, col })
                                 : wOptions;
                         break;
@@ -181,7 +181,7 @@ export default {
                             this.value = utils
                                 .getCascaderLabelValue({
                                     data: opts,
-                                    value: (this.value || "").split("/"),
+                                    value: (value || "").split("/"),
                                     matchFieldName: "label"
                                 })
                                 .map(({ value }) => value);

@@ -515,7 +515,12 @@ export default {
                             subType === "address"
                         ) {
                             const isExchange =
-                                exchange === false && o[k] && o[extraField];
+                                    exchange === false && o[k] && o[extraField],
+                                exchangeArrary = val => {
+                                    return val instanceof Array
+                                        ? val
+                                        : (val || "").split("/");
+                                };
                             if (
                                 addressOtps.length === 0 &&
                                 subType === "address"
@@ -530,21 +535,25 @@ export default {
                                     o = {
                                         ...o,
                                         [k]: isExchange
-                                            ? o[k]
-                                            : cascaderVals.label,
+                                            ? exchangeArrary(o[k])
+                                            : exchangeArrary(
+                                                  cascaderVals.label
+                                              ),
                                         [extraField]: isExchange
-                                            ? o[extraField]
-                                            : cascaderVals.value
+                                            ? exchangeArrary(o[extraField])
+                                            : exchangeArrary(cascaderVals.value)
                                     };
                                 } else {
                                     o = {
                                         ...o,
                                         [k]: isExchange
-                                            ? o[k]
-                                            : cascaderVals.value,
+                                            ? exchangeArrary(o[k])
+                                            : exchangeArrary(
+                                                  cascaderVals.value
+                                              ),
                                         [extraField]: isExchange
-                                            ? o[extraField]
-                                            : cascaderVals.label
+                                            ? exchangeArrary(o[extraField])
+                                            : exchangeArrary(cascaderVals.label)
                                     };
                                 }
                             } else {
@@ -567,20 +576,20 @@ export default {
                                         ...o,
                                         [k]: isExCascader
                                             ? res.map(({ label }) => label)
-                                            : o[k],
+                                            : exchangeArrary(o[k]),
                                         [extraField]: isExCascader
                                             ? res.map(({ value }) => value)
-                                            : o[extraField]
+                                            : exchangeArrary(o[extraField])
                                     };
                                 } else {
                                     o = {
                                         ...o,
                                         [k]: extraField
                                             ? res.map(({ value }) => value)
-                                            : o[k],
+                                            : exchangeArrary(o[k]),
                                         [extraField]: isExCascader
                                             ? res.map(({ label }) => label)
-                                            : o[extraField]
+                                            : exchangeArrary(o[extraField])
                                     };
                                 }
                             }
