@@ -271,7 +271,7 @@
                             };
                         }
                         if (row === this.core.countRows() - 1) {
-                            cellProperties.readOnly = true;
+                            cellProperties.editor = false;
                         } // 专为表尾合计用，如果使用了表尾合计，请一定要加上此段代码
                         return cellProperties;
                     },
@@ -354,7 +354,7 @@
                 );
 
                 filterKeysChanges({
-                    filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是true，即过滤
+                    filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是false，即过滤
                     changes,
                     keys: ["你需要监听的字段名1", "你需要监听的字段名2"],
                     callback: ({

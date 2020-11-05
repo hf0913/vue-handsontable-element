@@ -672,7 +672,7 @@ export default {
             this.core.getPlugin("filters").clearConditions();
             this.core.getPlugin("filters").filter();
         },
-        getKeyChange(key, changes, filterSummaryRow = true, precise = true) {
+        getKeyChange(key, changes, filterSummaryRow = false, precise = true) {
             let o = [];
 
             for (let item of changes.values()) {
@@ -697,7 +697,7 @@ export default {
             keys,
             changes,
             callback,
-            filterSummaryRow = true,
+            filterSummaryRow = false,
             precise = true // 精确过滤
         }) {
             for (let [index, item] of changes.entries()) {
@@ -899,7 +899,7 @@ export default {
                     }
                 });
                 o.filterKeysChanges({
-                    filterSummaryRow: true, // 过滤监听合计一行的数据变化，默认是true，即过滤
+                    filterSummaryRow: false, // 过滤监听合计一行的数据变化，默认是true，即过滤
                     changes: o.changes,
                     keys: sumKey,
                     callback: ({ key, oldVal, newVal }) => {

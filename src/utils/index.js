@@ -277,8 +277,8 @@ function getCascaderLabelValue({
         });
 
         if (matchVal === k) {
-            arr.push(item);
-            if (arr.length === value.length) return false;
+            arr[i] = item;
+            if (arr.length === value.length) return true;
             if (item[childrenName]) fn(item.children);
             return true;
         }
