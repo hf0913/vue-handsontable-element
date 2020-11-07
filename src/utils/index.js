@@ -264,7 +264,7 @@ function getCascaderLabelValue({
     matchFieldName = "value",
     value = []
 }) {
-    if (!value.length) return [];
+    if (!value.length || !data.length) return [];
     let arr = [];
     const m = item => {
         let matchVal = item[matchFieldName];
@@ -275,7 +275,6 @@ function getCascaderLabelValue({
             label: item[labelName],
             value: item[valueName]
         });
-
         if (matchVal === k) {
             arr[i] = item;
             if (arr.length === value.length) return true;

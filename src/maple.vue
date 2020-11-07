@@ -562,7 +562,7 @@ export default {
                                         subType === "address"
                                             ? addressOtps
                                             : opts,
-                                    value: (v + "").split("/"),
+                                    value: (v && v.split("/")) || [],
                                     matchFieldName: "label"
                                 });
                                 const isExCascader =
@@ -575,21 +575,21 @@ export default {
                                     o = {
                                         ...o,
                                         [k]: isExCascader
-                                            ? res.map(({ label }) => label)
-                                            : exchangeArrary(o[k]),
+                                            ? exchangeArrary(o[k])
+                                            : res.map(({ label }) => label),
                                         [extraField]: isExCascader
-                                            ? res.map(({ value }) => value)
-                                            : exchangeArrary(o[extraField])
+                                            ? exchangeArrary(o[extraField])
+                                            : res.map(({ value }) => value)
                                     };
                                 } else {
                                     o = {
                                         ...o,
                                         [k]: extraField
-                                            ? res.map(({ value }) => value)
-                                            : exchangeArrary(o[k]),
+                                            ? exchangeArrary(o[k])
+                                            : res.map(({ value }) => value),
                                         [extraField]: isExCascader
-                                            ? res.map(({ label }) => label)
-                                            : exchangeArrary(o[extraField])
+                                            ? exchangeArrary(o[extraField])
+                                            : res.map(({ label }) => label)
                                     };
                                 }
                             }
