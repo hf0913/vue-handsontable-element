@@ -24,7 +24,9 @@
         @getSelectOpts="getSelectOpts"
         @changeSort="changeSort"
         :options="options"
+        :singleSelectConfig="singleSelectConfig"
         ref="handsontableRef"
+        :showLastTotalText="showLastTotalText"
     />
 </template>
 
@@ -32,6 +34,7 @@
     export default {
         data() {
             return {
+                showLastTotalText: true, // "当第一列type为checkbox类型，控制最后一行是否展示合计"
                 selectArr: [
                     {
                         test: "maple1",
@@ -143,7 +146,7 @@
                         title:
                             "下拉框(优化模式，options属性或者source属性，接受一个回调函数，返回数据字典集合)",
                         data: "select",
-                        type: "dropdown",
+                        type: "autocomplete",
                         // options: () => this.selectArr, // 这种也可以哦，下拉框选项值字段名支持：source || options
                         options: () => this.selectArr, // 存放下拉框选项值集合，每一项中包含值和id，取名source或者options都可以
                         // extraField属性：调用getData方法，返回多余字段名，其值取item[valueType === valueName ? labelName : valueName]
@@ -151,7 +154,7 @@
                         valueType: "id", // 配合extraField属性使用，默认等于valueName
                         labelName: "test", // 下拉框选项值集合，每一项中值字段名，默认：label，即用户可以看到下拉框列表显示的值
                         valueName: "id", // 下拉框选项值集合，每一项中id字段名，默认：value，即发送给后台的值，用户是看不到这个值
-                        subType: "optimize", // 优化模式，配合maxMatchLen属性一起使用
+                        subType: "optimize", // 优化模式，配合maxMatchLen属性一起使用，必须滴
                         maxMatchLen: 8, // 根据source属性值，模糊匹配最大条数，默认8条，即用户点击下拉框只可以选择8条数据。
                         visibleRows: 4, // 可见列表数量
                         exchange: false, // 键值对都有值，不会转化，默认都会转化
@@ -319,6 +322,11 @@
                     // 表头中全选checkBox辅助配置，没有配置该属性，change事件返回的checked属性值为空
                     key: "checkbox", // 复选框字段名
                     col: 0 // 复选框行号
+                },
+                singleSelectConfig: {
+                    // 单选配置，通过change事件去监听checked的返回值，单选checked属性返回当前选择的数据集合
+                    key: "checked", // 字段名
+                    openAbled: true // 是否开启单选，默认关闭
                 }
             };
         },

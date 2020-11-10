@@ -296,6 +296,7 @@ function customColumns() {
                 const { singleSelectIndex } = this;
                 if (
                     singleSelectConfig.openAbled &&
+                    singleSelectConfig.key === prop &&
                     row !== singleSelectIndex &&
                     checkedVal
                 ) {
@@ -321,6 +322,7 @@ function customColumns() {
                     const { singleSelectIndex } = this;
                     if (
                         singleSelectConfig.openAbled &&
+                        singleSelectConfig.key === prop &&
                         row !== singleSelectIndex &&
                         checkedClickVal
                     ) {
@@ -381,6 +383,7 @@ function customColumns() {
                     const { singleSelectIndex } = this;
                     if (
                         singleSelectConfig.openAbled &&
+                        singleSelectConfig.key === prop &&
                         row !== singleSelectIndex &&
                         checkedClickVal
                     ) {
