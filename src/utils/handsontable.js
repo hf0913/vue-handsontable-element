@@ -105,7 +105,7 @@ function customColumns() {
                         const wOptions = w.options || w.source;
                         list =
                             wOptions instanceof Function
-                                ? wOptions()
+                                ? wOptions() || []
                                 : wOptions;
                         mnemonicCode = w.mnemonicCode || [];
                         break;

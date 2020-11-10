@@ -55,7 +55,7 @@ function checkType({ value, item }) {
         if (w.key === key || w.data === key) {
             asyncOpts = w.asyncOpts;
             const wOptions = w.options || w.source || [];
-            opts = wOptions instanceof Function ? wOptions() : wOptions;
+            opts = wOptions instanceof Function ? wOptions() || [] : wOptions;
             break;
         }
     }

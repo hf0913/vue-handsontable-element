@@ -227,7 +227,7 @@ export default {
                                 }
                                 const opts =
                                     wOptions instanceof Function
-                                        ? wOptions({ row, col })
+                                        ? wOptions({ row, col }) || []
                                         : wOptions;
                                 this.options = opts;
                                 for (let [i, item] of opts.entries()) {
