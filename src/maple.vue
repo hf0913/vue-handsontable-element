@@ -58,6 +58,13 @@ export default {
         pageSize: {
             type: Number,
             default: 12
+        },
+        singleSelectConfig: {
+            type: Object,
+            default: () => ({})
+        },
+        showLastTotalText: {
+            type: Boolean
         }
     },
     data() {
@@ -107,6 +114,7 @@ export default {
                     }
                 }
             },
+            singleSelectIndex: -1208,
             core: {},
             checkAllabled: false,
             width: 0,
@@ -438,8 +446,8 @@ export default {
                     const dItem = d[i];
                     const keys = getColumns.call(this, "no");
                     for (let [j, itemData] of keys.entries()) {
-                        const v = dItem[j];
-                        const k = itemData.key || itemData.data;
+                        const v = dItem[j],
+                            k = itemData.key || itemData.data;
                         let newItem = {};
                         if (newItem[k]) {
                             newItem = keyVals[k];
@@ -460,14 +468,30 @@ export default {
                             extraField = "_extraField_",
                             subType,
                             type,
-                            exchange
+                            exchange,
+                            checkedTemplate,
+                            uncheckedTemplate
                         } = newItem;
 
                         let opts = newItem.options || newItem.source;
                         if (opts instanceof Function) {
                             opts = opts() || [];
                         }
-                        if (
+                        if (type === "checkbox") {
+                            let checkboxVal = o[k];
+                            if (
+                                checkedTemplate != null &&
+                                checkedTemplate != ""
+                            ) {
+                                checkboxVal = checkboxVal
+                                    ? checkedTemplate
+                                    : uncheckedTemplate;
+                            }
+                            o = {
+                                ...o,
+                                [k]: checkboxVal
+                            };
+                        } else if (
                             (((type === "dropdown" ||
                                 type === "autocomplete") &&
                                 ((opts && opts.length) ||
@@ -614,7 +638,8 @@ export default {
                         data.push({
                             ...o,
                             notAddabled: undefined,
-                            _extraField_: undefined
+                            _extraField_: undefined,
+                            undefined
                         });
                     }
                 });

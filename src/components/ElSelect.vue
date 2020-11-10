@@ -159,9 +159,9 @@
                 <template
                     v-if="
                         emptyText &&
-                            (!allowCreate ||
-                                loading ||
-                                (allowCreate && options.length === 0))
+                        (!allowCreate ||
+                            loading ||
+                            (allowCreate && options.length === 0))
                     "
                 >
                     <slot name="empty" v-if="$slots.empty"></slot>

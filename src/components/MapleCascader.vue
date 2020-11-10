@@ -153,7 +153,7 @@ export default {
                         }
                         list =
                             (await wOptions) instanceof Function
-                                ? wOptions({ row, col })
+                                ? wOptions({ row, col }) || []
                                 : wOptions;
                         break;
                     }

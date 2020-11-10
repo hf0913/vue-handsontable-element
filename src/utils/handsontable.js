@@ -1,6 +1,5 @@
 import utils from "./index";
 import maple from "handsontable";
-
 function getColumns(t) {
     let _cols = [];
     if (!t) this.myColumns = JSON.parse(JSON.stringify(this.columns));
@@ -222,12 +221,8 @@ function customColumns() {
         }
         if (item.subType === "handle") {
             // eslint-disable-next-line no-unused-vars
-            item.renderer = (instance, td, row, col, cellProperties) => {
-                cellProperties = Object.assign(cellProperties, {
-                    readOnly: true,
-                    editor: true
-                });
-
+            item.readOnly = true;
+            item.renderer = (instance, td, row, col) => {
                 let $el = document.createElement("DIV");
                 $el.style.height = "100%";
                 $el.style.display = "flex";
@@ -236,7 +231,7 @@ function customColumns() {
 
                 if (this.hasColumnSummary && row === instance.countRows() - 1) {
                     maple.dom.empty(td);
-                    td.innerHTML = "合计";
+                    td.innerHTML = col === 0 ? "合计" : "";
                     td.setAttribute("class", "maple-table-total");
                     td.parentElement &&
                         td.parentElement.setAttribute(
@@ -273,6 +268,154 @@ function customColumns() {
                 return td;
             };
         }
+        if (item.type === "checkbox") {
+            // eslint-disable-next-line no-unused-vars
+            const {
+                columns,
+                data,
+                getKeyChange,
+                filterKeysChanges,
+                myColumns,
+                hasColumnSummary,
+                singleSelectConfig,
+                showLastTotalText
+            } = this;
+            item.renderer = (instance, td, row, col, prop, value) => {
+                maple.dom.empty(td);
+                let $el = document.createElement("INPUT"),
+                    $div = document.createElement("DIV"),
+                    oldVal = $el.checked,
+                    { checkedTemplate } = columns[col] || {},
+                    checkedVal =
+                        checkedTemplate != null && checkedTemplate !== ""
+                            ? checkedTemplate === value ||
+                              value === true ||
+                              value === "true"
+                            : !!value;
+
+                const { singleSelectIndex } = this;
+                if (
+                    singleSelectConfig.openAbled &&
+                    row !== singleSelectIndex &&
+                    checkedVal
+                ) {
+                    if (singleSelectIndex >= 0) {
+                        data[singleSelectIndex][prop] = false;
+                    }
+                    this.singleSelectIndex = row;
+                }
+
+                $el.type = "checkbox";
+                if (data[row]) {
+                    $el.checked = checkedVal;
+                    data[row][prop] = checkedVal;
+                }
+                $el.setAttribute("class", "maple-td-input-checkbox");
+                $el.setAttribute("id", `maple-td-input-checkbox-${row}`);
+
+                maple.dom.addEvent($el, "mousedown", event => {
+                    let checked = [],
+                        checkedClickVal = !event.target.checked;
+                    data[row][prop] = checkedClickVal;
+
+                    const { singleSelectIndex } = this;
+                    if (
+                        singleSelectConfig.openAbled &&
+                        row !== singleSelectIndex &&
+                        checkedClickVal
+                    ) {
+                        if (singleSelectIndex >= 0) {
+                            data[singleSelectIndex][prop] = false;
+                            instance.render();
+                        }
+                        this.singleSelectIndex = row;
+                    }
+
+                    data.filter((item, row) => {
+                        let cVal = item[prop];
+                        if (item[prop]) {
+                            checked.push({
+                                row,
+                                checked: cVal
+                            });
+                        }
+                    });
+                    this.$emit("change", {
+                        source: "checkbox",
+                        changes: [[row, prop, oldVal, checkedClickVal]],
+                        core: instance,
+                        type: "change",
+                        getKeyChange,
+                        filterKeysChanges,
+                        checked,
+                        columns: myColumns
+                    });
+                });
+                if (
+                    col === 0 &&
+                    (hasColumnSummary || showLastTotalText) &&
+                    row === instance.countRows() - 1
+                ) {
+                    td.innerHTML = "合计";
+                    td.setAttribute("class", "maple-table-total");
+                    td.parentElement &&
+                        td.parentElement.setAttribute(
+                            "class",
+                            "maple-table-total-tr"
+                        );
+                    return td;
+                }
+
+                $div.style.height = "100%";
+                $div.style.display = "flex";
+                $div.style.justifyContent = "space-around";
+                $div.style.alignItems = "center";
+                $div.setAttribute("class", "maple-td-checkbox");
+                $div.setAttribute("id", `maple-td-checkbox-${row}`);
+                maple.dom.addEvent($div, "dblclick", () => {
+                    let checked = [],
+                        checkedClickVal = $el.checked;
+                    data[row][prop] = checkedClickVal;
+                    data[row][prop] = $el.checked;
+
+                    const { singleSelectIndex } = this;
+                    if (
+                        singleSelectConfig.openAbled &&
+                        row !== singleSelectIndex &&
+                        checkedClickVal
+                    ) {
+                        if (singleSelectIndex >= 0) {
+                            data[singleSelectIndex][prop] = false;
+                            instance.render();
+                        }
+                        this.singleSelectIndex = row;
+                    }
+
+                    data.filter((item, row) => {
+                        let cVal = item[prop];
+                        if (item[prop]) {
+                            checked.push({
+                                row,
+                                checked: cVal
+                            });
+                        }
+                    });
+                    this.$emit("change", {
+                        source: "checkbox",
+                        changes: [[row, prop, oldVal, checkedClickVal]],
+                        core: instance,
+                        type: "change",
+                        getKeyChange,
+                        filterKeysChanges,
+                        checked,
+                        columns: myColumns
+                    });
+                });
+                $div.appendChild($el);
+                td.appendChild($div);
+                return td;
+            };
+        }
 
         item = {
             ...item,
@@ -302,7 +445,6 @@ function beforeChange(changes, source) {
 
 function afterOnCellMouseDown(event, coords, $el) {
     const { row, col } = coords;
-
     this.$emit("click", {
         col,
         row,
