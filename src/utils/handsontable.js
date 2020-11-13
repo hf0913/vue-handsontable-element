@@ -191,6 +191,7 @@ function customColumns() {
                     })
                 );
             };
+            item.editor = false;
         }
         if (
             (item.type === "text" || !item.type || item.subType === "text") &&
@@ -280,8 +281,10 @@ function customColumns() {
                 singleSelectConfig,
                 showLastTotalText
             } = this;
+            // 双击td元素边框会出现checkbox被勾选中
             item.renderer = (instance, td, row, col, prop, value) => {
                 maple.dom.empty(td);
+                const { readOnly, editor } = instance.getCellMeta(row, col);
                 let $el = document.createElement("INPUT"),
                     $div = document.createElement("DIV"),
                     oldVal = $el.checked,
@@ -292,7 +295,6 @@ function customColumns() {
                               value === true ||
                               value === "true"
                             : !!value;
-
                 const { singleSelectIndex } = this;
                 if (
                     singleSelectConfig.openAbled &&
@@ -309,6 +311,10 @@ function customColumns() {
                 $el.type = "checkbox";
                 if (data[row]) {
                     $el.checked = checkedVal;
+                    $el.disabled =
+                        readOnly ||
+                        editor === false ||
+                        (singleSelectConfig.strict && checkedVal);
                     data[row][prop] = checkedVal;
                 }
                 $el.setAttribute("class", "maple-td-input-checkbox");
@@ -326,6 +332,15 @@ function customColumns() {
                         row !== singleSelectIndex &&
                         checkedClickVal
                     ) {
+                        let timer = setTimeout(() => {
+                            $el.checked = checkedClickVal;
+                            $el.disabled =
+                                readOnly ||
+                                editor === false ||
+                                (singleSelectConfig.strict && checkedClickVal);
+                            clearTimeout(timer);
+                            timer = null;
+                        }, 128);
                         if (singleSelectIndex >= 0) {
                             data[singleSelectIndex][prop] = false;
                             instance.render();
@@ -387,6 +402,11 @@ function customColumns() {
                         row !== singleSelectIndex &&
                         checkedClickVal
                     ) {
+                        $el.checked = checkedClickVal;
+                        $el.disabled =
+                            readOnly ||
+                            editor === false ||
+                            (singleSelectConfig.strict && checkedClickVal);
                         if (singleSelectIndex >= 0) {
                             data[singleSelectIndex][prop] = false;
                             instance.render();
@@ -414,6 +434,7 @@ function customColumns() {
                         columns: myColumns
                     });
                 });
+                td.setAttribute("class", "maple-custom-checkbox-td");
                 $div.appendChild($el);
                 td.appendChild($div);
                 return td;

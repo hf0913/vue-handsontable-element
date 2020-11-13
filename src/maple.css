@@ -1,3 +1,4 @@
+.maple-td-input-checkbox:disabled,
 #maple-header-checkbox:disabled {
     cursor: not-allowed;
 }

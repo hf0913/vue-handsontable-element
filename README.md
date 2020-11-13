@@ -326,7 +326,8 @@
                 singleSelectConfig: {
                     // 单选配置，通过change事件去监听checked的返回值，单选checked属性返回当前选择的数据集合
                     key: "checked", // 字段名
-                    openAbled: true // 是否开启单选，默认关闭
+                    openAbled: false // 是否开启单选，默认关闭
+                    strict: false // 严格单选模式，开启将无法取消选择操作
                 }
             };
         },

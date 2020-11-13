@@ -37,6 +37,9 @@
     stroke: #409eff;
     stroke-linecap: round;
 }
+#handsontable .handsontable .maple-custom-checkbox-td {
+    padding: 0;
+}
 @keyframes loading-rotate {
     to {
         transform: rotate(1turn);

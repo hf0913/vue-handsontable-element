@@ -165,14 +165,14 @@ export default {
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
             if (columns[col] == null) return;
-            let { subType, readOnly = false, editor = true } = columns[col];
+            const { readOnly } = this.core.getCellMeta(row, col);
+            let { subType } = columns[col];
 
             if (subType === "address") subType = "cascader";
             if (
                 this.$refs[`${subType}Ref`] &&
                 row >= 0 &&
                 !readOnly &&
-                editor &&
                 !this.settings.readOnly &&
                 ((this.hasColumnSummary && row !== this.core.countRows() - 1) ||
                     !this.hasColumnSummary)
