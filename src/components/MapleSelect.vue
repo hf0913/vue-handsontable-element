@@ -207,7 +207,7 @@ export default {
                         if (!itemData) {
                             this.value = null;
                             this.options = [];
-                            this.search.call(this, v);
+                            this.search(v);
                         }
                     } else {
                         if (!itemData) {
@@ -259,11 +259,17 @@ export default {
             }
         },
         remoteMethod(v) {
-            this.debounceAjax.call(this, v, "remoteMethod");
+            if (v) {
+                this.loading = true;
+                this.debounceAjax.call(this, v, "remoteMethod");
+            } else {
+                this.options = [];
+                this.isOK = false;
+                this.loading = false;
+            }
         },
         search(query, source) {
             if (query) {
-                this.loading = true;
                 let { coords, ajaxConfig } = this,
                     { queryField, data, param, header } = ajaxConfig || {};
                 ajaxConfig.data =
@@ -305,9 +311,6 @@ export default {
                     }
                     this.loading = false;
                 });
-            } else {
-                this.options = [];
-                this.isOK = false;
             }
         }
     },
