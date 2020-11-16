@@ -70,7 +70,7 @@ function checkType({ value, item }) {
             if (state) {
                 const { min, max } = numericFormat;
                 if (min != null) {
-                    state = value - 0 >= min;
+                    state = min === -Infinity ? true : value - 0 >= min;
                 }
                 if (max != null && state) {
                     state = value - 0 <= max;
