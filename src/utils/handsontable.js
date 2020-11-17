@@ -27,7 +27,7 @@ function exchangeSort(key, n) {
 }
 
 function colHeaders(col) {
-    const { settings, myColumns, options, checkAllabled } = this;
+    const { settings, myColumns, options, checkAllabled, data } = this;
     const item = myColumns[col];
     const key = item.key || item.data;
     const { openSort } = options || {};
@@ -36,7 +36,7 @@ function colHeaders(col) {
         this.checkboxAllIndex = col;
         return `<input type="checkbox" id="maple-all-checkbox" index=${col}CDC ${
             checkAllabled ? "checked" : ""
-        } ${settings.readOnly ? "disabled" : ""} />`;
+        } ${settings.readOnly || !data.length ? "disabled" : ""} />`;
     }
     return `
         <div style="display: flex" class="${
@@ -454,30 +454,62 @@ function customColumns() {
     return columns;
 }
 
-function beforeChange(changes, source) {
-    const o = {
-        source,
-        changes,
-        core: this.core,
-        type: "beforeChange",
-        getKeyChange: this.getKeyChange,
-        filterKeysChanges: this.filterKeysChanges
-    };
-    this.sum(o);
-    this.$emit("change", o);
+function beforeChange(change) {
+    if (
+        change.length &&
+        change[0] &&
+        change[0].length &&
+        change[0].filter(value => Number.isNaN(value)).length
+    ) {
+        return false;
+    }
+    if (this.settings.changeBefore instanceof Function) {
+        return this.settings.changeBefore(change);
+    }
+    return true;
 }
 
 function afterOnCellMouseDown(event, coords, $el) {
-    const { row, col } = coords;
-    this.$emit("click", {
-        col,
-        row,
-        $el,
-        core: this.core,
-        name: "cells",
-        event,
-        type: "click"
-    });
+    if (coords) {
+        const { row, col } = coords;
+        const className = event.target.className;
+        if (
+            className.includes("maple-up-arrow") ||
+            className.includes("maple-down-arrow")
+        ) {
+            this.changeSort({
+                col,
+                row,
+                $el,
+                core: this.core,
+                name: "titleCells",
+                event,
+                type: "sort",
+                direction: className.includes("maple-up-arrow") ? "up" : "down"
+            });
+        }
+        if (event.target.id === "maple-fliter") {
+            this.$emit("controlCustomFilter", {
+                event,
+                coords,
+                $el
+            });
+        }
+        if (event.target.id === "maple-all-checkbox") {
+            this.checkAllBox(event, coords, $el);
+        } else {
+            this.$emit("click", {
+                col,
+                row,
+                $el,
+                core: this.core,
+                name: "cells",
+                event,
+                type: "click",
+                columns: this.myColumns
+            });
+        }
+    }
 }
 
 export {

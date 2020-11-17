@@ -5,9 +5,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
     color: #c0c4cc;
     position: absolute;
+    border: 1px solid #ccc;
+    border-top: none;
     top: 27px;
     left: 0;
     z-index: 1105;

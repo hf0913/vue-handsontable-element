@@ -1,4 +1,5 @@
 .maple-td-input-checkbox:disabled,
+#maple-all-checkbox:disabled,
 #maple-header-checkbox:disabled {
     cursor: not-allowed;
 }
@@ -79,4 +80,10 @@
 }
 .el-popper[x-placement^="bottom"] {
     margin-top: 6px !important;
+}
+.autocompleteEditor {
+    min-height: 60px;
+}
+#maple-table > .handsontable {
+    overflow: initial !important;
 }

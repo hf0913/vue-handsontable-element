@@ -15,7 +15,9 @@
             @getSelectOpts="getSelectOpts"
             @change="v => (stopKeyEvent = v)"
         />
-        <div class="empty" v-show="showEmpty">暂无数据</div>
+        <div class="empty" v-show="showEmpty" :style="{ width: emptyWidth }">
+            暂无数据
+        </div>
     </div>
 </template>
 
@@ -25,7 +27,13 @@ import _ from "./utils";
 import MapleCascader from "./components/MapleCascader";
 import MapleDatePicker from "./components/MapleDatePicker";
 import MapleSelect from "./components/MapleSelect";
-import { colHeaders, customColumns, getColumns } from "./utils/handsontable";
+import {
+    colHeaders,
+    customColumns,
+    getColumns,
+    beforeChange,
+    afterOnCellMouseDown
+} from "./utils/handsontable";
 
 export default {
     name: "MapleHandsontable",
@@ -139,7 +147,6 @@ export default {
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
     mounted() {
-        this.$el.style = "border: 1px solid #ccc;";
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
         this.$el.addEventListener("dblclick", this.cellDblClick);
@@ -240,12 +247,12 @@ export default {
                 persistentState: false,
                 manualColumnMove:
                     this.options.cacheId && this.options.openCache,
-                afterOnCellMouseDown: this.afterOnCellMouseDown,
+                afterOnCellMouseDown: afterOnCellMouseDown.bind(this),
                 afterChange: this.afterChange,
                 afterRemoveRow: this.afterRemoveRow,
                 afterCreateRow: this.afterCreateRow,
                 afterValidate: this.afterValidate,
-                beforeChange: this.beforeChange,
+                beforeChange: beforeChange.bind(this),
                 afterScrollHorizontally: this.afterScrollHorizontally,
                 afterScrollVertically: this.afterScrollVertically,
                 afterHideColumns: this.afterHideColumns,
@@ -261,50 +268,6 @@ export default {
                 this.settings.columnSummary &&
                 this.settings.columnSummary.length > 0;
             this.core.updateSettings(this.settings);
-        },
-        afterOnCellMouseDown(event, coords, $el) {
-            if (coords) {
-                const { row, col } = coords;
-                const className = event.target.className;
-                if (
-                    className.includes("maple-up-arrow") ||
-                    className.includes("maple-down-arrow")
-                ) {
-                    this.changeSort({
-                        col,
-                        row,
-                        $el,
-                        core: this.core,
-                        name: "titleCells",
-                        event,
-                        type: "sort",
-                        direction: className.includes("maple-up-arrow")
-                            ? "up"
-                            : "down"
-                    });
-                }
-                if (event.target.id === "maple-fliter") {
-                    this.$emit("controlCustomFilter", {
-                        event,
-                        coords,
-                        $el
-                    });
-                }
-                if (event.target.id === "maple-all-checkbox") {
-                    this.checkAllBox(event, coords, $el);
-                } else {
-                    this.$emit("click", {
-                        col,
-                        row,
-                        $el,
-                        core: this.core,
-                        name: "cells",
-                        event,
-                        type: "click",
-                        columns: this.myColumns
-                    });
-                }
-            }
         },
         hiddenPopup(type, e) {
             this.$refs.datePickerRef.controlOpen();
@@ -357,20 +320,6 @@ export default {
         },
         afterScrollHorizontally() {
             this.hiddenPopup("afterScrollHorizontally");
-        },
-        beforeChange(change) {
-            if (
-                change.length &&
-                change[0] &&
-                change[0].length &&
-                change[0].filter(value => Number.isNaN(value)).length
-            ) {
-                return false;
-            }
-            if (this.settings.changeBefore instanceof Function) {
-                return this.settings.changeBefore(change);
-            }
-            return true;
         },
         afterChange(changes, source) {
             if (!changes) return;
@@ -941,6 +890,15 @@ export default {
         },
         changeCheckAllabled(bl) {
             this.checkAllabled = bl;
+        }
+    },
+    computed: {
+        emptyWidth() {
+            if (!this.settings.data.length) {
+                let h = document.querySelector("table");
+                return `${h && h.clientWidth}px`;
+            }
+            return "auto";
         }
     },
     watch: {
