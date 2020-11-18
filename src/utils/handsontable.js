@@ -150,7 +150,8 @@ function customColumns() {
                     this.$emit("getSelectOpts", {
                         keyOpts: this.keyOpts,
                         selectVals: this.selectVals,
-                        orgSelect: true
+                        orgSelect: true,
+                        key: k
                     });
                 }
                 process(processOpts);

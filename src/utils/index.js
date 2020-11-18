@@ -112,7 +112,8 @@ function checkType({ value, item }) {
                     this.$emit("getSelectOpts", {
                         keyOpts,
                         selectVals,
-                        orgSelect: true
+                        orgSelect: true,
+                        key
                     });
                 }
             };
