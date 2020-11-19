@@ -266,19 +266,21 @@ function getCascaderLabelValue({
     value = []
 }) {
     if (!value.length || !data.length) return [];
-    let arr = [];
+    let arr = [],
+        vals = [...value];
     const m = item => {
         let matchVal = item[matchFieldName];
-        let i = value.indexOf(matchVal);
-        let k = value[i];
+        let i = vals.indexOf(matchVal);
+        let k = vals[i];
 
         item = Object.assign(item, {
             label: item[labelName],
-            value: item[valueName]
+            vals: item[valueName]
         });
         if (matchVal === k) {
             arr[i] = item;
-            if (arr.length === value.length) return true;
+            vals[i] = `maple@${i}`;
+            if (arr.length === vals.length) return true;
             if (item[childrenName]) fn(item.children);
             return true;
         }

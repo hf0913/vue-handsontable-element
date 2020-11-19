@@ -390,6 +390,18 @@ export default {
                 const data = [];
                 let addressOtps = [];
                 let keyVals = {};
+                const judgeVals = val => {
+                    let bl = true;
+                    if (
+                        Object.prototype.toString.call(val) ===
+                            "[object Array]" &&
+                        !val.length
+                    ) {
+                        bl = false;
+                    }
+                    if (val == null || val === "") bl = false;
+                    return bl;
+                };
                 d.map((ele, i) => {
                     let o = this.data[i] || {};
                     const dItem = d[i];
@@ -417,7 +429,6 @@ export default {
                             extraField = "_extraField_",
                             subType,
                             type,
-                            exchange,
                             checkedTemplate,
                             uncheckedTemplate
                         } = newItem;
@@ -463,37 +474,34 @@ export default {
                                         currentKey: labelName
                                     })[valueName] || undefined;
                             }
-                            const isEx =
-                                exchange === false && o[k] && o[extraField];
                             if (valueType === valueName) {
                                 o = {
                                     ...o,
-                                    [k]: isEx ? o[k] : currentValue,
-                                    [extraField]: isEx ? o[extraField] : v
+                                    [k]: judgeVals(currentValue)
+                                        ? currentValue
+                                        : o[k],
+                                    [extraField]: judgeVals(v)
+                                        ? v
+                                        : o[extraField]
                                 };
-                                if (extraField === "_extraField_") {
-                                    o[k] = isEx ? o[k] : currentValue || v;
-                                }
                             } else {
                                 o = {
                                     ...o,
-                                    [k]: isEx ? o[k] : v,
-                                    [extraField]: isEx
-                                        ? o[extraField]
-                                        : currentValue
+                                    [k]: judgeVals(v) ? v : o[k],
+                                    [extraField]: judgeVals(currentValue)
+                                        ? currentValue
+                                        : o[extraField]
                                 };
                             }
                         } else if (
                             subType === "cascader" ||
                             subType === "address"
                         ) {
-                            const isExchange =
-                                    exchange === false && o[k] && o[extraField],
-                                exchangeArrary = val => {
-                                    return val instanceof Array
-                                        ? val
-                                        : (val || "").split("/");
-                                };
+                            const exchangeArrary = val => {
+                                return val instanceof Array
+                                    ? val
+                                    : (val || "").split("/");
+                            };
                             if (
                                 addressOtps.length === 0 &&
                                 subType === "address"
@@ -507,26 +515,30 @@ export default {
                                 if (valueType === "label") {
                                     o = {
                                         ...o,
-                                        [k]: isExchange
-                                            ? exchangeArrary(o[k])
-                                            : exchangeArrary(
-                                                  cascaderVals.label
-                                              ),
-                                        [extraField]: isExchange
-                                            ? exchangeArrary(o[extraField])
-                                            : exchangeArrary(cascaderVals.value)
+                                        [k]: judgeVals(
+                                            exchangeArrary(cascaderVals.label)
+                                        )
+                                            ? exchangeArrary(cascaderVals.label)
+                                            : exchangeArrary(o[k]),
+                                        [extraField]: judgeVals(
+                                            exchangeArrary(cascaderVals.value)
+                                        )
+                                            ? exchangeArrary(cascaderVals.value)
+                                            : exchangeArrary(o[extraField])
                                     };
                                 } else {
                                     o = {
                                         ...o,
-                                        [k]: isExchange
-                                            ? exchangeArrary(o[k])
-                                            : exchangeArrary(
-                                                  cascaderVals.value
-                                              ),
-                                        [extraField]: isExchange
-                                            ? exchangeArrary(o[extraField])
-                                            : exchangeArrary(cascaderVals.label)
+                                        [k]: judgeVals(
+                                            exchangeArrary(cascaderVals.value)
+                                        )
+                                            ? exchangeArrary(cascaderVals.value)
+                                            : exchangeArrary(o[k]),
+                                        [extraField]: judgeVals(
+                                            exchangeArrary(cascaderVals.label)
+                                        )
+                                            ? exchangeArrary(cascaderVals.label)
+                                            : exchangeArrary(o[extraField])
                                     };
                                 }
                             } else {
@@ -538,31 +550,33 @@ export default {
                                     value: (v && v.split("/")) || [],
                                     matchFieldName: "label"
                                 });
-                                const isExCascader =
-                                    exchange === false &&
-                                    o[k] &&
-                                    o[k] !== 0 &&
-                                    o[extraField] &&
-                                    o[extraField] !== 0;
                                 if (valueType === "label") {
                                     o = {
                                         ...o,
-                                        [k]: isExCascader
-                                            ? exchangeArrary(o[k])
-                                            : res.map(({ label }) => label),
-                                        [extraField]: isExCascader
-                                            ? exchangeArrary(o[extraField])
-                                            : res.map(({ value }) => value)
+                                        [k]: judgeVals(
+                                            res.map(({ label }) => label)
+                                        )
+                                            ? res.map(({ label }) => label)
+                                            : exchangeArrary(o[k]),
+                                        [extraField]: judgeVals(
+                                            res.map(({ value }) => value)
+                                        )
+                                            ? res.map(({ value }) => value)
+                                            : exchangeArrary(o[extraField])
                                     };
                                 } else {
                                     o = {
                                         ...o,
-                                        [k]: isExCascader
-                                            ? exchangeArrary(o[k])
-                                            : res.map(({ value }) => value),
-                                        [extraField]: isExCascader
-                                            ? exchangeArrary(o[extraField])
-                                            : res.map(({ label }) => label)
+                                        [k]: judgeVals(
+                                            res.map(({ value }) => value)
+                                        )
+                                            ? res.map(({ value }) => value)
+                                            : exchangeArrary(o[k]),
+                                        [extraField]: judgeVals(
+                                            res.map(({ label }) => label)
+                                        )
+                                            ? res.map(({ label }) => label)
+                                            : exchangeArrary(o[extraField])
                                     };
                                 }
                             }
