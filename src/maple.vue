@@ -557,7 +557,7 @@ export default {
                                 } else {
                                     o = {
                                         ...o,
-                                        [k]: extraField
+                                        [k]: isExCascader
                                             ? exchangeArrary(o[k])
                                             : res.map(({ value }) => value),
                                         [extraField]: isExCascader
