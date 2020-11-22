@@ -28,12 +28,12 @@ function exchange({ data, currentValue, currentKey }) {
  * @param {*} delay
  */
 function debounce(fn, delay = 128) {
-    return function () {
+    return function() {
         let self = this;
         let args = arguments;
 
         timer && clearTimeout(timer);
-        timer = setTimeout(function () {
+        timer = setTimeout(function() {
             fn.apply(self, args);
         }, delay);
     };
@@ -215,7 +215,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function () {
+        xmlhttp.onreadystatechange = function() {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);

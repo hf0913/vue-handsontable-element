@@ -162,7 +162,7 @@ export default {
             this.cascaderVals = o.data;
         },
         getSelectOpts(o) {
-            this.$emit("getSelectOpts", o);
+            if (!o.noEmit) this.$emit("getSelectOpts", o);
             this.selectVals = o.selectVals;
             this.keyOpts = o.keyOpts;
         },
@@ -407,7 +407,7 @@ export default {
                     const dItem = d[i];
                     const keys = getColumns.call(this, "no");
                     for (let [j, itemData] of keys.entries()) {
-                        const v = dItem[j],
+                        let v = dItem[j],
                             k = itemData.key || itemData.data;
                         let newItem = {};
                         if (newItem[k]) {
@@ -459,13 +459,17 @@ export default {
                                 subType === "select") &&
                             k
                         ) {
+                            const { multiple } = newItem.props || {};
                             let currentValue,
                                 selectVals = this.selectVals[
                                     `key-${k}-value-${v}`
                                 ];
                             valueType = valueType || valueName;
+                            if (multiple) v = (v || "").split(",");
                             if (selectVals) {
-                                currentValue = selectVals[valueName];
+                                currentValue = multiple
+                                    ? selectVals.map(ele => ele[valueName])
+                                    : selectVals[valueName];
                             } else {
                                 currentValue =
                                     _.exchange({
@@ -477,9 +481,7 @@ export default {
                             if (valueType === valueName) {
                                 o = {
                                     ...o,
-                                    [k]: judgeVals(currentValue)
-                                        ? currentValue
-                                        : o[k],
+                                    [k]: judgeVals(v) ? currentValue : o[k],
                                     [extraField]: judgeVals(v)
                                         ? v
                                         : o[extraField]

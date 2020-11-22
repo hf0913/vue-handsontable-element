@@ -6,6 +6,7 @@
         v-model="value"
         size="mini"
         :loading="loading"
+        collapse-tags
         filterable
         :style="{
             background: 'white',
@@ -18,7 +19,8 @@
         :class="{ 'maple-hidden': show && neddInput }"
         v-bind="prop"
         @change="change"
-        @blur="blur"
+        @visible-change="visibleChange"
+        :popper-append-to-body="false"
     >
         <el-option
             v-for="item in options"
@@ -72,7 +74,8 @@ export default {
             mnemonicCode: null,
             isOK: true,
             valueType: "value",
-            extraField: null
+            extraField: null,
+            multiple: false
         };
     },
     mounted() {
@@ -80,19 +83,54 @@ export default {
         this.$body.appendChild(this.$el);
     },
     methods: {
-        blur() {
-            this.$nextTick(() => {
+        visibleChange(v) {
+            if (!v) {
                 this.show = true;
-                if (!this.isOK) {
-                    const { row, col } = this.coords;
+                const { row, col } = this.coords;
+                let cellVals = [],
+                    items = [],
+                    { valueName, labelName, value, options, key } = this;
+                if (this.multiple) {
+                    value.map(item => {
+                        for (let k of options.values()) {
+                            if (item === k[valueName]) {
+                                items.push(k);
+                                cellVals.push(k[labelName]);
+                                break;
+                            }
+                        }
+                    });
+                    cellVals = cellVals.join(",");
+                    this.keyOpts[key] = {
+                        opts: items
+                    };
+                    this.selectVals[`key-${key}-value-${cellVals}`] = items;
+                    if (cellVals.length) {
+                        this.$emit("getSelectOpts", {
+                            keyOpts: this.keyOpts,
+                            selectVals: this.selectVals,
+                            row,
+                            col,
+                            valueName,
+                            labelName,
+                            key,
+                            extraField: this.extraField,
+                            valueType: this.valueType,
+                            source: "select"
+                        });
+                    }
+                    this.core.setDataAtCell(row, col, cellVals, "changeCells");
+                } else if (!this.isOK) {
                     this.core.setDataAtCell(row, col, null, "changeCells");
                 }
-            });
-            this.$emit("change", false);
+                this.$emit("change", false);
+            }
         },
         change(v) {
-            this.controlPickerPanel(false);
-            this.changeCells(v);
+            if (!this.multiple) {
+                this.controlPickerPanel(false);
+                this.changeCells(v);
+            }
         },
         changeCells(v) {
             const { row, col } = this.coords;
@@ -170,7 +208,7 @@ export default {
                     this.key = data || key;
                     this.extraField = extraField;
                     this.valueType = valueType;
-                    let v = core.getDataAtCell(row, col);
+                    let v = core.getDataAtCell(row, col) || "";
                     const itemData = this.selectVals[
                         `key-${this.key}-value-${v}`
                     ];
@@ -186,10 +224,14 @@ export default {
                     this.valueName = valueName;
                     this.mnemonicCode = mnemonicCode;
                     this.prop = Object.assign({}, props);
+                    const multiple = props.multiple;
+                    this.multiple = multiple;
 
                     if (itemData) {
-                        this.value = itemData[labelName];
-                        this.options = [itemData];
+                        this.value = multiple
+                            ? itemData.map(item => item[valueName])
+                            : itemData[labelName];
+                        this.options = multiple ? itemData : [itemData];
                     }
                     if (this.prop.remote && ajaxConfig && ajaxConfig.url) {
                         this.ajaxConfig = ajaxConfig;
@@ -205,13 +247,13 @@ export default {
                         );
                         this.prop.remoteMethod = this.remoteMethod;
                         if (!itemData) {
-                            this.value = null;
+                            this.value = multiple ? [] : null;
                             this.options = [];
                             this.search(v);
                         }
                     } else {
                         if (!itemData) {
-                            this.value = null;
+                            this.value = multiple ? [] : null;
                             this.options = [];
                         }
                         for (let [, w] of orgColumns.entries()) {
@@ -230,13 +272,53 @@ export default {
                                         ? wOptions({ row, col }) || []
                                         : wOptions;
                                 this.options = opts;
-                                for (let [i, item] of opts.entries()) {
-                                    if (item[labelName] === v) {
-                                        this.value = item[this.labelName];
-                                        break;
-                                    }
-                                    if (i === opts.length - 1) {
-                                        this.isOK = false;
+                                let cellVals = [],
+                                    items = [];
+                                if (multiple) {
+                                    v = v.split(",");
+                                    v.map(item => {
+                                        for (let k of opts.values()) {
+                                            if (item === k[labelName]) {
+                                                items.push(k);
+                                                cellVals.push(k[valueName]);
+                                                break;
+                                            }
+                                        }
+                                    });
+                                    cellVals.length
+                                        ? (this.value = cellVals)
+                                        : (this.isOK = false);
+                                    this.keyOpts[key] = {
+                                        opts: items
+                                    };
+                                    this.selectVals[
+                                        `key-${key}-value-${cellVals}`
+                                    ] = items;
+                                    this.$emit("getSelectOpts", {
+                                        keyOpts: this.keyOpts,
+                                        selectVals: this.selectVals,
+                                        noEmit: true
+                                    });
+                                } else {
+                                    for (let [i, item] of opts.entries()) {
+                                        if (item[labelName] === v) {
+                                            this.value = item[this.labelName];
+                                            this.keyOpts[key] = {
+                                                opts: [item]
+                                            };
+                                            this.selectVals[
+                                                `key-${key}-value-${this.value}`
+                                            ] = item;
+                                            this.$emit("getSelectOpts", {
+                                                keyOpts: this.keyOpts,
+                                                selectVals: this.selectVals,
+                                                noEmit: true
+                                            });
+                                            break;
+                                        }
+                                        if (i === opts.length - 1) {
+                                            this.isOK = false;
+                                        }
                                     }
                                 }
                                 break;
@@ -263,14 +345,27 @@ export default {
                 this.loading = true;
                 this.debounceAjax.call(this, v, "remoteMethod");
             } else {
-                this.options = [];
-                this.isOK = false;
+                if (this.multiple) {
+                    if (!this.value.length) {
+                        this.options = [];
+                        this.isOK = false;
+                    }
+                } else {
+                    this.options = [];
+                    this.isOK = false;
+                }
                 this.loading = false;
             }
         },
         search(query, source) {
             if (query) {
-                let { coords, ajaxConfig } = this,
+                let {
+                        coords,
+                        ajaxConfig,
+                        labelName,
+                        multiple,
+                        valueName
+                    } = this,
                     { queryField, data, param, header } = ajaxConfig || {};
                 ajaxConfig.data =
                     data instanceof Function ? data(coords) : data;
@@ -291,21 +386,40 @@ export default {
                 fn("param", param);
                 utils.ajax(ajaxConfig).then(v => {
                     this.options = v;
-                    if (
-                        v.length === 1 &&
-                        v[0] &&
-                        v[0][this.labelName] === query
-                    ) {
-                        this.value = v[0][this.labelName];
-                    } else {
-                        for (let [i, item] of v.entries()) {
-                            if (item[this.labelName] === query) {
-                                if (source !== "remoteMethod")
-                                    this.value = item[this.labelName];
-                                break;
+                    if (multiple) {
+                        let cellVals = [];
+                        query = query.split(",");
+                        query.map(item => {
+                            for (let k of v.values()) {
+                                if (item === k[labelName]) {
+                                    cellVals.push(k[valueName]);
+                                    break;
+                                }
                             }
-                            if (i === v.length - 1) {
-                                this.isOK = false;
+                        });
+                        if (cellVals.length) {
+                            this.$nextTick(() => {
+                                this.value = cellVals;
+                            });
+                        }
+                    } else {
+                        if (
+                            v.length === 1 &&
+                            v[0] &&
+                            v[0][labelName] === query
+                        ) {
+                            this.value = v[0][labelName];
+                        } else {
+                            for (let [i, item] of v.entries()) {
+                                if (item[labelName] === query) {
+                                    if (source !== "remoteMethod") {
+                                        this.value = item[labelName];
+                                    }
+                                    break;
+                                }
+                                if (i === v.length - 1) {
+                                    this.isOK = false;
+                                }
                             }
                         }
                     }
