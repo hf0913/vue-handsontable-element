@@ -288,10 +288,13 @@ export default {
                 selectBoxConfig
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
-                const lastIndex = autoRowSizePlugin.getLastVisibleRow();
-                const currentLen = core.getData().length;
-
-                if (lastIndex >= currentLen - 3) {
+                const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
+                    sourceData = core.getSourceData(),
+                    currentLen = sourceData.length;
+                if (
+                    lastIndex >= currentLen - 3 &&
+                    currentLen < copyData.length
+                ) {
                     this.stopLazyAbled = false;
                     lastPage = (lastPage || lastIndex) + pageSize;
                     let data = copyData.slice(0, lastPage);
@@ -305,8 +308,9 @@ export default {
                         data
                     });
                     this.lastPage = lastPage;
+
                     let t = setTimeout(() => {
-                        core.scrollViewportTo(lastIndex - pageSize / 2);
+                        core.scrollViewportTo(lastIndex - 2);
                         this.stopLazyAbled = true;
                         clearTimeout(t);
                         t = null;
@@ -430,7 +434,8 @@ export default {
                             subType,
                             type,
                             checkedTemplate,
-                            uncheckedTemplate
+                            uncheckedTemplate,
+                            ajaxConfig
                         } = newItem;
 
                         let opts = newItem.options || newItem.source;
@@ -486,6 +491,18 @@ export default {
                                         ? v
                                         : o[extraField]
                                 };
+                                if (
+                                    extraField === "_extraField_" &&
+                                    o[k] == null &&
+                                    ajaxConfig &&
+                                    ajaxConfig.url
+                                ) {
+                                    o = {
+                                        ...o,
+                                        [k]: v,
+                                        [extraField]: undefined
+                                    };
+                                }
                             } else {
                                 o = {
                                     ...o,
