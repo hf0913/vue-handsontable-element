@@ -45,20 +45,28 @@ function debounce(fn, delay = 128) {
  */
 function checkType({ value, item }) {
     let state = true,
-        { numericFormat = {}, subType, type } = item,
         opts = [],
+        itemData,
         asyncOpts;
     const key = item.key || item.data,
         { keyOpts, selectVals, getDataDoubled, cascaderVals } = this;
 
     for (let [, w] of this.columns.entries()) {
         if (w.key === key || w.data === key) {
+            itemData = w;
             asyncOpts = w.asyncOpts;
             const wOptions = w.options || w.source || [];
             opts = wOptions instanceof Function ? wOptions() || [] : wOptions;
             break;
         }
     }
+    let {
+        numericFormat = {},
+        subType,
+        type,
+        props: { multiple } = {},
+        labelName
+    } = itemData;
 
     if (value === "" || value == null || value === false) {
         return item.allowEmpty !== false;
@@ -122,27 +130,67 @@ function checkType({ value, item }) {
                 commit();
                 return (state = true);
             }
-            for (const [i, ele] of processOpts.entries()) {
-                if (ele === value) {
-                    const d = keyOptions.opts[i];
-                    selectVals[`key-${key}-value-${value}`] = d;
-                    keyOpts[key].processOpts = [d];
-                    keyOpts[key].opts = d;
-                    commit();
-                    return (state = true);
-                }
-            }
-            for (const ele of opts.values()) {
-                const val = ele[item.labelName || "label"];
-                if (val === value) {
-                    selectVals[`key-${key}-value-${value}`] = ele;
+
+            if (multiple && value) {
+                let cellVals = [];
+                value = value.split(",");
+                value.map(item => {
+                    for (let k of processOpts.values()) {
+                        if (item === k[labelName]) {
+                            cellVals.push(k);
+                            break;
+                        }
+                    }
+                });
+                if (cellVals.length && cellVals.length === value.length) {
+                    selectVals[`key-${key}-value-${value}`] = cellVals;
                     keyOpts[key] = Object.assign(keyOptions, {
-                        processOpts: [val],
-                        opts: [ele]
+                        processOpts: cellVals,
+                        opts: cellVals
                     });
                     return (state = true);
                 }
+                cellVals = [];
+                value.map(item => {
+                    for (let k of opts.values()) {
+                        if (item === k[labelName]) {
+                            cellVals.push(k);
+                            break;
+                        }
+                    }
+                });
+                if (cellVals.length && cellVals.length === value.length) {
+                    selectVals[`key-${key}-value-${value}`] = cellVals;
+                    keyOpts[key] = Object.assign(keyOptions, {
+                        processOpts: cellVals,
+                        opts: cellVals
+                    });
+                    return (state = true);
+                }
+            } else {
+                for (const [i, ele] of processOpts.entries()) {
+                    if (ele === value) {
+                        const d = keyOptions.opts[i];
+                        selectVals[`key-${key}-value-${value}`] = d;
+                        keyOpts[key].processOpts = [d];
+                        keyOpts[key].opts = d;
+                        commit();
+                        return (state = true);
+                    }
+                }
+                for (const ele of opts.values()) {
+                    const val = ele[item.labelName || "label"];
+                    if (val === value) {
+                        selectVals[`key-${key}-value-${value}`] = ele;
+                        keyOpts[key] = Object.assign(keyOptions, {
+                            processOpts: [val],
+                            opts: [ele]
+                        });
+                        return (state = true);
+                    }
+                }
             }
+
             if (!opts.length && (asyncOpts || subType === "select"))
                 state = true;
             break;

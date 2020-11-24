@@ -51,6 +51,7 @@ export default {
     data() {
         return {
             value: null,
+            lableOpts: [],
             show: true,
             coords: {},
             top: 0,
@@ -86,13 +87,23 @@ export default {
         visibleChange(v) {
             if (!v) {
                 this.show = true;
-                const { row, col } = this.coords;
-                let cellVals = [],
-                    items = [],
-                    { valueName, labelName, value, options, key } = this;
-                if (this.multiple) {
+                let items = [],
+                    {
+                        valueName,
+                        labelName,
+                        value,
+                        options,
+                        key,
+                        coords,
+                        multiple,
+                        lableOpts
+                    } = this,
+                    cellVals = [],
+                    { row, col } = coords;
+                if (multiple) {
+                    const opts = [...lableOpts, ...options];
                     value.map(item => {
-                        for (let k of options.values()) {
+                        for (let k of opts.values()) {
                             if (item === k[valueName]) {
                                 items.push(k);
                                 cellVals.push(k[labelName]);
@@ -127,7 +138,20 @@ export default {
             }
         },
         change(v) {
-            if (!this.multiple) {
+            if (this.multiple) {
+                const { options, valueName } = this;
+                let lableOpts = this.lableOpts;
+                options.map(item => {
+                    if (
+                        ~v.findIndex(ele => ele === item[valueName]) &&
+                        !~lableOpts.findIndex(
+                            ele => ele[valueName] === item[valueName]
+                        )
+                    ) {
+                        lableOpts.push(item);
+                    }
+                });
+            } else {
                 this.controlPickerPanel(false);
                 this.changeCells(v);
             }
@@ -249,7 +273,7 @@ export default {
                         if (!itemData) {
                             this.value = multiple ? [] : null;
                             this.options = [];
-                            this.search(v);
+                            this.search(v, "autoFill");
                         }
                     } else {
                         if (!itemData) {
@@ -343,7 +367,7 @@ export default {
         remoteMethod(v) {
             if (v) {
                 this.loading = true;
-                this.debounceAjax.call(this, v, "remoteMethod");
+                this.debounceAjax.call(this, v);
             } else {
                 if (this.multiple) {
                     if (!this.value.length) {
@@ -399,7 +423,8 @@ export default {
                         });
                         if (cellVals.length) {
                             this.$nextTick(() => {
-                                this.value = cellVals;
+                                if (source === "autoFill")
+                                    this.value = cellVals;
                             });
                         }
                     } else {
@@ -411,10 +436,11 @@ export default {
                             this.value = v[0][labelName];
                         } else {
                             for (let [i, item] of v.entries()) {
-                                if (item[labelName] === query) {
-                                    if (source !== "remoteMethod") {
-                                        this.value = item[labelName];
-                                    }
+                                if (
+                                    item[labelName] === query &&
+                                    source === "autoFill"
+                                ) {
+                                    this.value = item[labelName];
                                     break;
                                 }
                                 if (i === v.length - 1) {
