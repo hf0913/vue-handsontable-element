@@ -746,48 +746,54 @@ export default {
             core && core.render();
         },
         afterValidate(isValid, value, row, prop) {
-            const customValidate = this.settings.customValidate;
+            const {
+                selectBoxConfig,
+                settings,
+                getDataDoubled,
+                hasColumnSummary,
+                core,
+                myColumns
+            } = this;
+            const customValidate = settings.customValidate;
 
-            if (this.getDataDoubled && this.settings.openEmptyValid) {
-                const hasDefaultValFileds =
-                    this.settings.hasDefaultValFileds || [];
+            if (getDataDoubled && settings.openEmptyValid) {
+                const hasDefaultValFileds = settings.hasDefaultValFileds || [];
 
-                if (
-                    this.hasColumnSummary &&
-                    row + 1 === this.core.countRows()
-                ) {
+                if (hasColumnSummary && row + 1 === core.countRows()) {
                     return true;
                 }
 
-                const isEmptyRow = this.core.isEmptyRow(row);
+                const isEmptyRow = core.isEmptyRow(row);
 
                 if (isEmptyRow) {
                     isValid = true;
                 } else {
-                    const rowData = this.core.getDataAtRow(row);
+                    const rowData = core.getDataAtRow(row);
                     let itemData = {};
                     let emptyCount = 0;
 
-                    for (let [j, item] of this.myColumns.entries()) {
+                    for (let [j, item] of myColumns.entries()) {
                         const k = item.data || item.key || "maple-field";
                         const i = hasDefaultValFileds.indexOf(k);
                         const key = hasDefaultValFileds[i];
                         const v = rowData[j];
+                        const emptyVal =
+                            v === "" ||
+                            v == null ||
+                            v === false ||
+                            v === item.uncheckedTemplate;
 
                         if (k === prop) itemData = item;
-                        if (
-                            k !== key &&
-                            (v === "" ||
-                                v == null ||
-                                v === false ||
-                                v === item.uncheckedTemplate)
-                        ) {
+                        if (k === selectBoxConfig.key && emptyVal) {
+                            return true;
+                        }
+                        if (k !== key && emptyVal) {
                             emptyCount++;
                         }
                     }
                     if (
                         emptyCount + hasDefaultValFileds.length ===
-                            this.core.countCols() &&
+                            core.countCols() &&
                         itemData.allowEmpty === false
                     ) {
                         isValid = true;

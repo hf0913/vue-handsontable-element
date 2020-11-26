@@ -123,10 +123,13 @@
                         data: "numeric",
                         type: "numeric",
                         subType: "posInt", // 正整数类型
+                        allowZero: true, // subType为"posInt"时，是否允许赋值为0
                         numericFormat: {
                             pattern: "0.00", // 显示值类型
                             min: 0, // 最小值
-                            max: 1208 // 最大值
+                            max: 1208, // 最大值
+                            minInclude: false, // 是否包含最小值，默认true
+                            maxInclude: false, // 是否包含最大值，默认true
                         }
                     },
                     {
@@ -240,6 +243,8 @@
                     readOnly: false, // table是否只读
                     columnSorting: true, // 开启排序
                     wordWrap: false, // 不换行
+                    cacheId: "inventoryPricingMainTable", // 拖拽缓存唯一标记
+                    openCache: false, // 是否开启拖拽缓存
                     nestedHeaders: [
                         // 合并表头
                         ["A", { label: "B", colspan: 8 }, "C"],

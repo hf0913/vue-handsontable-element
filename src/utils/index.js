@@ -76,15 +76,20 @@ function checkType({ value, item }) {
         case type === "numeric":
             state = !isNaN(value - 0);
             if (state) {
-                const { min, max } = numericFormat;
+                const { min, max, minInclude, maxInclude } = numericFormat;
                 if (min != null) {
-                    state = min === -Infinity ? true : value - 0 >= min;
+                    if (minInclude === false)
+                        state = min === -Infinity ? true : value - 0 > min;
+                    else state = min === -Infinity ? true : value - 0 >= min;
                 }
                 if (max != null && state) {
-                    state = value - 0 <= max;
+                    if (maxInclude === false) state = value - 0 < max;
+                    else state = value - 0 <= max;
                 }
                 if (item.subType === "posInt" && state) {
-                    state = value - 0 > 0 && !(value + "").includes(".");
+                    if (item.allowZero)
+                        state = value - 0 >= 0 && !(value + "").includes(".");
+                    else state = value - 0 > 0 && !(value + "").includes(".");
                 }
             }
             break;
