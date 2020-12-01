@@ -142,7 +142,8 @@ export default {
             autoRowSizePlugin: null,
             lastPage: null,
             copyData: [],
-            stopLazyAbled: true
+            stopLazyAbled: true,
+            emptyWidth: "100%"
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -155,6 +156,7 @@ export default {
     },
     activated() {
         this.fixView();
+        this.changeEmptyWidth(this.settings.data);
     },
     methods: {
         getCascaderVals(o) {
@@ -223,6 +225,7 @@ export default {
             let hiddCols = [];
             let { data, lastPage, pageSize, lazyLoadAbled } = this;
             this.copyData = data;
+            this.changeEmptyWidth(data);
             if (this.options.cacheId && this.options.openCache) {
                 hiddCols = JSON.parse(
                     localStorage.getItem(
@@ -929,15 +932,16 @@ export default {
         },
         changeCheckAllabled(bl) {
             this.checkAllabled = bl;
-        }
-    },
-    computed: {
-        emptyWidth() {
-            if (!this.settings.data.length) {
-                let h = document.querySelector("table");
-                return `${h && h.clientWidth}px`;
-            }
-            return "auto";
+        },
+        changeEmptyWidth(d) {
+            this.$nextTick(() => {
+                let w = "100%";
+                if (!d.length) {
+                    let $w = this.$el.querySelector("table");
+                    w = `${$w && $w.clientWidth}px`;
+                }
+                this.emptyWidth = w;
+            });
         }
     },
     watch: {
