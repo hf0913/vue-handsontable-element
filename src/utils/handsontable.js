@@ -35,7 +35,7 @@ function colHeaders(col) {
     if (item.subType === "selection" && item.type === "checkbox") {
         this.checkboxAllIndex = col;
         return `<input type="checkbox" id="maple-all-checkbox" index=${col}CDC ${
-            checkAllabled ? "checked" : ""
+            checkAllabled && data && data.length ? "checked" : ""
         } ${settings.readOnly || !data.length ? "disabled" : ""} />`;
     }
     return `
