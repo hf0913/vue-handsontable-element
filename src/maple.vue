@@ -939,6 +939,7 @@ export default {
                 if (!d.length) {
                     let $w = this.$el.querySelector("table");
                     w = `${$w && $w.clientWidth}px`;
+                    this.changeCheckAllabled(false);
                 }
                 this.emptyWidth = w;
             });
