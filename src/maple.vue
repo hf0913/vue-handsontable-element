@@ -330,8 +330,11 @@ export default {
         },
         afterChange(changes, source) {
             if (!changes) return;
-            const { key = "mapleChecked", col = 0 } =
-                this.selectBoxConfig || {};
+            const {
+                key = "mapleChecked",
+                col = 0,
+                checkedTemplate = "checkedTemplate"
+            } = this.selectBoxConfig || {};
             const checkBoxVal = this.getKeyChange(key, changes);
             let checked = [];
 
@@ -339,7 +342,7 @@ export default {
                 let { length: len } = this.core
                     .getDataAtCol(col)
                     .filter((bl, row) => {
-                        if (bl) {
+                        if (bl || bl === checkedTemplate) {
                             checked.push({
                                 row,
                                 checked: bl
@@ -347,10 +350,8 @@ export default {
                         }
                         return bl;
                     });
-                let countRows = this.core.countRows();
-
-                if (this.hasColumnSummary) countRows--;
-                let bl = len === countRows;
+                let countRows = this.core.countRows(),
+                    bl = len === countRows;
                 if (bl !== this.checkAllabled) {
                     this.checkAllabled = bl;
                     this.core.render();
