@@ -384,6 +384,7 @@ function customColumns() {
                     (hasColumnSummary || showLastTotalText) &&
                     row === instance.countRows() - 1
                 ) {
+                    data[row][prop] = false;
                     td.innerHTML = "合计";
                     td.setAttribute("class", "maple-table-total");
                     td.parentElement &&
