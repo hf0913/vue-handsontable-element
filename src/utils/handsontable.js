@@ -355,7 +355,7 @@ function customColumns() {
 
                     data.filter((item, row) => {
                         let cVal = item[prop];
-                        if (item[prop]) {
+                        if (cVal) {
                             checked.push({
                                 row,
                                 checked: cVal
@@ -372,6 +372,12 @@ function customColumns() {
                         checked,
                         columns: myColumns
                     });
+                    this.checkAllabled = !!((checked.length &&
+                        hasColumnSummary) ||
+                    showLastTotalText
+                        ? checked.length === data.length - 1
+                        : checked.length === data.length);
+                    instance.render();
                 });
                 if (
                     col === 0 &&
@@ -423,7 +429,7 @@ function customColumns() {
 
                     data.filter((item, row) => {
                         let cVal = item[prop];
-                        if (item[prop]) {
+                        if (cVal) {
                             checked.push({
                                 row,
                                 checked: cVal
@@ -440,6 +446,12 @@ function customColumns() {
                         checked,
                         columns: myColumns
                     });
+                    this.checkAllabled = !!((checked.length &&
+                        hasColumnSummary) ||
+                    showLastTotalText
+                        ? checked.length === data.length - 1
+                        : checked.length === data.length);
+                    instance.render();
                 });
                 td.setAttribute("class", "maple-custom-checkbox-td");
                 $div.appendChild($el);

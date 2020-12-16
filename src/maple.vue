@@ -331,15 +331,22 @@ export default {
         afterChange(changes, source) {
             if (!changes) return;
             const {
-                key = "mapleChecked",
-                col = 0,
-                checkedTemplate = "checkedTemplate"
-            } = this.selectBoxConfig || {};
-            const checkBoxVal = this.getKeyChange(key, changes);
+                    hasColumnSummary,
+                    showLastTotalText,
+                    selectBoxConfig,
+                    getKeyChange,
+                    core
+                } = this,
+                {
+                    key = "mapleChecked",
+                    col = 0,
+                    checkedTemplate = "checkedTemplate"
+                } = selectBoxConfig || {},
+                checkBoxVal = getKeyChange(key, changes);
             let checked = [];
 
             if (checkBoxVal.length) {
-                let { length: len } = this.core
+                let { length: len } = core
                     .getDataAtCol(col)
                     .filter((bl, row) => {
                         if (bl || bl === checkedTemplate) {
@@ -350,11 +357,14 @@ export default {
                         }
                         return bl;
                     });
-                let countRows = this.core.countRows(),
-                    bl = len === countRows;
+                let countRows = core.countRows(),
+                    bl =
+                        hasColumnSummary || showLastTotalText
+                            ? len === countRows - 1
+                            : len === countRows;
                 if (bl !== this.checkAllabled) {
                     this.checkAllabled = bl;
-                    this.core.render();
+                    core.render();
                 }
             }
 
@@ -640,32 +650,40 @@ export default {
         },
         checkAllBox(event, coords, $el) {
             if (!coords) return;
-            const { row, col } = coords;
+            const { row, col } = coords,
+                {
+                    showLastTotalText,
+                    hasColumnSummary,
+                    core,
+                    getKeyChange,
+                    filterKeysChanges,
+                    myColumns
+                } = this;
             let type = "checkbox";
 
             if (event.target.id === "maple-all-checkbox") {
                 const checkAllableds = [];
 
                 this.checkAllabled = !this.checkAllabled;
-                for (let i = 0; i < this.core.countRows(); i++) {
+                for (let i = 0; i < core.countRows(); i++) {
                     if (
-                        this.hasColumnSummary &&
-                        i === this.core.countRows() - 1
+                        (hasColumnSummary || showLastTotalText) &&
+                        i === core.countRows() - 1
                     ) {
                         continue;
                     }
                     checkAllableds.push([i, col, this.checkAllabled]);
                 }
-                this.core.setDataAtCell(checkAllableds);
+                core.setDataAtCell(checkAllableds);
                 type = "allCheckbox";
                 this.$emit("change", {
                     type,
                     event,
-                    core: this.core,
+                    core: core,
                     checkAllabled: this.checkAllabled,
-                    getKeyChange: this.getKeyChange,
-                    filterKeysChanges: this.filterKeysChanges,
-                    columns: this.myColumns
+                    getKeyChange: getKeyChange,
+                    filterKeysChanges: filterKeysChanges,
+                    columns: myColumns
                 });
             }
             this.$emit("click", {
