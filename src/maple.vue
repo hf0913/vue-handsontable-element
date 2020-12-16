@@ -173,7 +173,15 @@ export default {
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
-            if (columns[col] == null) return;
+            if (columns[col] == null)
+                return this.$emit("cellDblClick", {
+                    mouseEvent,
+                    $el,
+                    coord: {
+                        row,
+                        col
+                    }
+                });
             const { readOnly } = this.core.getCellMeta(row, col);
             let { subType } = columns[col];
 
