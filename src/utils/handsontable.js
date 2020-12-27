@@ -1,5 +1,5 @@
 import utils from "./index";
-import maple from "handsontable";
+import maple from "custom-handsontable";
 function getColumns(t) {
     let _cols = [];
     if (!t) this.myColumns = JSON.parse(JSON.stringify(this.columns));
