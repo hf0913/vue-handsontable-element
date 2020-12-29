@@ -242,6 +242,9 @@ export default {
                 );
             }
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
+            this.hasColumnSummary =
+                this.options.columnSummary &&
+                this.options.columnSummary.length > 0;
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
                 data: lazyLoadAbled
@@ -273,11 +276,35 @@ export default {
                     if (this.stopKeyEvent) {
                         event.stopImmediatePropagation();
                     }
+                },
+                depthFilterByValue: (d, m) => {
+                    // 针对filter_by_value选项，深度过滤选项值最终显示结果
+                    const lastRow = m.hot.countRows() - 1,
+                        { showLastTotalText, hasColumnSummary } = this;
+
+                    return ~d.indexOf(lastRow)
+                        ? d
+                        : d.concat(
+                              hasColumnSummary || showLastTotalText
+                                  ? [lastRow]
+                                  : []
+                          );
+                },
+                getColumnVisibleValuesDepth: (d, m) => {
+                    // 针对filter_by_value选项，深度过滤选项列表
+                    const lastRow = m.hot.countRows() - 1,
+                        { showLastTotalText, hasColumnSummary } = this;
+
+                    return ~d.indexOf(lastRow)
+                        ? d
+                        : d.slice(
+                              0,
+                              hasColumnSummary || showLastTotalText
+                                  ? lastRow - 1
+                                  : lastRow
+                          );
                 }
             });
-            this.hasColumnSummary =
-                this.settings.columnSummary &&
-                this.settings.columnSummary.length > 0;
             this.core.updateSettings(this.settings);
         },
         hiddenPopup(type, e) {
@@ -411,6 +438,11 @@ export default {
                 });
             }
             this.getDataDoubled = true;
+            const filtersPlugin = this.core.getPlugin("filters");
+            for (let i of this.columns.keys()) {
+                filtersPlugin.removeConditions(i);
+            }
+            filtersPlugin.filter();
             return new Promise(resolve => {
                 const d = this.core.getData();
                 const data = [];
