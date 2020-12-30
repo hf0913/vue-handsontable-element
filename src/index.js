@@ -4,7 +4,7 @@ import MapleCascader from "./components/MapleCascader.vue";
 import utils from "./utils";
 import "./maple.css";
 import "custom-handsontable/languages/zh-CN";
-import "custom-handsontable/dist/handsontable.full.css";
+import "custom-handsontable/dist/custom-handsontable.full.css";
 import "element-ui/lib/theme-chalk/index.css";
 // const viewsFiles = require.context('../views/',true,/\.vue/)
 const components = [MapleHandsontable, MapleDatePicker, MapleCascader];

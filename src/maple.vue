@@ -150,7 +150,6 @@ export default {
     mounted() {
         this.$emit("getCore", this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
-        this.$el.addEventListener("dblclick", this.cellDblClick);
         this.autoRowSizePlugin = this.core.getPlugin("autoRowSize");
         this.init();
     },
@@ -168,7 +167,8 @@ export default {
             this.selectVals = o.selectVals;
             this.keyOpts = o.keyOpts;
         },
-        cellDblClick(mouseEvent) {
+        cellDblClick(o) {
+            const {event: mouseEvent} = o;
             const columns = getColumns.call(this, "no");
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
@@ -180,7 +180,8 @@ export default {
                     coord: {
                         row,
                         col
-                    }
+                    },
+                    eventData: o
                 });
             const { readOnly } = this.core.getCellMeta(row, col);
             let { subType } = columns[col];
@@ -226,7 +227,8 @@ export default {
                 coord: {
                     row,
                     col
-                }
+                },
+                eventData: o
             });
         },
         init() {
@@ -303,7 +305,8 @@ export default {
                                   ? lastRow - 1
                                   : lastRow
                           );
-                }
+                },
+                onCellDblClick: this.cellDblClick
             });
             this.core.updateSettings(this.settings);
         },
@@ -1018,7 +1021,6 @@ export default {
     },
     beforeDestroy() {
         Object.assign(this.$data, {});
-        this.$el.removeEventListener("dblclick", this.cellDblClick);
     }
 };
 </script>

@@ -1,6 +1,6 @@
 {
     "name": "vue-handsontable-element",
-    "version": "4.9.7",
+    "version": "4.9.8",
     "description": "handsontable for vue",
     "author": "Maple <fenghu0913@gmail.com>",
     "license": "ISC",
@@ -14,7 +14,7 @@
     "scripts": {
         "clean": "rimraf dist",
         "build": "npm run clean && cross-env NODE_ENV=production webpack --progress --hide-modules",
-        "release": "npm run build && npm run publish"
+        "release": "npm run build && npm publish"
     },
     "jest": {
         "moduleFileExtensions": [
@@ -50,7 +50,7 @@
         "babel-preset-stage-2": "^6.24.1",
         "cross-env": "^3.0.0",
         "css-loader": "^0.25.0",
-        "custom-handsontable": "^1.0.2",
+        "custom-handsontable": "^1.0.3",
         "element-ui": "^2.13.2",
         "file-loader": "^0.9.0",
         "jest": "^22.4.4",
