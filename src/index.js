@@ -6,10 +6,12 @@ import "./maple.css";
 import "custom-handsontable/languages/zh-CN";
 import "custom-handsontable/dist/custom-handsontable.full.css";
 import "element-ui/lib/theme-chalk/index.css";
-// const viewsFiles = require.context('../views/',true,/\.vue/)
+import ElSelect from "./components/ElSelect";
+import ElOption from "./components/ElOption";
+
 const components = [MapleHandsontable, MapleDatePicker, MapleCascader];
 
-export { MapleHandsontable, MapleDatePicker, MapleCascader, utils };
+export { MapleHandsontable, MapleDatePicker, MapleCascader, utils ,ElSelect, ElOption};
 
 export default function install(Vue) {
     components.map(component => {
