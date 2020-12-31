@@ -51,8 +51,7 @@ export default {
             cascaderAbled: false,
             address: [],
             cascaderVals: {},
-            loading: false,
-            timer: null
+            loading: false
         };
     },
     mounted() {
@@ -199,12 +198,10 @@ export default {
                 }
                 this.options = opts;
                 if (opts.length) {
-                    clearTimeout(this.timer);
                     this.$refs.cascaderRef.$refs.panel.activePath = [];
                     this.$el.click();
                     this.$el.querySelector("input").focus();
                 } else {
-                    clearTimeout(this.timer);
                     this.$el.click();
                     this.changeEmptyText("暂无数据");
                 }
@@ -228,16 +225,13 @@ export default {
             this.cascaderAbled = false;
             if (bl) {
                 this.cascaderAbled = true;
-                this.timer = setTimeout(() => {
-                    this.options = [];
+                let timer = setTimeout(() => {
                     this.$refs.cascaderRef.$refs.panel.activePath = [];
                     this.$el.click();
-                    this.$el.querySelector("input").focus();
                     this.changeEmptyText();
-                    clearTimeout(this.timer);
+                    clearTimeout(timer);
                 }, 60);
             } else {
-                clearTimeout(this.timer);
                 this.changeEmptyText("加载中");
                 this.$nextTick(() => {
                     const $pop = document.querySelector(
