@@ -168,7 +168,7 @@ export default {
             this.keyOpts = o.keyOpts;
         },
         cellDblClick(o) {
-            const {event: mouseEvent} = o;
+            const { event: mouseEvent } = o;
             const columns = getColumns.call(this, "no");
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
@@ -441,11 +441,20 @@ export default {
                 });
             }
             this.getDataDoubled = true;
-            const filtersPlugin = this.core.getPlugin("filters");
-            for (let i of this.columns.keys()) {
-                filtersPlugin.removeConditions(i);
+            if (this.settings.filters) {
+                const filtersPlugin = this.core.getPlugin("filters");
+                for (let i of this.columns.keys()) {
+                    filtersPlugin.removeConditions(i);
+                }
+                filtersPlugin.filter();
+                this.core.updateSettings({
+                    hiddenRows: {
+                        copyPasteEnabled: true,
+                        indicators: true,
+                        rows: []
+                    }
+                });
             }
-            filtersPlugin.filter();
             return new Promise(resolve => {
                 const d = this.core.getData();
                 const data = [];
