@@ -274,6 +274,7 @@ export default {
                 afterHideColumns: this.afterHideColumns,
                 afterUnhideColumns: this.afterUnhideColumns,
                 afterColumnMove: this.afterColumnMove,
+                afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
                         event.stopImmediatePropagation();
@@ -314,7 +315,7 @@ export default {
             this.$refs.datePickerRef.controlOpen();
             this.$refs.cascaderRef.controlOpen();
             this.$refs.selectRef.controlOpen();
-            this.$emit(type, e);
+            if (type) this.$emit(type, e);
         },
         lazyLoadData() {
             let {
@@ -358,6 +359,9 @@ export default {
                     }, 128);
                 }
             }
+        },
+        afterOnCellCornerDblClick(event) {
+            this.hiddenPopup("afterOnCellCornerDblClick", event);
         },
         afterScrollVertically() {
             this.hiddenPopup("afterScrollVertically");
@@ -441,20 +445,7 @@ export default {
                 });
             }
             this.getDataDoubled = true;
-            if (this.settings.filters) {
-                const filtersPlugin = this.core.getPlugin("filters");
-                for (let i of this.columns.keys()) {
-                    filtersPlugin.removeConditions(i);
-                }
-                filtersPlugin.filter();
-                this.core.updateSettings({
-                    hiddenRows: {
-                        copyPasteEnabled: true,
-                        indicators: true,
-                        rows: []
-                    }
-                });
-            }
+            if (this.settings.filters) this.clearFilters();
             return new Promise(resolve => {
                 const d = this.core.getData();
                 const data = [];
@@ -750,8 +741,18 @@ export default {
             });
         },
         clearFilters() {
-            this.core.getPlugin("filters").clearConditions();
-            this.core.getPlugin("filters").filter();
+            const filtersPlugin = this.core.getPlugin("filters");
+            for (let i of this.columns.keys()) {
+                filtersPlugin.removeConditions(i);
+            }
+            filtersPlugin.filter();
+            this.core.updateSettings({
+                hiddenRows: {
+                    copyPasteEnabled: true,
+                    indicators: true,
+                    rows: []
+                }
+            });
         },
         getKeyChange(key, changes, filterSummaryRow = false, precise = true) {
             let o = [];
