@@ -2,7 +2,7 @@ import utils from "./index";
 import maple from "custom-handsontable";
 function getColumns(t) {
     let _cols = [];
-    if (!t) this.myColumns = JSON.parse(JSON.stringify(this.columns));
+    if (!t) this.myColumns = utils.deepCopy(this.columns);
     if (this.options.cacheId && this.options.openCache) {
         _cols = JSON.parse(
             localStorage.getItem(`${this.options.cacheId}-columns`) || "[]"

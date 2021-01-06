@@ -28,12 +28,12 @@ function exchange({ data, currentValue, currentKey }) {
  * @param {*} delay
  */
 function debounce(fn, delay = 128) {
-    return function() {
+    return function () {
         let self = this;
         let args = arguments;
 
         timer && clearTimeout(timer);
-        timer = setTimeout(function() {
+        timer = setTimeout(function () {
             fn.apply(self, args);
         }, delay);
     };
@@ -268,7 +268,7 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             ? new window.XMLHttpRequest()
             : new window.ActiveXObject("Microsoft.XMLHTTP");
 
-        xmlhttp.onreadystatechange = function() {
+        xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
@@ -410,6 +410,55 @@ function collageAddress(address) {
     }
     return options;
 }
+/**
+ * @description 类型判断
+ * @param {any} obj 需要判断的对象
+ * @returns 类型
+ */
+function typeOf(obj) {
+    const toString = Object.prototype.toString;
+    const map = {
+        "[object Boolean]": "boolean",
+        "[object Number]": "number",
+        "[object String]": "string",
+        "[object Function]": "function",
+        "[object Array]": "array",
+        "[object Date]": "date",
+        "[object RegExp]": "regExp",
+        "[object Undefined]": "undefined",
+        "[object Null]": "null",
+        "[object Object]": "object"
+    };
+    return map[toString.call(obj)];
+}
+/**
+ * @description 深度拷贝
+ * @param {any} data 需要拷贝的对象
+ * @returns 拷贝后的对象
+ */
+function deepCopy(data) {
+    const t = typeOf(data);
+    let o;
+
+    if (t === "array") {
+        o = [];
+    } else if (t === "object") {
+        o = {};
+    } else {
+        return data;
+    }
+
+    if (t === "array") {
+        for (let i = 0; i < data.length; i++) {
+            o.push(deepCopy(data[i]));
+        }
+    } else if (t === "object") {
+        for (let i in data) {
+            o[i] = deepCopy(data[i]);
+        }
+    }
+    return o;
+}
 
 const maple = {
     exchange,
@@ -420,7 +469,8 @@ const maple = {
     getHasValue,
     collageAddress,
     address,
-    ajax
+    ajax,
+    deepCopy
 };
 
 export default maple;
