@@ -303,7 +303,7 @@ function customColumns() {
                     row !== singleSelectIndex &&
                     checkedVal
                 ) {
-                    if (singleSelectIndex >= 0) {
+                    if (singleSelectIndex >= 0 && data[singleSelectIndex]) {
                         data[singleSelectIndex][prop] = false;
                     }
                     this.singleSelectIndex = row;
@@ -346,7 +346,7 @@ function customColumns() {
                             clearTimeout(timer);
                             timer = null;
                         }, 128);
-                        if (singleSelectIndex >= 0) {
+                        if (singleSelectIndex >= 0 && data[singleSelectIndex]) {
                             data[singleSelectIndex][prop] = false;
                             instance.render();
                         }
@@ -422,7 +422,7 @@ function customColumns() {
                             (singleSelectConfig.openAbled &&
                                 singleSelectConfig.strict &&
                                 checkedClickVal);
-                        if (singleSelectIndex >= 0) {
+                        if (singleSelectIndex >= 0 && data[singleSelectIndex]) {
                             data[singleSelectIndex][prop] = false;
                             instance.render();
                         }
