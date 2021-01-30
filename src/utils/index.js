@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import address from "./address";
+import address from './address';
 let addressOtps = [];
 let timer;
 /**
@@ -12,7 +12,7 @@ let timer;
 function exchange({ data, currentValue, currentKey }) {
     let o = {};
     if (data instanceof Array) {
-        if (currentValue == "" || currentValue == null) return o;
+        if (currentValue == '' || currentValue == null) return o;
         for (let item of data.values()) {
             if (item[currentKey] == currentValue) {
                 o = item;
@@ -68,12 +68,12 @@ function checkType({ value, item }) {
         labelName
     } = itemData;
 
-    if (value === "" || value == null || value === false) {
+    if (value === '' || value == null || value === false) {
         return item.allowEmpty !== false;
     }
 
     switch (true) {
-        case type === "numeric":
+        case type === 'numeric':
             state = !isNaN(value - 0);
             if (state) {
                 const { min, max, minInclude, maxInclude } = numericFormat;
@@ -86,43 +86,43 @@ function checkType({ value, item }) {
                     if (maxInclude === false) state = value - 0 < max;
                     else state = value - 0 <= max;
                 }
-                if (item.subType === "posInt" && state) {
+                if (item.subType === 'posInt' && state) {
                     if (item.allowZero)
-                        state = value - 0 >= 0 && !(value + "").includes(".");
-                    else state = value - 0 > 0 && !(value + "").includes(".");
+                        state = value - 0 >= 0 && !(value + '').includes('.');
+                    else state = value - 0 > 0 && !(value + '').includes('.');
                 }
             }
             break;
-        case subType === "datePicker":
+        case subType === 'datePicker':
             const charReg = /^[\u4e00-\u9fa5]+$/;
-            const { valueFormat = "yyyy-MM-dd HH:mm:ss" } = item.props || {};
+            const { valueFormat = 'yyyy-MM-dd HH:mm:ss' } = item.props || {};
 
             state = value.length === valueFormat.length && !charReg.test(value);
             break;
-        case subType === "cascader" || subType === "address":
+        case subType === 'cascader' || subType === 'address':
             if (cascaderVals[`key-${key}-value-${value}`]) {
                 state = true;
                 break;
             }
-            if (addressOtps.length === 0 && subType === "address") {
+            if (addressOtps.length === 0 && subType === 'address') {
                 addressOtps = collageAddress(address);
             }
             let v = getCascaderLabelValue({
-                data: subType === "address" ? addressOtps : opts,
-                value: (value + "").split("/"),
-                matchFieldName: "label"
+                data: subType === 'address' ? addressOtps : opts,
+                value: (value + '').split('/'),
+                matchFieldName: 'label'
             });
-            v = v.map(({ label }) => label).join("/");
+            v = v.map(({ label }) => label).join('/');
             state = value === v;
             if (!opts.length && asyncOpts) state = true;
             break;
-        case type === "autocomplete" || subType === "select":
+        case type === 'autocomplete' || subType === 'select':
             state = false;
             const keyOptions = keyOpts[key] || {};
             const processOpts = keyOptions.processOpts || [];
             const commit = () => {
                 if (!getDataDoubled) {
-                    this.$emit("getSelectOpts", {
+                    this.$emit('getSelectOpts', {
                         keyOpts,
                         selectVals,
                         orgSelect: true,
@@ -138,7 +138,7 @@ function checkType({ value, item }) {
 
             if (multiple && value) {
                 let cellVals = [];
-                value = value.split(",");
+                value = value.split(',');
                 value.map(item => {
                     for (let k of processOpts.values()) {
                         if (item === k[labelName]) {
@@ -184,7 +184,7 @@ function checkType({ value, item }) {
                     }
                 }
                 for (const ele of opts.values()) {
-                    const val = ele[item.labelName || "label"];
+                    const val = ele[item.labelName || 'label'];
                     if (val === value) {
                         selectVals[`key-${key}-value-${value}`] = ele;
                         keyOpts[key] = Object.assign(keyOptions, {
@@ -196,7 +196,7 @@ function checkType({ value, item }) {
                 }
             }
 
-            if (!opts.length && (asyncOpts || subType === "select"))
+            if (!opts.length && (asyncOpts || subType === 'select'))
                 state = true;
             break;
     }
@@ -213,9 +213,9 @@ function checkType({ value, item }) {
  */
 function collageCascaderData({
     data = [],
-    valueFields = ["value"],
-    labelFields = ["label"],
-    childrenFields = ["children"],
+    valueFields = ['value'],
+    labelFields = ['label'],
+    childrenFields = ['children'],
     changeItemData = () => {}
 }) {
     const fn = children => {
@@ -247,16 +247,16 @@ function collageCascaderData({
  * @param {Object} param 以查询方式发送数据
  * @param {String} result 根据后端返回数据的结构，给出一个链结构，来表示可以根据这个链结构找到数据，举例：后端返回数据结构为{data:{data:[],message:null}},则result赋值为data.data
  */
-function ajax({ url, method = "GET", header, data, param, result = "" }) {
-    let d = "";
+function ajax({ url, method = 'GET', header, data, param, result = '' }) {
+    let d = '';
 
     clearTimeout(timer);
     data = data || {};
     method = method.toLocaleUpperCase();
-    result = result.split(".");
+    result = result.split('.');
     header = header || {};
     param = param || {};
-    if (method === "GET") {
+    if (method === 'GET') {
         for (let [k, v] of Object.entries(param)) {
             d += `${k}=${v}&`;
         }
@@ -266,21 +266,21 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
     return new Promise(resolve => {
         const xmlhttp = window.XMLHttpRequest
             ? new window.XMLHttpRequest()
-            : new window.ActiveXObject("Microsoft.XMLHTTP");
+            : new window.ActiveXObject('Microsoft.XMLHTTP');
 
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4) {
                 if (xmlhttp.status == 200) {
                     const responseText = JSON.parse(xmlhttp.responseText);
-                    let res = "mapleLoveCDC";
+                    let res = 'mapleLoveCDC';
 
                     for (let k of result.values()) {
                         if (res == null) break;
-                        if (res === "mapleLoveCDC") {
+                        if (res === 'mapleLoveCDC') {
                             res = responseText[k];
                         } else res = res[k];
                     }
-                    res = res === "mapleLoveCDC" || res == null ? [] : res;
+                    res = res === 'mapleLoveCDC' || res == null ? [] : res;
                     resolve(res);
                 } else {
                     resolve([]);
@@ -288,16 +288,16 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
             }
         };
         xmlhttp.open(method, url, true);
-        if (method === "POST") {
+        if (method === 'POST') {
             header = {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
                 ...header
             };
         }
         for (let [k, v] of Object.entries(header)) {
             xmlhttp.setRequestHeader(k, v);
         }
-        method === "GET" ? xmlhttp.send() : xmlhttp.send(JSON.stringify(data));
+        method === 'GET' ? xmlhttp.send() : xmlhttp.send(JSON.stringify(data));
     });
 }
 /**
@@ -312,10 +312,10 @@ function ajax({ url, method = "GET", header, data, param, result = "" }) {
  */
 function getCascaderLabelValue({
     data = [],
-    valueName = "value",
-    labelName = "label",
-    childrenName = "children",
-    matchFieldName = "value",
+    valueName = 'value',
+    labelName = 'label',
+    childrenName = 'children',
+    matchFieldName = 'value',
     value = []
 }) {
     if (!value.length || !data.length) return [];
@@ -333,7 +333,11 @@ function getCascaderLabelValue({
         if (matchVal === k) {
             arr[i] = item;
             vals[i] = `maple@${i}`;
-            if (arr.length === vals.length) return true;
+            if (
+                arr.filter(val => val != null && val !== '').length ===
+                vals.length
+            )
+                return true;
             if (item[childrenName]) fn(item.children);
             return true;
         }
@@ -359,7 +363,7 @@ function getCascaderLabelValue({
  * @param {Array} atrs 属性名集合
  */
 function getHasValue(o, atrs) {
-    let v = { value: "", key: "" };
+    let v = { value: '', key: '' };
 
     for (let i = atrs.length - 1; i >= 0; i--) {
         let f = atrs[i];
@@ -382,7 +386,7 @@ function getHasValue(o, atrs) {
 function collageAddress(address) {
     let options = [];
 
-    for (let [k1, v1] of Object.entries(address["100000"])) {
+    for (let [k1, v1] of Object.entries(address['100000'])) {
         let children1 = [];
 
         for (let [k2, v2] of Object.entries(address[k1] || [])) {
@@ -418,16 +422,16 @@ function collageAddress(address) {
 function typeOf(obj) {
     const toString = Object.prototype.toString;
     const map = {
-        "[object Boolean]": "boolean",
-        "[object Number]": "number",
-        "[object String]": "string",
-        "[object Function]": "function",
-        "[object Array]": "array",
-        "[object Date]": "date",
-        "[object RegExp]": "regExp",
-        "[object Undefined]": "undefined",
-        "[object Null]": "null",
-        "[object Object]": "object"
+        '[object Boolean]': 'boolean',
+        '[object Number]': 'number',
+        '[object String]': 'string',
+        '[object Function]': 'function',
+        '[object Array]': 'array',
+        '[object Date]': 'date',
+        '[object RegExp]': 'regExp',
+        '[object Undefined]': 'undefined',
+        '[object Null]': 'null',
+        '[object Object]': 'object'
     };
     return map[toString.call(obj)];
 }
@@ -440,19 +444,19 @@ function deepCopy(data) {
     const t = typeOf(data);
     let o;
 
-    if (t === "array") {
+    if (t === 'array') {
         o = [];
-    } else if (t === "object") {
+    } else if (t === 'object') {
         o = {};
     } else {
         return data;
     }
 
-    if (t === "array") {
+    if (t === 'array') {
         for (let i = 0; i < data.length; i++) {
             o.push(deepCopy(data[i]));
         }
-    } else if (t === "object") {
+    } else if (t === 'object') {
         for (let i in data) {
             o[i] = deepCopy(data[i]);
         }
