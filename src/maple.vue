@@ -22,21 +22,21 @@
 </template>
 
 <script>
-import { HotTable } from "@handsontable/vue";
-import _ from "./utils";
-import MapleCascader from "./components/MapleCascader";
-import MapleDatePicker from "./components/MapleDatePicker";
-import MapleSelect from "./components/MapleSelect";
+import { HotTable } from '@handsontable/vue';
+import _ from './utils';
+import MapleCascader from './components/MapleCascader';
+import MapleDatePicker from './components/MapleDatePicker';
+import MapleSelect from './components/MapleSelect';
 import {
     colHeaders,
     customColumns,
     getColumns,
     beforeChange,
     afterOnCellMouseDown
-} from "./utils/handsontable";
+} from './utils/handsontable';
 
 export default {
-    name: "MapleHandsontable",
+    name: 'MapleHandsontable',
     props: {
         columns: {
             required: true,
@@ -51,7 +51,7 @@ export default {
         },
         selectBoxConfig: {
             type: Object,
-            default: () => ({ key: "mapleChecked", col: 0 })
+            default: () => ({ key: 'mapleChecked', col: 0 })
         },
         widthAuto: {
             type: Boolean
@@ -63,9 +63,17 @@ export default {
             type: Boolean,
             default: false
         },
+        initSize: {
+            type: Number,
+            default: 20
+        },
         pageSize: {
             type: Number,
-            default: 12
+            default: 128
+        },
+        diff: {
+            type: Number,
+            default: 5
         },
         singleSelectConfig: {
             type: Object,
@@ -85,20 +93,20 @@ export default {
                 manualColumnResize: true,
                 fillHandle: {
                     autoInsertRow: false,
-                    direction: "vertical"
+                    direction: 'vertical'
                 },
                 dropdownMenu: null,
                 manualRowResize: false,
                 renderAllRows: false,
                 maxRows: 12080,
                 height: 1208,
-                readOnlyCellClassName: "maple-readOnly",
+                readOnlyCellClassName: 'maple-readOnly',
                 openEmptyValid: true,
                 hiddenColumns: true,
                 viewportColumnRenderingOffset: 128,
-                licenseKey: "non-commercial-and-evaluation",
-                language: "zh-CN",
-                className: "htCenter htMiddle",
+                licenseKey: 'non-commercial-and-evaluation',
+                language: 'zh-CN',
+                className: 'htCenter htMiddle',
                 bindRowsWithHeaders: true,
                 rowHeaders: true,
                 comments: true,
@@ -110,10 +118,10 @@ export default {
                         remove_row: {},
                         clear_column: {},
                         hidden_columns_hide: {
-                            name: "隐藏列"
+                            name: '隐藏列'
                         },
                         hidden_columns_show: {
-                            name: "展示列"
+                            name: '展示列'
                         },
                         undo: {},
                         redo: {},
@@ -129,7 +137,7 @@ export default {
             height: 0,
             getDataDoubled: false,
             hasColumnSummary: false,
-            showEmpty: !this.data.length,
+            showEmpty: false,
             keyOpts: {},
             selectVals: {},
             cascaderVals: {},
@@ -143,14 +151,14 @@ export default {
             lastPage: null,
             copyData: [],
             stopLazyAbled: true,
-            emptyWidth: "100%"
+            emptyWidth: '100%'
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
     mounted() {
-        this.$emit("getCore", this.$refs.mapleTable.hotInstance);
+        this.$emit('getCore', this.$refs.mapleTable.hotInstance);
         this.core = this.$refs.mapleTable.hotInstance;
-        this.autoRowSizePlugin = this.core.getPlugin("autoRowSize");
+        this.autoRowSizePlugin = this.core.getPlugin('autoRowSize');
         this.init();
     },
     activated() {
@@ -159,22 +167,22 @@ export default {
     },
     methods: {
         getCascaderVals(o) {
-            this.$emit("getCascaderVals", o);
+            this.$emit('getCascaderVals', o);
             this.cascaderVals = o.data;
         },
         getSelectOpts(o) {
-            if (!o.noEmit) this.$emit("getSelectOpts", o);
+            if (!o.noEmit) this.$emit('getSelectOpts', o);
             this.selectVals = o.selectVals;
             this.keyOpts = o.keyOpts;
         },
         cellDblClick(o) {
             const { event: mouseEvent } = o;
-            const columns = getColumns.call(this, "no");
+            const columns = getColumns.call(this, 'no');
             const $el = mouseEvent.target;
             const [[row, col]] = this.core.getSelected() || [[]];
             const { width, top, left, height } = $el.getBoundingClientRect();
             if (columns[col] == null)
-                return this.$emit("cellDblClick", {
+                return this.$emit('cellDblClick', {
                     mouseEvent,
                     $el,
                     coord: {
@@ -186,7 +194,7 @@ export default {
             const { readOnly } = this.core.getCellMeta(row, col);
             let { subType } = columns[col];
 
-            if (subType === "address") subType = "cascader";
+            if (subType === 'address') subType = 'cascader';
             if (
                 this.$refs[`${subType}Ref`] &&
                 row >= 0 &&
@@ -221,7 +229,7 @@ export default {
                     orgColumns: this.columns
                 });
             }
-            this.$emit("cellDblClick", {
+            this.$emit('cellDblClick', {
                 mouseEvent,
                 $el,
                 coord: {
@@ -232,29 +240,47 @@ export default {
             });
         },
         init() {
-            let hiddCols = [];
-            let { data, lastPage, pageSize, lazyLoadAbled } = this;
+            if (this.lazyLoadAbled)
+                this.lazyLoadDataLen = this.core.countRows();
+            let {
+                    data,
+                    lastPage,
+                    lazyLoadAbled,
+                    initSize,
+                    lazyLoadDataLen
+                } = this,
+                hiddCols = [],
+                startIndex = initSize,
+                initData = data;
             this.copyData = data;
             this.changeEmptyWidth(data);
             if (this.options.cacheId && this.options.openCache) {
                 hiddCols = JSON.parse(
                     localStorage.getItem(
                         `${this.options.cacheId}-hiddenColumns`
-                    ) || "[]"
+                    ) || '[]'
                 );
             }
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
             this.hasColumnSummary =
                 this.options.columnSummary &&
                 this.options.columnSummary.length > 0;
+
+            if (lazyLoadDataLen > initSize) {
+                startIndex = lazyLoadDataLen;
+            }
+            this.options.minRows
+                ? (this.showEmpty = false)
+                : (this.showEmpty = !this.copyData.length);
+            if (lazyLoadAbled && data.length > initSize) {
+                initData = data.slice(
+                    0,
+                    lazyLoadAbled ? startIndex : lastPage || undefined
+                );
+            }
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
-                data: lazyLoadAbled
-                    ? this.copyData.slice(
-                          0,
-                          lazyLoadAbled ? pageSize : lastPage || undefined
-                      )
-                    : data,
+                data: initData,
                 colHeaders: colHeaders.bind(this),
                 hiddenColumns: {
                     columns: hiddCols,
@@ -327,21 +353,42 @@ export default {
                 lastPage,
                 pageSize,
                 checkAllabled,
-                selectBoxConfig
+                selectBoxConfig,
+                hasColumnSummary,
+                $parent,
+                diff
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
                     sourceData = core.getSourceData(),
-                    currentLen = sourceData.length;
+                    currentLen = sourceData.length,
+                    copyDataLen = copyData.length;
+
                 if (
-                    lastIndex >= currentLen - 3 &&
-                    currentLen < copyData.length
+                    lastIndex >= currentLen - diff &&
+                    currentLen < copyDataLen &&
+                    currentLen !== copyDataLen
                 ) {
                     this.stopLazyAbled = false;
-                    lastPage = (lastPage || lastIndex) + pageSize;
+                    lastPage = currentLen + pageSize;
                     let data = copyData.slice(0, lastPage);
+                    if (hasColumnSummary) {
+                        let sumIndex = lastPage - pageSize - 1,
+                            sumData = _.deepCopy(sourceData[sumIndex]);
+                        if (sumData) {
+                            const d =
+                                $parent.replaceSumData[sumIndex] ||
+                                _.deepCopy(data[sumIndex]);
+                            data.splice(sumIndex, 1, d);
+                            data.length === copyDataLen
+                                ? data.splice(copyDataLen - 1, 1, sumData)
+                                : data.push(sumData);
+                            copyData[sumIndex] = d;
+                            $parent.value[sumIndex] = d;
+                        }
+                    }
                     if (checkAllabled) {
-                        const { key = "mapleChecked" } = selectBoxConfig || {};
+                        const { key = 'mapleChecked' } = selectBoxConfig || {};
                         data.forEach(item => {
                             item[key] = true;
                         });
@@ -350,25 +397,19 @@ export default {
                         data
                     });
                     this.lastPage = lastPage;
-
-                    let t = setTimeout(() => {
-                        core.scrollViewportTo(lastIndex - 2);
-                        this.stopLazyAbled = true;
-                        clearTimeout(t);
-                        t = null;
-                    }, 128);
+                    this.stopLazyAbled = true;
                 }
             }
         },
         afterOnCellCornerDblClick(event) {
-            this.hiddenPopup("afterOnCellCornerDblClick", event);
+            this.hiddenPopup('afterOnCellCornerDblClick', event);
         },
         afterScrollVertically() {
-            this.hiddenPopup("afterScrollVertically");
+            this.hiddenPopup('afterScrollVertically');
             this.lazyLoadData();
         },
         afterScrollHorizontally() {
-            this.hiddenPopup("afterScrollHorizontally");
+            this.hiddenPopup('afterScrollHorizontally');
         },
         afterChange(changes, source) {
             if (!changes) return;
@@ -380,9 +421,9 @@ export default {
                     core
                 } = this,
                 {
-                    key = "mapleChecked",
+                    key = 'mapleChecked',
                     col = 0,
-                    checkedTemplate = "checkedTemplate"
+                    checkedTemplate = 'checkedTemplate'
                 } = selectBoxConfig || {},
                 checkBoxVal = getKeyChange(key, changes);
             let checked = [];
@@ -410,11 +451,11 @@ export default {
                 }
             }
 
-            this.$emit("change", {
+            this.$emit('change', {
                 source,
                 changes,
                 core: this.core,
-                type: "change",
+                type: 'change',
                 getKeyChange: this.getKeyChange,
                 filterKeysChanges: this.filterKeysChanges,
                 checked,
@@ -423,7 +464,7 @@ export default {
         },
         afterRemoveRow(index, amount, physicalRows, source) {
             this.showEmpty = this.core.countRows() === 0;
-            this.$emit("afterRemoveRow", {
+            this.$emit('afterRemoveRow', {
                 index,
                 amount,
                 physicalRows,
@@ -431,7 +472,7 @@ export default {
             });
         },
         afterCreateRow(index, amount, source) {
-            this.$emit("afterCreateRow", {
+            this.$emit('afterCreateRow', {
                 index,
                 amount,
                 source
@@ -455,18 +496,18 @@ export default {
                     let bl = true;
                     if (
                         Object.prototype.toString.call(val) ===
-                            "[object Array]" &&
+                            '[object Array]' &&
                         !val.length
                     ) {
                         bl = false;
                     }
-                    if (val == null || val === "") bl = false;
+                    if (val == null || val === '') bl = false;
                     return bl;
                 };
                 d.map((ele, i) => {
                     let o = this.data[i] || {};
                     const dItem = d[i];
-                    const keys = getColumns.call(this, "no");
+                    const keys = getColumns.call(this, 'no');
                     for (let [j, itemData] of keys.entries()) {
                         let v = dItem[j],
                             k = itemData.key || itemData.data;
@@ -485,9 +526,9 @@ export default {
 
                         let {
                             valueType,
-                            labelName = "label",
-                            valueName = "value",
-                            extraField = "_extraField_",
+                            labelName = 'label',
+                            valueName = 'value',
+                            extraField = '_extraField_',
                             subType,
                             type,
                             checkedTemplate,
@@ -499,11 +540,11 @@ export default {
                         if (opts instanceof Function) {
                             opts = opts() || [];
                         }
-                        if (type === "checkbox") {
+                        if (type === 'checkbox') {
                             let checkboxVal = o[k];
                             if (
                                 checkedTemplate != null &&
-                                checkedTemplate != ""
+                                checkedTemplate != ''
                             ) {
                                 checkboxVal = checkboxVal
                                     ? checkedTemplate
@@ -514,11 +555,11 @@ export default {
                                 [k]: checkboxVal
                             };
                         } else if (
-                            (((type === "dropdown" ||
-                                type === "autocomplete") &&
+                            (((type === 'dropdown' ||
+                                type === 'autocomplete') &&
                                 ((opts && opts.length) ||
-                                    subType === "ajax")) ||
-                                subType === "select") &&
+                                    subType === 'ajax')) ||
+                                subType === 'select') &&
                             k
                         ) {
                             const { multiple } = newItem.props || {};
@@ -527,7 +568,7 @@ export default {
                                     `key-${k}-value-${v}`
                                 ];
                             valueType = valueType || valueName;
-                            if (multiple) v = (v || "").split(",");
+                            if (multiple) v = (v || '').split(',');
                             if (selectVals) {
                                 currentValue = multiple
                                     ? selectVals.map(ele => ele[valueName])
@@ -549,7 +590,7 @@ export default {
                                         : o[extraField]
                                 };
                                 if (
-                                    extraField === "_extraField_" &&
+                                    extraField === '_extraField_' &&
                                     o[k] == null &&
                                     ajaxConfig &&
                                     ajaxConfig.url
@@ -570,17 +611,17 @@ export default {
                                 };
                             }
                         } else if (
-                            subType === "cascader" ||
-                            subType === "address"
+                            subType === 'cascader' ||
+                            subType === 'address'
                         ) {
                             const exchangeArrary = val => {
                                 return val instanceof Array
                                     ? val
-                                    : (val || "").split("/");
+                                    : (val || '').split('/');
                             };
                             if (
                                 addressOtps.length === 0 &&
-                                subType === "address"
+                                subType === 'address'
                             ) {
                                 addressOtps = _.collageAddress(_.address);
                             }
@@ -588,7 +629,7 @@ export default {
                                 const cascaderVals = this.cascaderVals[
                                     `key-${k}-value-${v}`
                                 ];
-                                if (valueType === "label") {
+                                if (valueType === 'label') {
                                     o = {
                                         ...o,
                                         [k]: judgeVals(
@@ -620,13 +661,13 @@ export default {
                             } else {
                                 const res = _.getCascaderLabelValue({
                                     data:
-                                        subType === "address"
+                                        subType === 'address'
                                             ? addressOtps
                                             : opts,
-                                    value: (v && v.split("/")) || [],
-                                    matchFieldName: "label"
+                                    value: (v && v.split('/')) || [],
+                                    matchFieldName: 'label'
                                 });
-                                if (valueType === "label") {
+                                if (valueType === 'label') {
                                     o = {
                                         ...o,
                                         [k]: judgeVals(
@@ -656,7 +697,7 @@ export default {
                                     };
                                 }
                             }
-                        } else if (subType !== "handle" && k) {
+                        } else if (subType !== 'handle' && k) {
                             o = {
                                 ...o,
                                 [k]: v
@@ -672,7 +713,7 @@ export default {
                     // 根据callback返回的notAddabled字段，判断是否添加数据
                     if (
                         !o.notAddabled &&
-                        !(o.mapleTotal === "合计" && i === d.length - 1)
+                        !(o.mapleTotal === '合计' && i === d.length - 1)
                     ) {
                         data.push({
                             ...o,
@@ -702,9 +743,9 @@ export default {
                     filterKeysChanges,
                     myColumns
                 } = this;
-            let type = "checkbox";
+            let type = 'checkbox';
 
-            if (event.target.id === "maple-all-checkbox") {
+            if (event.target.id === 'maple-all-checkbox') {
                 const checkAllableds = [];
 
                 this.checkAllabled = !this.checkAllabled;
@@ -718,8 +759,8 @@ export default {
                     checkAllableds.push([i, col, this.checkAllabled]);
                 }
                 core.setDataAtCell(checkAllableds);
-                type = "allCheckbox";
-                this.$emit("change", {
+                type = 'allCheckbox';
+                this.$emit('change', {
                     type,
                     event,
                     core: core,
@@ -729,7 +770,7 @@ export default {
                     columns: myColumns
                 });
             }
-            this.$emit("click", {
+            this.$emit('click', {
                 col,
                 row,
                 $el,
@@ -741,7 +782,7 @@ export default {
             });
         },
         clearFilters() {
-            const filtersPlugin = this.core.getPlugin("filters");
+            const filtersPlugin = this.core.getPlugin('filters');
             for (let i of this.columns.keys()) {
                 filtersPlugin.removeConditions(i);
             }
@@ -848,12 +889,12 @@ export default {
                     let emptyCount = 0;
 
                     for (let [j, item] of myColumns.entries()) {
-                        const k = item.data || item.key || "maple-field";
+                        const k = item.data || item.key || 'maple-field';
                         const i = hasDefaultValFileds.indexOf(k);
                         const key = hasDefaultValFileds[i];
                         const v = rowData[j];
                         const emptyVal =
-                            v === "" ||
+                            v === '' ||
                             v == null ||
                             v === false ||
                             v === item.uncheckedTemplate;
@@ -903,8 +944,8 @@ export default {
                 const cols = [];
                 t.map(ele => {
                     const index = ele.slice(
-                        ele.indexOf("index=") + 6,
-                        ele.indexOf("CDC")
+                        ele.indexOf('index=') + 6,
+                        ele.indexOf('CDC')
                     );
                     cols.push(this.myColumns[index]);
                 });
@@ -925,19 +966,19 @@ export default {
                 key = this.myColumns[col].key || this.myColumns[col].data;
             let sortType = 0,
                 v = this.sort[key] || {};
-            if ((!v.type || v.type === -1) && direction === "up") {
+            if ((!v.type || v.type === -1) && direction === 'up') {
                 sortType = 1;
             }
-            if (v.type === 1 && direction === "up") {
+            if (v.type === 1 && direction === 'up') {
                 sortType = 0;
             }
-            if ((!v.type || v.type === 1) && direction === "down") {
+            if ((!v.type || v.type === 1) && direction === 'down') {
                 sortType = -1;
             }
-            if (v.type === -1 && direction === "down") {
+            if (v.type === -1 && direction === 'down') {
                 sortType = 0;
             }
-            this.$emit("changeSort", {
+            this.$emit('changeSort', {
                 data: {
                     ...o,
                     currentData: {
@@ -982,7 +1023,7 @@ export default {
             if (this.settings.summaryColumn instanceof Array) {
                 let sumKey = [];
                 this.settings.summaryColumn.forEach(item => {
-                    if (item.type === "sum") {
+                    if (item.type === 'sum') {
                         sumKey.push(item.key);
                     }
                 });
@@ -1007,9 +1048,9 @@ export default {
         },
         changeEmptyWidth(d) {
             this.$nextTick(() => {
-                let w = "100%";
+                let w = '100%';
                 if (!d.length) {
-                    let $w = this.$el.querySelector("table");
+                    let $w = this.$el.querySelector('table');
                     w = `${$w && $w.clientWidth}px`;
                     this.changeCheckAllabled(false);
                 }
@@ -1021,8 +1062,7 @@ export default {
         columns() {
             this.init();
         },
-        data(v) {
-            this.showEmpty = !v.length;
+        data() {
             this.init();
         },
         options() {
@@ -1036,5 +1076,5 @@ export default {
 </script>
 
 <style scoped>
-@import url("./scoped.css");
+@import url('./scoped.css');
 </style>
