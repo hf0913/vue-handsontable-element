@@ -81,6 +81,9 @@ export default {
         },
         showLastTotalText: {
             type: Boolean
+        },
+        asyncLoadConfig: {
+            type: Object
         }
     },
     data() {
@@ -247,7 +250,8 @@ export default {
                     lastPage,
                     lazyLoadAbled,
                     initSize,
-                    lazyLoadDataLen
+                    lazyLoadDataLen,
+                    asyncLoadConfig
                 } = this,
                 hiddCols = [],
                 startIndex = initSize,
@@ -272,7 +276,7 @@ export default {
             this.options.minRows
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
-            if (lazyLoadAbled && data.length > initSize) {
+            if (lazyLoadAbled && data.length > initSize && !asyncLoadConfig) {
                 initData = data.slice(
                     0,
                     lazyLoadAbled ? startIndex : lastPage || undefined
@@ -343,6 +347,11 @@ export default {
             this.$refs.selectRef.controlOpen();
             if (type) this.$emit(type, e);
         },
+        asyncLoad({ ajax }) {
+            this.stopLazyAbled = false;
+            ajax();
+            this.asyncLoadConfig.cb = () => this.stopLazyAbled = true;
+        },
         lazyLoadData() {
             let {
                 autoRowSizePlugin,
@@ -356,7 +365,9 @@ export default {
                 selectBoxConfig,
                 hasColumnSummary,
                 $parent,
-                diff
+                diff,
+                asyncLoadConfig,
+                asyncLoad
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
@@ -365,9 +376,15 @@ export default {
                     copyDataLen = copyData.length;
 
                 if (
+                    asyncLoadConfig &&
                     lastIndex >= currentLen - diff &&
-                    currentLen < copyDataLen &&
-                    currentLen !== copyDataLen
+                    currentLen < asyncLoadConfig.total
+                )
+                    return asyncLoad(asyncLoadConfig);
+
+                if (
+                    lastIndex >= currentLen - diff &&
+                    currentLen < copyDataLen
                 ) {
                     this.stopLazyAbled = false;
                     lastPage = currentLen + pageSize;
