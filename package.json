@@ -1,6 +1,6 @@
 {
     "name": "vue-handsontable-element",
-    "version": "5.1.8",
+    "version": "5.1.9",
     "description": "handsontable for vue",
     "author": "Maple <fenghu0913@gmail.com>",
     "license": "ISC",
@@ -49,7 +49,7 @@
         "babel-preset-stage-2": "^6.24.1",
         "cross-env": "^3.0.0",
         "css-loader": "^0.25.0",
-        "custom-handsontable": "^1.2.0",
+        "custom-handsontable": "^1.2.2",
         "element-ui": "^2.13.2",
         "file-loader": "^0.9.0",
         "jest": "^22.4.4",
