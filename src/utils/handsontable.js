@@ -533,10 +533,25 @@ function afterOnCellMouseDown(event, coords, $el) {
     }
 }
 
+function afterPasteCustom({row, col, value}){
+    const {data, lazyLoadAbled, $parent} = this, keys = getColumns.call(this, 'no'), key = keys[col].data || keys[col].key
+    if(lazyLoadAbled) {
+        data[row] = data[row] || {}
+        if (data[row].mapleTotal === '合计') {
+            data[row] = {
+                ...$parent.replaceSumData,
+                [key]: value
+            }
+        } else data[row][key] = value
+    }
+    return null
+}
+
 export {
     colHeaders,
     customColumns,
     beforeChange,
     afterOnCellMouseDown,
-    getColumns
+    getColumns,
+    afterPasteCustom
 };

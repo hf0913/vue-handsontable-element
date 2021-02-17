@@ -1,6 +1,6 @@
 <template>
     <div id="maple-table">
-        <hot-table :settings="settings" ref="mapleTable" :style="customStyle" />
+        <hot-table licenseKey="non-commercial-and-evaluation" ref="mapleTable" :style="customStyle" />
         <MapleDatePicker
             ref="datePickerRef"
             @change="v => (stopKeyEvent = v)"
@@ -32,7 +32,8 @@ import {
     customColumns,
     getColumns,
     beforeChange,
-    afterOnCellMouseDown
+    afterOnCellMouseDown,
+    afterPasteCustom
 } from './utils/handsontable';
 
 export default {
@@ -305,6 +306,7 @@ export default {
                 afterUnhideColumns: this.afterUnhideColumns,
                 afterColumnMove: this.afterColumnMove,
                 afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
+                afterPasteCustom: afterPasteCustom.bind(this),
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
                         event.stopImmediatePropagation();
@@ -394,7 +396,7 @@ export default {
                             sumData = _.deepCopy(sourceData[sumIndex]);
                         if (sumData) {
                             const d =
-                                $parent.replaceSumData[sumIndex] ||
+                                $parent.replaceSumData ||
                                 _.deepCopy(data[sumIndex]);
                             data.splice(sumIndex, 1, d);
                             data.length === copyDataLen
@@ -728,10 +730,7 @@ export default {
                         ...extraItem
                     };
                     // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (
-                        !o.notAddabled &&
-                        !(o.mapleTotal === '合计' && i === d.length - 1)
-                    ) {
+                    if (!o.notAddabled && o.mapleTotal !== '合计') {
                         data.push({
                             ...o,
                             notAddabled: undefined,
