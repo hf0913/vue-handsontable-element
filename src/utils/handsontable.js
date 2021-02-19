@@ -534,8 +534,11 @@ function afterOnCellMouseDown(event, coords, $el) {
 }
 
 function afterPasteCustom({row, col, value}){
-    const {data, lazyLoadAbled, $parent} = this, keys = getColumns.call(this, 'no'), key = keys[col].data || keys[col].key
-    if(lazyLoadAbled) {
+    const {data, lazyLoadAbled, $parent} = this, keys = getColumns.call(this, 'no')
+    let key;
+
+    if(lazyLoadAbled && keys && keys[col]) {
+        key = keys[col].data || keys[col].key
         data[row] = data[row] || {}
         if (data[row].mapleTotal === '合计') {
             data[row] = {
