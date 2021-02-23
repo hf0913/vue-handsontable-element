@@ -282,13 +282,14 @@ function customColumns() {
                 singleSelectConfig
             } = this;
             item.renderer = (instance, td, row, col, prop, value) => {
-                maple.dom.empty(td);
                 const { readOnly, editor } = instance.getCellMeta(row, col),
                     { _mapleIndex } = instance.getSourceDataAtRow(row) || {},
                     sourceIndex = data.findIndex(
                         e => e._mapleIndex === _mapleIndex
                     );
 
+                if (!data[sourceIndex]) return td;
+                maple.dom.empty(td);
                 let $el = document.createElement('INPUT'),
                     $div = document.createElement('DIV'),
                     oldVal = $el.checked,
