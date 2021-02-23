@@ -644,7 +644,7 @@ export default {
                 source
             });
         },
-        getData(callback = () => {},  {key: checkedKey, value: checkedVal}) {
+        getData(callback = () => {},  {key: checkedKey, value: checkedVal} = {}) {
             if (this.getDataDoubled) {
                 return Promise.resolve({
                     value: [],
@@ -877,7 +877,7 @@ export default {
                         ...o,
                         ...extraItem
                     };
-                    if(checkedKey && (o[checkedKey] === checkedVal || o[checkedKey] === true)) {
+                    if(!checkedKey || (checkedKey && (o[checkedKey] === checkedVal || o[checkedKey] === true))) {
                         // 根据callback返回的notAddabled字段，判断是否添加数据
                         if (!o.notAddabled && o.mapleTotal !== '合计') {
                             data.push({
@@ -899,12 +899,12 @@ export default {
                     if(checkedKey) {
                         popData = popData.filter(item => (item[checkedKey] === checkedVal || item[checkedKey] === true))
                     }
-                    const value = data.concat(popData)
+                    const value = data.concat(popData).filter(item => item) // 暂时只增加filter方法，后续需要优化，针对设置最少行数
                     if(!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && sumIndex){
                         value[sumIndex] = this.beforeSumData
                     }
                     resolve({
-                        value: value[value.length - 1].mapleTotal === '合计' ? value.slice(0, value.length - 1) : value,
+                        value: value[value.length - 1] && value[value.length - 1].mapleTotal === '合计' ? value.slice(0, value.length - 1) : value,
                         valid: valid
                     });
                     this.getDataDoubled = false;
