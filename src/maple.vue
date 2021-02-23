@@ -85,11 +85,19 @@ export default {
         },
         asyncLoadConfig: {
             type: Object
+        },
+        beforeReplaceSumData: {
+            type: Object
+        },
+        rowHeight: {
+            type: Number,
+            default: 23
         }
     },
     data() {
         return {
             settings: {
+                beforeSumData: null,
                 data: [],
                 columns: [],
                 trimRows: true,
@@ -140,7 +148,7 @@ export default {
             width: 0,
             height: 0,
             getDataDoubled: false,
-            hasColumnSummary: false,
+            hasColumnSummary: this.showLastTotalText,
             showEmpty: false,
             keyOpts: {},
             selectVals: {},
@@ -155,7 +163,8 @@ export default {
             lastPage: null,
             copyData: [],
             stopLazyAbled: true,
-            emptyWidth: '100%'
+            emptyWidth: '100%',
+            checkAllabledIndex: 0
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -170,6 +179,122 @@ export default {
         this.changeEmptyWidth(this.settings.data);
     },
     methods: {
+        beforeFilter(conditions){
+            this.conditions = conditions
+            this.init(d => {
+                const {options:{columnSummary = [], lastTotalFields = []}, filterData, core, getNowColumns, settings, hasColumnSummary} = this,
+                data = filterData(d), sumData = this.sumData, h = settings.height,
+                height = this.rowHeight * (data.length + 1) < h ? 'auto' : h, t = columnSummary.length ? columnSummary : lastTotalFields
+
+                if(sumData && hasColumnSummary) {
+                    const cols = getNowColumns()
+                    this.$nextTick(()=>{
+                        let dataAtCells = [], len = core.countRows() - 1
+                        if(data[len] && data[len].mapleTotal !== '合计') this.replaceSumData = _.deepCopy(data[len])
+                        if(len === 0 || height === 'auto') len++
+                        data.splice(len, 1, sumData)
+                        for (let j = 0; j < t.length; j++) {
+                            const {key} = t[j], keyIndex = cols.findIndex((item, index) => {
+                                const bl = item.key === key || item.data === key
+                                if(!bl) dataAtCells.push([len, index, null])
+                                return bl
+                            })
+                            if(~keyIndex) dataAtCells.push([len, keyIndex, sumData[key]])
+                        }
+                        core.setDataAtCell(dataAtCells)
+                    })
+                }
+                this.$nextTick(()=>{
+                    this.core.updateSettings({
+                        height
+                    })
+                })
+                return data
+            })
+            return false
+        },
+        filterData(d){
+            const {conditions = [], getNowColumns, options:{columnSummary}, beforeSumData} = this, cols = getNowColumns(),
+            data = d.filter((item, index) => {
+                let passCount = 0
+                if(!item) return false
+                if(item.mapleTotal === '合计') {
+                    if (index < d.length - 1) {
+                        this.sumData = _.deepCopy(item)
+                        item = Object.assign({}, beforeSumData)
+                        d[index] = item
+                    } else return false
+                }
+                conditions.map(({column: i, conditions:[{name: type, args}]}) => {
+                    const key = cols[i].key || cols[i].data
+                    let curr = item[key]
+                    if(this.sumData && curr && ~columnSummary.findIndex(item => item.key === key) && curr == this.sumData[key]) {
+                        item = Object.assign({}, beforeSumData)
+                        d[index] = item
+                    }
+                    curr = item[key]
+                    switch(type){
+                        case 'begins_with':
+                            if(typeof curr === 'string' && curr.startsWith(args[0])) passCount++
+                            break
+                        case 'between':
+                            if(curr >= args[0] && curr <= args[1]) passCount++
+                            break
+                        case 'contains':
+                            if(typeof curr === 'string' && curr.includes(args[0])) passCount++
+                            break
+                        case 'empty':
+                            if(curr == null || curr === '') passCount++
+                            break
+                        case 'ends_with':
+                            if(typeof curr === 'string' && curr.endsWith(args[0])) passCount++
+                            break
+                        case 'eq':
+                            if(curr == args[0]) passCount++
+                            break
+                        case 'gt':
+                            if(curr > args[0]) passCount++
+                            break
+                        // Greater than or equal
+                        case 'gte':
+                            if(curr >= args[0]) passCount++
+                            break
+                        case 'lt':
+                            if(curr < args[0]) passCount++
+                            break
+                        // Less than or equal
+                        case 'lte':
+                            if(curr <= args[0]) passCount++
+                            break
+                        case 'not_between':
+                            if(!(curr >= args[0] && curr <= args[1])) passCount++
+                            break
+                        case 'not_contains':
+                            if(!(typeof curr === 'string' && curr.includes(args[0]))) passCount++
+                            break
+                        case 'not_empty':
+                            if(!(curr == null || curr === '')) passCount++
+                            break
+                        // Not equal
+                        case 'neq':
+                            if(curr != args[0]) passCount++
+                            break
+                        case 'date_before':
+                            break
+                        case 'date_after':
+                            break
+                        case 'date_tomorrow':
+                            break
+                        case 'date_today':
+                            break
+                        case 'date_yesterday':
+                            break
+                    }
+                })
+                return passCount === conditions.length
+            })
+            return data
+        },
         getCascaderVals(o) {
             this.$emit('getCascaderVals', o);
             this.cascaderVals = o.data;
@@ -243,16 +368,23 @@ export default {
                 eventData: o
             });
         },
-        init() {
-            if (this.lazyLoadAbled)
-                this.lazyLoadDataLen = this.core.countRows();
+        init(cb) {
+            if (this.lazyLoadAbled) {
+                    this.lazyLoadDataLen = this.core.countRows();
+                    for(let [index, item] of this.data.entries()){
+                        item = Object.assign(item, {
+                            _mapleIndex: item._mapleIndex || `${index}-${Math.random()}`
+                        })
+                    }
+            }
             let {
                     data,
                     lastPage,
                     lazyLoadAbled,
                     initSize,
                     lazyLoadDataLen,
-                    asyncLoadConfig
+                    asyncLoadConfig,
+                    filterInit
                 } = this,
                 hiddCols = [],
                 startIndex = initSize,
@@ -267,18 +399,22 @@ export default {
                 );
             }
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
-            this.hasColumnSummary =
-                this.options.columnSummary &&
-                this.options.columnSummary.length > 0;
+            this.hasColumnSummary = (this.options.columnSummary && this.options.columnSummary.length > 0) || this.showLastTotalText;
 
             if (lazyLoadDataLen > initSize) {
-                startIndex = lazyLoadDataLen;
+                startIndex = filterInit ? initSize : lazyLoadDataLen;
+                this.filterInit = false
             }
             this.options.minRows
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
             if (lazyLoadAbled && data.length > initSize && !asyncLoadConfig) {
-                initData = data.slice(
+                cb instanceof Function
+                ? initData = cb(data).slice(
+                    0,
+                    lazyLoadAbled ? startIndex : lastPage || undefined
+                )
+                : initData = data.slice(
                     0,
                     lazyLoadAbled ? startIndex : lastPage || undefined
                 );
@@ -307,6 +443,16 @@ export default {
                 afterColumnMove: this.afterColumnMove,
                 afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
                 afterPasteCustom: afterPasteCustom.bind(this),
+                beforeFilter: v => {
+                    this.filterInit = true
+                    this.lastPage = this.initSize
+                    this.stopLazyAbled = true
+                    if(this.checkAllabled){
+                        const l = this.hasColumnSummary ? this.copyData.length - 1 : this.copyData.length
+                        this.changeCheckAllabled(this.checkAllabledIndex === l)
+                    }
+                    this.beforeFilter(v)
+                },
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
                         event.stopImmediatePropagation();
@@ -314,27 +460,25 @@ export default {
                 },
                 depthFilterByValue: (d, m) => {
                     // 针对filter_by_value选项，深度过滤选项值最终显示结果
-                    const lastRow = m.hot.countRows() - 1,
-                        { showLastTotalText, hasColumnSummary } = this;
+                    const lastRow = m.hot.countRows() - 1, { hasColumnSummary } = this;
 
                     return ~d.indexOf(lastRow)
                         ? d
                         : d.concat(
-                              hasColumnSummary || showLastTotalText
+                              hasColumnSummary
                                   ? [lastRow]
                                   : []
                           );
                 },
                 getColumnVisibleValuesDepth: (d, m) => {
                     // 针对filter_by_value选项，深度过滤选项列表
-                    const lastRow = m.hot.countRows() - 1,
-                        { showLastTotalText, hasColumnSummary } = this;
+                    const lastRow = m.hot.countRows() - 1, { hasColumnSummary } = this;
 
                     return ~d.indexOf(lastRow)
                         ? d
                         : d.slice(
                               0,
-                              hasColumnSummary || showLastTotalText
+                              hasColumnSummary
                                   ? lastRow - 1
                                   : lastRow
                           );
@@ -366,16 +510,19 @@ export default {
                 checkAllabled,
                 selectBoxConfig,
                 hasColumnSummary,
-                $parent,
+                filterData,
                 diff,
                 asyncLoadConfig,
-                asyncLoad
+                asyncLoad,
+                beforeSumData,
+                settings
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
                     sourceData = core.getSourceData(),
-                    currentLen = sourceData.length,
-                    copyDataLen = copyData.length;
+                    currentLen = sourceData.length
+                let copySoucreData = copyData,
+                    copyDataLen = copySoucreData.length;
 
                 if (
                     asyncLoadConfig &&
@@ -389,21 +536,22 @@ export default {
                     currentLen < copyDataLen
                 ) {
                     this.stopLazyAbled = false;
+                    copySoucreData = filterData(copyData)
+                    copyDataLen = copySoucreData.length;
                     lastPage = currentLen + pageSize;
-                    let data = copyData.slice(0, lastPage);
+                    let data = copySoucreData.slice(0, lastPage);
                     if (hasColumnSummary) {
                         let sumIndex = lastPage - pageSize - 1,
                             sumData = _.deepCopy(sourceData[sumIndex]);
                         if (sumData) {
-                            const d =
-                                $parent.replaceSumData ||
-                                _.deepCopy(data[sumIndex]);
-                            data.splice(sumIndex, 1, d);
-                            data.length === copyDataLen
-                                ? data.splice(copyDataLen - 1, 1, sumData)
-                                : data.push(sumData);
-                            copyData[sumIndex] = d;
-                            $parent.value[sumIndex] = d;
+                            sumData.mapleTotal = '合计'
+                            data.splice(sumIndex, 1, beforeSumData);
+                            this.beforeSumData = _.deepCopy(data[lastPage - 1] || data[data.length - 1]);
+                            data.length === copyDataLen ? data.splice(copyDataLen, 1, sumData) : data.splice(lastPage - 1, 1, sumData)
+
+                            if(!settings.filters){
+                                copySoucreData[sumIndex] = beforeSumData;
+                            }
                         }
                     }
                     if (checkAllabled) {
@@ -416,7 +564,7 @@ export default {
                         data
                     });
                     this.lastPage = lastPage;
-                    this.stopLazyAbled = true;
+                    if(data.length < copyDataLen) this.stopLazyAbled = true;
                 }
             }
         },
@@ -434,7 +582,6 @@ export default {
             if (!changes) return;
             const {
                     hasColumnSummary,
-                    showLastTotalText,
                     selectBoxConfig,
                     getKeyChange,
                     core
@@ -461,7 +608,7 @@ export default {
                     });
                 let countRows = core.countRows(),
                     bl =
-                        hasColumnSummary || showLastTotalText
+                        hasColumnSummary
                             ? len === countRows - 1
                             : len === countRows;
                 if (bl !== this.checkAllabled) {
@@ -497,7 +644,7 @@ export default {
                 source
             });
         },
-        getData(callback = () => {}) {
+        getData(callback = () => {},  {key: checkedKey, value: checkedVal}) {
             if (this.getDataDoubled) {
                 return Promise.resolve({
                     value: [],
@@ -505,12 +652,13 @@ export default {
                 });
             }
             this.getDataDoubled = true;
-            if (this.settings.filters) this.clearFilters();
+            this.clearFilters();
             return new Promise(resolve => {
                 const d = this.core.getData();
                 const data = [];
                 let addressOtps = [];
                 let keyVals = {};
+                let sumIndex;
                 const judgeVals = val => {
                     let bl = true;
                     if (
@@ -729,19 +877,34 @@ export default {
                         ...o,
                         ...extraItem
                     };
-                    // 根据callback返回的notAddabled字段，判断是否添加数据
-                    if (!o.notAddabled && o.mapleTotal !== '合计') {
-                        data.push({
-                            ...o,
-                            notAddabled: undefined,
-                            _extraField_: undefined,
-                            undefined
-                        });
+                    if(checkedKey && (o[checkedKey] === checkedVal || o[checkedKey] === true)) {
+                        // 根据callback返回的notAddabled字段，判断是否添加数据
+                        if (!o.notAddabled && o.mapleTotal !== '合计') {
+                            data.push({
+                                ...o,
+                                notAddabled: undefined,
+                                _extraField_: undefined,
+                                undefined
+                            });
+                            if (!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && i === d.length - 1) {
+                                sumIndex = i
+                            }
+                        } else if (!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && data.length < this.copyData.length - 1){
+                            data.push(this.beforeSumData)
+                        }
                     }
                 });
                 this.core.validateCells(valid => {
+                    let popData = this.copyData.slice(d.length)
+                    if(checkedKey) {
+                        popData = popData.filter(item => (item[checkedKey] === checkedVal || item[checkedKey] === true))
+                    }
+                    const value = data.concat(popData)
+                    if(!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && sumIndex){
+                        value[sumIndex] = this.beforeSumData
+                    }
                     resolve({
-                        value: data.concat(this.copyData.slice(d.length)),
+                        value: value[value.length - 1].mapleTotal === '合计' ? value.slice(0, value.length - 1) : value,
                         valid: valid
                     });
                     this.getDataDoubled = false;
@@ -752,29 +915,26 @@ export default {
             if (!coords) return;
             const { row, col } = coords,
                 {
-                    showLastTotalText,
-                    hasColumnSummary,
                     core,
                     getKeyChange,
                     filterKeysChanges,
-                    myColumns
-                } = this;
-            let type = 'checkbox';
-
+                    myColumns,
+                    selectBoxConfig,
+                    filterData
+                } = this,
+                {
+                    key = 'mapleChecked',
+                    col: checkedIndex
+                } = selectBoxConfig || {}
+            let type = 'checkbox', d = filterData(this.copyData)
             if (event.target.id === 'maple-all-checkbox') {
-                const checkAllableds = [];
-
                 this.checkAllabled = !this.checkAllabled;
-                for (let i = 0; i < core.countRows(); i++) {
-                    if (
-                        (hasColumnSummary || showLastTotalText) &&
-                        i === core.countRows() - 1
-                    ) {
-                        continue;
-                    }
-                    checkAllableds.push([i, col, this.checkAllabled]);
+                for(let i = 0; i < d.length; i++) {
+                    if (d[i].mapleTotal === '合计') continue;
+                    d[i][key] = this.checkAllabled ? myColumns[checkedIndex].checkedTemplate || true : myColumns[checkedIndex].uncheckedTemplate || false
+                    if(this.checkAllabled) this.checkAllabledIndex++
                 }
-                core.setDataAtCell(checkAllableds);
+                this.core.render()
                 type = 'allCheckbox';
                 this.$emit('change', {
                     type,
@@ -798,18 +958,20 @@ export default {
             });
         },
         clearFilters() {
-            const filtersPlugin = this.core.getPlugin('filters');
-            for (let i of this.columns.keys()) {
-                filtersPlugin.removeConditions(i);
-            }
-            filtersPlugin.filter();
-            this.core.updateSettings({
-                hiddenRows: {
-                    copyPasteEnabled: true,
-                    indicators: true,
-                    rows: []
+            if (this.settings.filters) {
+                const filtersPlugin = this.core.getPlugin('filters');
+                for (let i of this.columns.keys()) {
+                    filtersPlugin.removeConditions(i);
                 }
-            });
+                filtersPlugin.filter();
+                this.core.updateSettings({
+                    hiddenRows: {
+                        copyPasteEnabled: true,
+                        indicators: true,
+                        rows: []
+                    }
+                });
+            }
         },
         getKeyChange(key, changes, filterSummaryRow = false, precise = true) {
             let o = [];
@@ -975,6 +1137,9 @@ export default {
                 );
             }
         },
+        getNowColumns(){
+            return getColumns.call(this, 'no')
+        },
         changeSort(o) {
             if (this.sortabled) return;
             this.sortabled = true;
@@ -1072,6 +1237,27 @@ export default {
                 }
                 this.emptyWidth = w;
             });
+        },
+        getCheckedData({key, value, clear, getItem = () => {}} = {}){
+            if(!key) throw `Please provide the field name of the selection box`
+            let d = [], {clearFilters, copyData} = this
+            for(const item of copyData.values()){
+                if(item[key] === value || item[key] === true){
+                    getItem(item)
+                    d.push(item)
+                }
+            }
+            if(clear) {
+                let t = setTimeout(()=>{
+                    clearFilters()
+                    clearTimeout(t)
+                    t = null
+                })
+            }
+            return {
+                checkedData: d,
+                clearFilters
+            }
         }
     },
     watch: {
@@ -1083,6 +1269,9 @@ export default {
         },
         options() {
             this.init();
+        },
+        beforeReplaceSumData(v){
+            this.beforeSumData = v
         }
     },
     beforeDestroy() {

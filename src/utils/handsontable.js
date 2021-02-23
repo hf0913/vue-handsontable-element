@@ -279,10 +279,8 @@ function customColumns() {
                 filterKeysChanges,
                 myColumns,
                 hasColumnSummary,
-                singleSelectConfig,
-                showLastTotalText
-            } = this;
-            // 双击td元素边框会出现checkbox被勾选中
+                singleSelectConfig
+            } = this
             item.renderer = (instance, td, row, col, prop, value) => {
                 maple.dom.empty(td);
                 const { readOnly, editor } = instance.getCellMeta(row, col);
@@ -318,7 +316,7 @@ function customColumns() {
                         (singleSelectConfig.openAbled &&
                             singleSelectConfig.strict &&
                             checkedVal);
-                    data[row][prop] = checkedVal;
+                    // data[row][prop] = checkedVal; 筛选勾选失效
                 }
                 $el.setAttribute("class", "maple-td-input-checkbox");
                 $el.setAttribute("id", `maple-td-input-checkbox-${row}`);
@@ -372,16 +370,13 @@ function customColumns() {
                         checked,
                         columns: myColumns
                     });
-                    this.checkAllabled = !!((checked.length &&
-                        hasColumnSummary) ||
-                    showLastTotalText
+                    this.checkAllabled = !!((checked.length && hasColumnSummary)
                         ? checked.length === data.length - 1
                         : checked.length === data.length);
                     instance.render();
                 });
                 if (
-                    col === 0 &&
-                    (hasColumnSummary || showLastTotalText) &&
+                    col === 0 && hasColumnSummary &&
                     row === instance.countRows() - 1
                 ) {
                     if (!data[row]) return td;
@@ -448,9 +443,7 @@ function customColumns() {
                         checked,
                         columns: myColumns
                     });
-                    this.checkAllabled = !!((checked.length &&
-                        hasColumnSummary) ||
-                    showLastTotalText
+                    this.checkAllabled = !!((checked.length && hasColumnSummary)
                         ? checked.length === data.length - 1
                         : checked.length === data.length);
                     instance.render();

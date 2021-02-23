@@ -89,15 +89,15 @@ if (process.env.NODE_ENV === "production") {
         }),
         new webpack.optimize.UglifyJsPlugin({
             //删除注释
-            output: {
-                comments: false
-            },
-            //删除console 和 debugger  删除警告
-            compress: {
-                warnings: false,
-                drop_debugger: true,
-                drop_console: false
-            }
+            // output: {
+            //     comments: false
+            // },
+            // //删除console 和 debugger  删除警告
+            // compress: {
+            //     warnings: false,
+            //     drop_debugger: true,
+            //     drop_console: false
+            // }
         })
     ]);
 }
