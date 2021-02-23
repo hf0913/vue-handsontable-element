@@ -21,17 +21,17 @@
 </template>
 
 <script>
-import { DatePicker } from "element-ui";
+import { DatePicker } from 'element-ui';
 
 export default {
-    name: "MapleDatePicker",
+    name: 'MapleDatePicker',
     props: {
         neddInput: {
             type: Boolean,
             default: true
         }
     },
-    components: { "el-date-picker": DatePicker },
+    components: { 'el-date-picker': DatePicker },
     data() {
         return {
             value: null,
@@ -39,7 +39,7 @@ export default {
             coords: {},
             top: 0,
             left: 0,
-            width: "auto",
+            width: 'auto',
             core: {},
             prop: {},
             columns: [],
@@ -55,7 +55,7 @@ export default {
     methods: {
         blur() {
             this.show = true;
-            this.$emit("change", false);
+            this.$emit('change', false);
         },
         change(v) {
             this.controlPickerPanel(false);
@@ -65,21 +65,21 @@ export default {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtCell(row, col, v, "changeDate");
+                this.core.setDataAtCell(row, col, v, 'changeDate');
             }
         },
         controlOpen({
             open = false,
             col = 0,
             row = 0,
-            width = "auto",
+            width = 'auto',
             top = 0,
             left = 0,
             core = {},
             columns = []
         } = {}) {
             if (!open) {
-                this.$emit("change", false);
+                this.$emit('change', false);
                 return (this.datePickerAbled = false);
             }
             this.datePickerAbled = true;
@@ -88,12 +88,12 @@ export default {
                 row
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                const { subType = "", props = {}, type } = columns[col];
+                const { subType = '', props = {}, type } = columns[col];
                 const charReg = /^[\u4e00-\u9fa5]+$/;
-                const { valueFormat = "yyyy-MM-dd HH:mm:ss" } = props;
+                const { valueFormat = 'yyyy-MM-dd HH:mm:ss' } = props;
 
                 this.columns = columns;
-                if (subType === "datePicker" && !type) {
+                if (subType === 'datePicker' && !type) {
                     let v = core.getDataAtCell(row, col);
 
                     this.value =
@@ -112,7 +112,7 @@ export default {
             }
         },
         controlPickerPanel(bl) {
-            this.$emit("change", bl);
+            this.$emit('change', bl);
             if (bl) {
                 let t = setTimeout(() => {
                     this.$refs.datePickerRef.focus();

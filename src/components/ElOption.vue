@@ -19,17 +19,17 @@
 </template>
 
 <script type="text/babel">
-import Emitter from "element-ui/src/mixins/emitter";
-import { getValueByPath, escapeRegexpString } from "element-ui/src/utils/util";
+import Emitter from 'element-ui/src/mixins/emitter';
+import { getValueByPath, escapeRegexpString } from 'element-ui/src/utils/util';
 
 export default {
     mixins: [Emitter],
 
-    name: "ElOption",
+    name: 'ElOption',
 
-    componentName: "ElOption",
+    componentName: 'ElOption',
 
-    inject: ["select"],
+    inject: ['select'],
 
     props: {
         value: {
@@ -63,16 +63,16 @@ export default {
         isObject() {
             return (
                 Object.prototype.toString.call(this.value).toLowerCase() ===
-                "[object object]"
+                '[object object]'
             );
         },
 
         currentLabel() {
-            return this.label || (this.isObject ? "" : this.value);
+            return this.label || (this.isObject ? '' : this.value);
         },
 
         currentValue() {
-            return this.value || this.label || "";
+            return this.value || this.label || '';
         },
 
         itemSelected() {
@@ -100,20 +100,20 @@ export default {
     watch: {
         currentLabel() {
             if (!this.created && !this.select.remote)
-                this.dispatch("ElSelect", "setSelected");
+                this.dispatch('ElSelect', 'setSelected');
         },
         value(val, oldVal) {
             const { remote, valueKey } = this.select;
             if (!this.created && !remote) {
                 if (
                     valueKey &&
-                    typeof val === "object" &&
-                    typeof oldVal === "object" &&
+                    typeof val === 'object' &&
+                    typeof oldVal === 'object' &&
                     val[valueKey] === oldVal[valueKey]
                 ) {
                     return;
                 }
-                this.dispatch("ElSelect", "setSelected");
+                this.dispatch('ElSelect', 'setSelected');
             }
         }
     },
@@ -159,7 +159,7 @@ export default {
 
         selectOptionClick() {
             if (this.disabled !== true && this.groupDisabled !== true) {
-                this.dispatch("ElSelect", "handleOptionClick", [this, true]);
+                this.dispatch('ElSelect', 'handleOptionClick', [this, true]);
             }
         },
 
@@ -167,11 +167,11 @@ export default {
             let visible = false;
             if (this.mnemonicCode instanceof Array) {
                 visible = this.mnemonicCode.some(k => {
-                    return (this.itemData[k] || "").indexOf(query) !== -1;
+                    return (this.itemData[k] || '').indexOf(query) !== -1;
                 });
             }
             this.visible =
-                new RegExp(escapeRegexpString(query), "i").test(
+                new RegExp(escapeRegexpString(query), 'i').test(
                     this.currentLabel
                 ) ||
                 visible ||
@@ -188,8 +188,8 @@ export default {
         this.select.optionsCount++;
         this.select.filteredOptionsCount++;
 
-        this.$on("queryChange", this.queryChange);
-        this.$on("handleGroupDisabled", this.handleGroupDisabled);
+        this.$on('queryChange', this.queryChange);
+        this.$on('handleGroupDisabled', this.handleGroupDisabled);
     },
 
     beforeDestroy() {

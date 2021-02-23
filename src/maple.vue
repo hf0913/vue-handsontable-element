@@ -1,6 +1,10 @@
 <template>
     <div id="maple-table">
-        <hot-table licenseKey="non-commercial-and-evaluation" ref="mapleTable" :style="customStyle" />
+        <hot-table
+            licenseKey="non-commercial-and-evaluation"
+            ref="mapleTable"
+            :style="customStyle"
+        />
         <MapleDatePicker
             ref="datePickerRef"
             @change="v => (stopKeyEvent = v)"
@@ -179,121 +183,175 @@ export default {
         this.changeEmptyWidth(this.settings.data);
     },
     methods: {
-        beforeFilter(conditions){
-            this.conditions = conditions
+        beforeFilter(conditions) {
+            this.conditions = conditions;
             this.init(d => {
-                const {options:{columnSummary = [], lastTotalFields = []}, filterData, core, getNowColumns, settings, hasColumnSummary} = this,
-                data = filterData(d), sumData = this.sumData, h = settings.height,
-                height = this.rowHeight * (data.length + 1) < h ? 'auto' : h, t = columnSummary.length ? columnSummary : lastTotalFields
+                const {
+                        options: { columnSummary = [], lastTotalFields = [] },
+                        filterData,
+                        core,
+                        getNowColumns,
+                        settings,
+                        hasColumnSummary
+                    } = this,
+                    data = filterData(d),
+                    sumData = this.sumData,
+                    h = settings.height,
+                    height =
+                        this.rowHeight * (data.length + 1) < h ? 'auto' : h,
+                    t = columnSummary.length ? columnSummary : lastTotalFields;
 
-                if(sumData && hasColumnSummary) {
-                    const cols = getNowColumns()
-                    this.$nextTick(()=>{
-                        let dataAtCells = [], len = core.countRows() - 1
-                        if(data[len] && data[len].mapleTotal !== '合计') this.replaceSumData = _.deepCopy(data[len])
-                        if(len === 0 || height === 'auto') len++
-                        data.splice(len, 1, sumData)
+                if (sumData && hasColumnSummary) {
+                    const cols = getNowColumns();
+                    this.$nextTick(() => {
+                        let dataAtCells = [],
+                            len = core.countRows() - 1;
+                        if (data[len] && data[len].mapleTotal !== '合计')
+                            this.replaceSumData = _.deepCopy(data[len]);
+                        if (len === 0 || height === 'auto') len++;
+                        data.splice(len, 1, sumData);
                         for (let j = 0; j < t.length; j++) {
-                            const {key} = t[j], keyIndex = cols.findIndex((item, index) => {
-                                const bl = item.key === key || item.data === key
-                                if(!bl) dataAtCells.push([len, index, null])
-                                return bl
-                            })
-                            if(~keyIndex) dataAtCells.push([len, keyIndex, sumData[key]])
+                            const { key } = t[j],
+                                keyIndex = cols.findIndex((item, index) => {
+                                    const bl =
+                                        item.key === key || item.data === key;
+                                    if (!bl)
+                                        dataAtCells.push([len, index, null]);
+                                    return bl;
+                                });
+                            if (~keyIndex)
+                                dataAtCells.push([len, keyIndex, sumData[key]]);
                         }
-                        core.setDataAtCell(dataAtCells)
-                    })
+                        core.setDataAtCell(dataAtCells);
+                    });
                 }
-                this.$nextTick(()=>{
+                this.$nextTick(() => {
                     this.core.updateSettings({
                         height
-                    })
-                })
-                return data
-            })
-            return false
+                    });
+                });
+                return data;
+            });
+            return false;
         },
-        filterData(d){
-            const {conditions = [], getNowColumns, options:{columnSummary}, beforeSumData} = this, cols = getNowColumns(),
-            data = d.filter((item, index) => {
-                let passCount = 0
-                if(!item) return false
-                if(item.mapleTotal === '合计') {
-                    if (index < d.length - 1) {
-                        this.sumData = _.deepCopy(item)
-                        item = Object.assign({}, beforeSumData)
-                        d[index] = item
-                    } else return false
-                }
-                conditions.map(({column: i, conditions:[{name: type, args}]}) => {
-                    const key = cols[i].key || cols[i].data
-                    let curr = item[key]
-                    if(this.sumData && curr && ~columnSummary.findIndex(item => item.key === key) && curr == this.sumData[key]) {
-                        item = Object.assign({}, beforeSumData)
-                        d[index] = item
+        filterData(d) {
+            const {
+                    conditions = [],
+                    getNowColumns,
+                    options: { columnSummary },
+                    beforeSumData
+                } = this,
+                cols = getNowColumns(),
+                data = d.filter((item, index) => {
+                    let passCount = 0;
+                    if (!item) return false;
+                    if (item.mapleTotal === '合计') {
+                        if (index < d.length - 1) {
+                            this.sumData = _.deepCopy(item);
+                            item = Object.assign({}, beforeSumData);
+                            d[index] = item;
+                        } else return false;
                     }
-                    curr = item[key]
-                    switch(type){
-                        case 'begins_with':
-                            if(typeof curr === 'string' && curr.startsWith(args[0])) passCount++
-                            break
-                        case 'between':
-                            if(curr >= args[0] && curr <= args[1]) passCount++
-                            break
-                        case 'contains':
-                            if(typeof curr === 'string' && curr.includes(args[0])) passCount++
-                            break
-                        case 'empty':
-                            if(curr == null || curr === '') passCount++
-                            break
-                        case 'ends_with':
-                            if(typeof curr === 'string' && curr.endsWith(args[0])) passCount++
-                            break
-                        case 'eq':
-                            if(curr == args[0]) passCount++
-                            break
-                        case 'gt':
-                            if(curr > args[0]) passCount++
-                            break
-                        // Greater than or equal
-                        case 'gte':
-                            if(curr >= args[0]) passCount++
-                            break
-                        case 'lt':
-                            if(curr < args[0]) passCount++
-                            break
-                        // Less than or equal
-                        case 'lte':
-                            if(curr <= args[0]) passCount++
-                            break
-                        case 'not_between':
-                            if(!(curr >= args[0] && curr <= args[1])) passCount++
-                            break
-                        case 'not_contains':
-                            if(!(typeof curr === 'string' && curr.includes(args[0]))) passCount++
-                            break
-                        case 'not_empty':
-                            if(!(curr == null || curr === '')) passCount++
-                            break
-                        // Not equal
-                        case 'neq':
-                            if(curr != args[0]) passCount++
-                            break
-                        case 'date_before':
-                            break
-                        case 'date_after':
-                            break
-                        case 'date_tomorrow':
-                            break
-                        case 'date_today':
-                            break
-                        case 'date_yesterday':
-                            break
-                    }
-                })
-                return passCount === conditions.length
-            })
-            return data
+                    conditions.map(
+                        ({ column: i, conditions: [{ name: type, args }] }) => {
+                            const key = cols[i].key || cols[i].data;
+                            let curr = item[key];
+                            if (
+                                this.sumData &&
+                                curr &&
+                                ~columnSummary.findIndex(
+                                    item => item.key === key
+                                ) &&
+                                curr == this.sumData[key]
+                            ) {
+                                item = Object.assign({}, beforeSumData);
+                                d[index] = item;
+                            }
+                            curr = item[key];
+                            switch (type) {
+                                case 'begins_with':
+                                    if (
+                                        typeof curr === 'string' &&
+                                        curr.startsWith(args[0])
+                                    )
+                                        passCount++;
+                                    break;
+                                case 'between':
+                                    if (curr >= args[0] && curr <= args[1])
+                                        passCount++;
+                                    break;
+                                case 'contains':
+                                    if (
+                                        typeof curr === 'string' &&
+                                        curr.includes(args[0])
+                                    )
+                                        passCount++;
+                                    break;
+                                case 'empty':
+                                    if (curr == null || curr === '')
+                                        passCount++;
+                                    break;
+                                case 'ends_with':
+                                    if (
+                                        typeof curr === 'string' &&
+                                        curr.endsWith(args[0])
+                                    )
+                                        passCount++;
+                                    break;
+                                case 'eq':
+                                    if (curr == args[0]) passCount++;
+                                    break;
+                                case 'gt':
+                                    if (curr > args[0]) passCount++;
+                                    break;
+                                // Greater than or equal
+                                case 'gte':
+                                    if (curr >= args[0]) passCount++;
+                                    break;
+                                case 'lt':
+                                    if (curr < args[0]) passCount++;
+                                    break;
+                                // Less than or equal
+                                case 'lte':
+                                    if (curr <= args[0]) passCount++;
+                                    break;
+                                case 'not_between':
+                                    if (!(curr >= args[0] && curr <= args[1]))
+                                        passCount++;
+                                    break;
+                                case 'not_contains':
+                                    if (
+                                        !(
+                                            typeof curr === 'string' &&
+                                            curr.includes(args[0])
+                                        )
+                                    )
+                                        passCount++;
+                                    break;
+                                case 'not_empty':
+                                    if (!(curr == null || curr === ''))
+                                        passCount++;
+                                    break;
+                                // Not equal
+                                case 'neq':
+                                    if (curr != args[0]) passCount++;
+                                    break;
+                                case 'date_before':
+                                    break;
+                                case 'date_after':
+                                    break;
+                                case 'date_tomorrow':
+                                    break;
+                                case 'date_today':
+                                    break;
+                                case 'date_yesterday':
+                                    break;
+                            }
+                        }
+                    );
+                    return passCount === conditions.length;
+                });
+            return data;
         },
         getCascaderVals(o) {
             this.$emit('getCascaderVals', o);
@@ -370,12 +428,13 @@ export default {
         },
         init(cb) {
             if (this.lazyLoadAbled) {
-                    this.lazyLoadDataLen = this.core.countRows();
-                    for(let [index, item] of this.data.entries()){
-                        item = Object.assign(item, {
-                            _mapleIndex: item._mapleIndex || `${index}-${Math.random()}`
-                        })
-                    }
+                this.lazyLoadDataLen = this.core.countRows();
+                for (let [index, item] of this.data.entries()) {
+                    item = Object.assign(item, {
+                        _mapleIndex:
+                            item._mapleIndex || `${index}-${Math.random()}`
+                    });
+                }
             }
             let {
                     data,
@@ -399,25 +458,28 @@ export default {
                 );
             }
             if (!hiddCols.length) hiddCols = this.settings.hiddCols || [];
-            this.hasColumnSummary = (this.options.columnSummary && this.options.columnSummary.length > 0) || this.showLastTotalText;
+            this.hasColumnSummary =
+                (this.options.columnSummary &&
+                    this.options.columnSummary.length > 0) ||
+                this.showLastTotalText;
 
             if (lazyLoadDataLen > initSize) {
                 startIndex = filterInit ? initSize : lazyLoadDataLen;
-                this.filterInit = false
+                this.filterInit = false;
             }
             this.options.minRows
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
             if (lazyLoadAbled && data.length > initSize && !asyncLoadConfig) {
                 cb instanceof Function
-                ? initData = cb(data).slice(
-                    0,
-                    lazyLoadAbled ? startIndex : lastPage || undefined
-                )
-                : initData = data.slice(
-                    0,
-                    lazyLoadAbled ? startIndex : lastPage || undefined
-                );
+                    ? (initData = cb(data).slice(
+                          0,
+                          lazyLoadAbled ? startIndex : lastPage || undefined
+                      ))
+                    : (initData = data.slice(
+                          0,
+                          lazyLoadAbled ? startIndex : lastPage || undefined
+                      ));
             }
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
@@ -444,14 +506,16 @@ export default {
                 afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
                 afterPasteCustom: afterPasteCustom.bind(this),
                 beforeFilter: v => {
-                    this.filterInit = true
-                    this.lastPage = this.initSize
-                    this.stopLazyAbled = true
-                    if(this.checkAllabled){
-                        const l = this.hasColumnSummary ? this.copyData.length - 1 : this.copyData.length
-                        this.changeCheckAllabled(this.checkAllabledIndex === l)
+                    this.filterInit = true;
+                    this.lastPage = this.initSize;
+                    this.stopLazyAbled = true;
+                    if (this.checkAllabled) {
+                        const l = this.hasColumnSummary
+                            ? this.copyData.length - 1
+                            : this.copyData.length;
+                        this.changeCheckAllabled(this.checkAllabledIndex === l);
                     }
-                    this.beforeFilter(v)
+                    this.beforeFilter(v);
                 },
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
@@ -460,28 +524,21 @@ export default {
                 },
                 depthFilterByValue: (d, m) => {
                     // 针对filter_by_value选项，深度过滤选项值最终显示结果
-                    const lastRow = m.hot.countRows() - 1, { hasColumnSummary } = this;
+                    const lastRow = m.hot.countRows() - 1,
+                        { hasColumnSummary } = this;
 
                     return ~d.indexOf(lastRow)
                         ? d
-                        : d.concat(
-                              hasColumnSummary
-                                  ? [lastRow]
-                                  : []
-                          );
+                        : d.concat(hasColumnSummary ? [lastRow] : []);
                 },
                 getColumnVisibleValuesDepth: (d, m) => {
                     // 针对filter_by_value选项，深度过滤选项列表
-                    const lastRow = m.hot.countRows() - 1, { hasColumnSummary } = this;
+                    const lastRow = m.hot.countRows() - 1,
+                        { hasColumnSummary } = this;
 
                     return ~d.indexOf(lastRow)
                         ? d
-                        : d.slice(
-                              0,
-                              hasColumnSummary
-                                  ? lastRow - 1
-                                  : lastRow
-                          );
+                        : d.slice(0, hasColumnSummary ? lastRow - 1 : lastRow);
                 },
                 onCellDblClick: this.cellDblClick
             });
@@ -496,7 +553,7 @@ export default {
         asyncLoad({ ajax }) {
             this.stopLazyAbled = false;
             ajax();
-            this.asyncLoadConfig.cb = () => this.stopLazyAbled = true;
+            this.asyncLoadConfig.cb = () => (this.stopLazyAbled = true);
         },
         lazyLoadData() {
             let {
@@ -520,7 +577,7 @@ export default {
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
                     sourceData = core.getSourceData(),
-                    currentLen = sourceData.length
+                    currentLen = sourceData.length;
                 let copySoucreData = copyData,
                     copyDataLen = copySoucreData.length;
 
@@ -536,7 +593,7 @@ export default {
                     currentLen < copyDataLen
                 ) {
                     this.stopLazyAbled = false;
-                    copySoucreData = filterData(copyData)
+                    copySoucreData = filterData(copyData);
                     copyDataLen = copySoucreData.length;
                     lastPage = currentLen + pageSize;
                     let data = copySoucreData.slice(0, lastPage);
@@ -544,12 +601,16 @@ export default {
                         let sumIndex = lastPage - pageSize - 1,
                             sumData = _.deepCopy(sourceData[sumIndex]);
                         if (sumData) {
-                            sumData.mapleTotal = '合计'
+                            sumData.mapleTotal = '合计';
                             data.splice(sumIndex, 1, beforeSumData);
-                            this.beforeSumData = _.deepCopy(data[lastPage - 1] || data[data.length - 1]);
-                            data.length === copyDataLen ? data.splice(copyDataLen, 1, sumData) : data.splice(lastPage - 1, 1, sumData)
+                            this.beforeSumData = _.deepCopy(
+                                data[lastPage - 1] || data[data.length - 1]
+                            );
+                            data.length === copyDataLen
+                                ? data.splice(copyDataLen, 1, sumData)
+                                : data.splice(lastPage - 1, 1, sumData);
 
-                            if(!settings.filters){
+                            if (!settings.filters) {
                                 copySoucreData[sumIndex] = beforeSumData;
                             }
                         }
@@ -564,7 +625,7 @@ export default {
                         data
                     });
                     this.lastPage = lastPage;
-                    if(data.length < copyDataLen) this.stopLazyAbled = true;
+                    if (data.length < copyDataLen) this.stopLazyAbled = true;
                 }
             }
         },
@@ -607,10 +668,9 @@ export default {
                         return bl;
                     });
                 let countRows = core.countRows(),
-                    bl =
-                        hasColumnSummary
-                            ? len === countRows - 1
-                            : len === countRows;
+                    bl = hasColumnSummary
+                        ? len === countRows - 1
+                        : len === countRows;
                 if (bl !== this.checkAllabled) {
                     this.checkAllabled = bl;
                     core.render();
@@ -644,7 +704,10 @@ export default {
                 source
             });
         },
-        getData(callback = () => {},  {key: checkedKey, value: checkedVal} = {}) {
+        getData(
+            callback = () => {},
+            { key: checkedKey, value: checkedVal } = {}
+        ) {
             if (this.getDataDoubled) {
                 return Promise.resolve({
                     value: [],
@@ -877,7 +940,12 @@ export default {
                         ...o,
                         ...extraItem
                     };
-                    if(!checkedKey || (checkedKey && (o[checkedKey] === checkedVal || o[checkedKey] === true))) {
+                    if (
+                        !checkedKey ||
+                        (checkedKey &&
+                            (o[checkedKey] === checkedVal ||
+                                o[checkedKey] === true))
+                    ) {
                         // 根据callback返回的notAddabled字段，判断是否添加数据
                         if (!o.notAddabled && o.mapleTotal !== '合计') {
                             data.push({
@@ -886,25 +954,48 @@ export default {
                                 _extraField_: undefined,
                                 undefined
                             });
-                            if (!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && i === d.length - 1) {
-                                sumIndex = i
+                            if (
+                                !this.asyncLoadConfig &&
+                                this.lazyLoadAbled &&
+                                this.hasColumnSummary &&
+                                i === d.length - 1
+                            ) {
+                                sumIndex = i;
                             }
-                        } else if (!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && data.length < this.copyData.length - 1){
-                            data.push(this.beforeSumData)
+                        } else if (
+                            !this.asyncLoadConfig &&
+                            this.lazyLoadAbled &&
+                            this.hasColumnSummary &&
+                            data.length < this.copyData.length - 1
+                        ) {
+                            data.push(this.beforeSumData);
                         }
                     }
                 });
                 this.core.validateCells(valid => {
-                    let popData = this.copyData.slice(d.length)
-                    if(checkedKey) {
-                        popData = popData.filter(item => (item[checkedKey] === checkedVal || item[checkedKey] === true))
+                    let popData = this.copyData.slice(d.length);
+                    if (checkedKey) {
+                        popData = popData.filter(
+                            item =>
+                                item[checkedKey] === checkedVal ||
+                                item[checkedKey] === true
+                        );
                     }
-                    const value = data.concat(popData).filter(item => item) // 暂时只增加filter方法，后续需要优化，针对设置最少行数
-                    if(!this.asyncLoadConfig && this.lazyLoadAbled && this.hasColumnSummary && sumIndex){
-                        value[sumIndex] = this.beforeSumData
+                    const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
+                    if (
+                        !this.asyncLoadConfig &&
+                        this.lazyLoadAbled &&
+                        this.hasColumnSummary &&
+                        sumIndex
+                    ) {
+                        value[sumIndex] = this.beforeSumData;
                     }
                     resolve({
-                        value: value[value.length - 1] && value[value.length - 1].mapleTotal === '合计' ? value.slice(0, value.length - 1) : value,
+                        value:
+                            value[value.length - 1] &&
+                            value[value.length - 1].mapleTotal === '合计'
+                                ? value.slice(0, value.length - 1)
+                                : value,
                         valid: valid
                     });
                     this.getDataDoubled = false;
@@ -922,19 +1013,20 @@ export default {
                     selectBoxConfig,
                     filterData
                 } = this,
-                {
-                    key = 'mapleChecked',
-                    col: checkedIndex
-                } = selectBoxConfig || {}
-            let type = 'checkbox', d = filterData(this.copyData)
+                { key = 'mapleChecked', col: checkedIndex } =
+                    selectBoxConfig || {};
+            let type = 'checkbox',
+                d = filterData(this.copyData);
             if (event.target.id === 'maple-all-checkbox') {
                 this.checkAllabled = !this.checkAllabled;
-                for(let i = 0; i < d.length; i++) {
+                for (let i = 0; i < d.length; i++) {
                     if (d[i].mapleTotal === '合计') continue;
-                    d[i][key] = this.checkAllabled ? myColumns[checkedIndex].checkedTemplate || true : myColumns[checkedIndex].uncheckedTemplate || false
-                    if(this.checkAllabled) this.checkAllabledIndex++
+                    d[i][key] = this.checkAllabled
+                        ? myColumns[checkedIndex].checkedTemplate || true
+                        : myColumns[checkedIndex].uncheckedTemplate || false;
+                    if (this.checkAllabled) this.checkAllabledIndex++;
                 }
-                this.core.render()
+                this.core.render();
                 type = 'allCheckbox';
                 this.$emit('change', {
                     type,
@@ -1137,8 +1229,8 @@ export default {
                 );
             }
         },
-        getNowColumns(){
-            return getColumns.call(this, 'no')
+        getNowColumns() {
+            return getColumns.call(this, 'no');
         },
         changeSort(o) {
             if (this.sortabled) return;
@@ -1238,26 +1330,28 @@ export default {
                 this.emptyWidth = w;
             });
         },
-        getCheckedData({key, value, clear, getItem = () => {}} = {}){
-            if(!key) throw `Please provide the field name of the selection box`
-            let d = [], {clearFilters, copyData} = this
-            for(const item of copyData.values()){
-                if(item[key] === value || item[key] === true){
-                    getItem(item)
-                    d.push(item)
+        getCheckedData({ key, value, clear, getItem = () => {} } = {}) {
+            if (!key)
+                throw `Please provide the field name of the selection box`;
+            let d = [],
+                { clearFilters, copyData } = this;
+            for (const item of copyData.values()) {
+                if (item[key] === value || item[key] === true) {
+                    getItem(item);
+                    d.push(item);
                 }
             }
-            if(clear) {
-                let t = setTimeout(()=>{
-                    clearFilters()
-                    clearTimeout(t)
-                    t = null
-                })
+            if (clear) {
+                let t = setTimeout(() => {
+                    clearFilters();
+                    clearTimeout(t);
+                    t = null;
+                });
             }
             return {
                 checkedData: d,
                 clearFilters
-            }
+            };
         }
     },
     watch: {
@@ -1270,8 +1364,8 @@ export default {
         options() {
             this.init();
         },
-        beforeReplaceSumData(v){
-            this.beforeSumData = v
+        beforeReplaceSumData(v) {
+            this.beforeSumData = v;
         }
     },
     beforeDestroy() {

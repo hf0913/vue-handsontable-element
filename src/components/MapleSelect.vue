@@ -35,12 +35,12 @@
 </template>
 
 <script>
-import ElSelect from "./ElSelect";
-import ElOption from "./ElOption";
-import utils from "../utils";
+import ElSelect from './ElSelect';
+import ElOption from './ElOption';
+import utils from '../utils';
 
 export default {
-    name: "MapleDatePicker",
+    name: 'MapleDatePicker',
     props: {
         neddInput: {
             type: Boolean,
@@ -56,7 +56,7 @@ export default {
             coords: {},
             top: 0,
             left: 0,
-            width: "auto",
+            width: 'auto',
             core: {},
             prop: {},
             columns: [],
@@ -64,8 +64,8 @@ export default {
             $input: null,
             selectAbled: true,
             options: [],
-            labelName: "label",
-            valueName: "value",
+            labelName: 'label',
+            valueName: 'value',
             debounceAjax: null,
             ajaxConfig: {},
             loading: false,
@@ -74,7 +74,7 @@ export default {
             selectVals: {},
             mnemonicCode: null,
             isOK: true,
-            valueType: "value",
+            valueType: 'value',
             extraField: null,
             multiple: false
         };
@@ -111,13 +111,13 @@ export default {
                             }
                         }
                     });
-                    cellVals = cellVals.join(",");
+                    cellVals = cellVals.join(',');
                     this.keyOpts[key] = {
                         opts: items
                     };
                     this.selectVals[`key-${key}-value-${cellVals}`] = items;
                     if (cellVals.length) {
-                        this.$emit("getSelectOpts", {
+                        this.$emit('getSelectOpts', {
                             keyOpts: this.keyOpts,
                             selectVals: this.selectVals,
                             row,
@@ -127,14 +127,14 @@ export default {
                             key,
                             extraField: this.extraField,
                             valueType: this.valueType,
-                            source: "select"
+                            source: 'select'
                         });
                     }
-                    this.core.setDataAtCell(row, col, cellVals, "changeCells");
+                    this.core.setDataAtCell(row, col, cellVals, 'changeCells');
                 } else if (!this.isOK) {
-                    this.core.setDataAtCell(row, col, null, "changeCells");
+                    this.core.setDataAtCell(row, col, null, 'changeCells');
                 }
-                this.$emit("change", false);
+                this.$emit('change', false);
             }
         },
         change(v) {
@@ -172,7 +172,7 @@ export default {
                         break;
                     }
                 }
-                this.$emit("getSelectOpts", {
+                this.$emit('getSelectOpts', {
                     keyOpts: this.keyOpts,
                     selectVals: this.selectVals,
                     row,
@@ -182,10 +182,10 @@ export default {
                     key: this.key,
                     extraField: this.extraField,
                     valueType: this.valueType,
-                    source: "select"
+                    source: 'select'
                 });
                 let t = setTimeout(() => {
-                    this.core.setDataAtCell(row, col, value, "changeCells");
+                    this.core.setDataAtCell(row, col, value, 'changeCells');
                     clearTimeout(t);
                     t = null;
                 }, 128);
@@ -195,7 +195,7 @@ export default {
             open = false,
             col = 0,
             row = 0,
-            width = "auto",
+            width = 'auto',
             top = 0,
             left = 0,
             core = {},
@@ -203,7 +203,7 @@ export default {
             orgColumns = []
         } = {}) {
             if (!open) {
-                this.$emit("change", false);
+                this.$emit('change', false);
                 return (this.selectAbled = false);
             }
             this.selectAbled = true;
@@ -213,13 +213,13 @@ export default {
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 const {
-                    subType = "",
+                    subType = '',
                     props = {},
                     type,
                     debounceTime = 666,
                     ajaxConfig = {},
-                    labelName = "label",
-                    valueName = "value",
+                    labelName = 'label',
+                    valueName = 'value',
                     key,
                     data,
                     mnemonicCode = [],
@@ -228,11 +228,11 @@ export default {
                 } = columns[col];
                 this.isOK = true;
                 this.columns = columns;
-                if (subType === "select" && !type) {
+                if (subType === 'select' && !type) {
                     this.key = data || key;
                     this.extraField = extraField;
                     this.valueType = valueType;
-                    let v = core.getDataAtCell(row, col) || "";
+                    let v = core.getDataAtCell(row, col) || '';
                     const itemData = this.selectVals[
                         `key-${this.key}-value-${v}`
                     ];
@@ -273,7 +273,7 @@ export default {
                         if (!itemData) {
                             this.value = multiple ? [] : null;
                             this.options = [];
-                            this.search(v, "autoFill");
+                            this.search(v, 'autoFill');
                         }
                     } else {
                         if (!itemData) {
@@ -299,7 +299,7 @@ export default {
                                 let cellVals = [],
                                     items = [];
                                 if (multiple) {
-                                    v = v.split(",");
+                                    v = v.split(',');
                                     v.map(item => {
                                         for (let k of opts.values()) {
                                             if (item === k[labelName]) {
@@ -318,7 +318,7 @@ export default {
                                     this.selectVals[
                                         `key-${key}-value-${cellVals}`
                                     ] = items;
-                                    this.$emit("getSelectOpts", {
+                                    this.$emit('getSelectOpts', {
                                         keyOpts: this.keyOpts,
                                         selectVals: this.selectVals,
                                         noEmit: true
@@ -333,7 +333,7 @@ export default {
                                             this.selectVals[
                                                 `key-${key}-value-${this.value}`
                                             ] = item;
-                                            this.$emit("getSelectOpts", {
+                                            this.$emit('getSelectOpts', {
                                                 keyOpts: this.keyOpts,
                                                 selectVals: this.selectVals,
                                                 noEmit: true
@@ -353,7 +353,7 @@ export default {
             }
         },
         controlPickerPanel(bl) {
-            this.$emit("change", bl);
+            this.$emit('change', bl);
             if (bl) {
                 let t = setTimeout(() => {
                     this.$refs.selectRef.focus();
@@ -401,18 +401,18 @@ export default {
                     if (queryField && v && Reflect.has(v, queryField)) {
                         ajaxConfig[k] = {
                             ...v,
-                            [queryField]: query.replace(/\s+/g, "")
+                            [queryField]: query.replace(/\s+/g, '')
                         };
                     }
                 };
 
-                fn("data", data);
-                fn("param", param);
+                fn('data', data);
+                fn('param', param);
                 utils.ajax(ajaxConfig).then(v => {
                     this.options = v;
                     if (multiple) {
                         let cellVals = [];
-                        query = query.split(",");
+                        query = query.split(',');
                         query.map(item => {
                             for (let k of v.values()) {
                                 if (item === k[labelName]) {
@@ -423,7 +423,7 @@ export default {
                         });
                         if (cellVals.length) {
                             this.$nextTick(() => {
-                                if (source === "autoFill")
+                                if (source === 'autoFill')
                                     this.value = cellVals;
                             });
                         }
@@ -438,7 +438,7 @@ export default {
                             for (let [i, item] of v.entries()) {
                                 if (
                                     item[labelName] === query &&
-                                    source === "autoFill"
+                                    source === 'autoFill'
                                 ) {
                                     this.value = item[labelName];
                                     break;

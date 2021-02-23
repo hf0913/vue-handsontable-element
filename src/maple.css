@@ -78,7 +78,7 @@
     height: auto;
     line-height: normal;
 }
-.el-popper[x-placement^="bottom"] {
+.el-popper[x-placement^='bottom'] {
     margin-top: 6px !important;
 }
 .autocompleteEditor {

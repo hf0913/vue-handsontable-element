@@ -22,18 +22,18 @@
 </template>
 
 <script>
-import utils from "../utils/index";
-import { Cascader } from "element-ui";
+import utils from '../utils/index';
+import { Cascader } from 'element-ui';
 
 export default {
-    name: "MapleCascader",
+    name: 'MapleCascader',
     props: {
         neddInput: {
             type: Boolean,
             default: true
         }
     },
-    components: { "el-cascader": Cascader },
+    components: { 'el-cascader': Cascader },
     data() {
         return {
             options: [],
@@ -42,7 +42,7 @@ export default {
             coords: {},
             top: 0,
             left: 0,
-            width: "auto",
+            width: 'auto',
             core: {},
             prop: {},
             columns: [],
@@ -61,7 +61,7 @@ export default {
     methods: {
         visible(v) {
             this.show = !v;
-            this.$emit("change", v);
+            this.$emit('change', v);
         },
         change(v) {
             const { row, col } = this.coords;
@@ -69,7 +69,7 @@ export default {
             const key = this.columns[col].key || this.columns[col].data;
             const value = v;
 
-            if (subType === "address" || subType === "cascader") {
+            if (subType === 'address' || subType === 'cascader') {
                 if (this.cascaderVals[`key-${key}-value-${value}`]) {
                     v = this.cascaderVals[`key-${key}-value-${value}`].label;
                 } else {
@@ -81,7 +81,7 @@ export default {
                             labelName
                         })
                         .map(({ label }) => label)
-                        .join("/");
+                        .join('/');
                 }
                 this.cascaderVals = {
                     ...this.cascaderVals,
@@ -94,7 +94,7 @@ export default {
                         label: v
                     }
                 };
-                this.$emit("getCascaderVals", {
+                this.$emit('getCascaderVals', {
                     data: this.cascaderVals,
                     row,
                     col
@@ -107,14 +107,14 @@ export default {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtCell(row, col, v, "changeCascader");
+                this.core.setDataAtCell(row, col, v, 'changeCascader');
             }
         },
         async controlOpen({
             open = false,
             col = 0,
             row = 0,
-            width = "auto",
+            width = 'auto',
             top = 0,
             left = 0,
             core = {},
@@ -122,7 +122,7 @@ export default {
             orgColumns = []
         } = {}) {
             if (!open) {
-                this.$emit("change", false);
+                this.$emit('change', false);
                 return (this.cascaderAbled = false);
             }
             this.core = core;
@@ -133,7 +133,7 @@ export default {
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 let list = [];
                 const key = columns[col].key || columns[col].data,
-                    { subType = "", props = {}, type } = columns[col];
+                    { subType = '', props = {}, type } = columns[col];
                 if (type) return;
                 this.controlPickerPanel(open);
                 this.show = !open;
@@ -160,7 +160,7 @@ export default {
 
                 let opts = list;
                 this.columns = columns;
-                if (subType === "address") {
+                if (subType === 'address') {
                     if (this.address.length) {
                         opts = this.address;
                     } else {
@@ -169,7 +169,7 @@ export default {
                     }
                 }
 
-                if (subType === "address" || subType === "cascader") {
+                if (subType === 'address' || subType === 'cascader') {
                     const value = this.core.getDataAtCell(row, col);
                     if (value) {
                         if (this.cascaderVals[`key-${key}-value-${value}`]) {
@@ -180,8 +180,8 @@ export default {
                             this.value = utils
                                 .getCascaderLabelValue({
                                     data: opts,
-                                    value: (value || "").split("/"),
-                                    matchFieldName: "label"
+                                    value: (value || '').split('/'),
+                                    matchFieldName: 'label'
                                 })
                                 .map(({ value }) => value);
                         }
@@ -190,8 +190,8 @@ export default {
                             this.core.setDataAtCell(
                                 row,
                                 col,
-                                "",
-                                "changeCascader"
+                                '',
+                                'changeCascader'
                             );
                         }
                     }
@@ -200,28 +200,28 @@ export default {
                 if (opts.length) {
                     this.$refs.cascaderRef.$refs.panel.activePath = [];
                     this.$el.click();
-                    this.$el.querySelector("input").focus();
+                    this.$el.querySelector('input').focus();
                 } else {
                     this.$el.click();
-                    this.changeEmptyText("暂无数据");
+                    this.changeEmptyText('暂无数据');
                 }
             }
         },
-        changeEmptyText(innerHTML = "加载中") {
+        changeEmptyText(innerHTML = '加载中') {
             let $empty = document.querySelector(
-                ".el-cascader-menu__empty-text"
+                '.el-cascader-menu__empty-text'
             );
             $empty
                 ? ($empty.innerHTML = innerHTML)
                 : this.$nextTick(() => {
                       $empty = document.querySelector(
-                          ".el-cascader-menu__empty-text"
+                          '.el-cascader-menu__empty-text'
                       );
                       if ($empty) $empty.innerHTML = innerHTML;
                   });
         },
         controlPickerPanel(bl) {
-            this.$emit("change", bl);
+            this.$emit('change', bl);
             this.cascaderAbled = false;
             if (bl) {
                 this.cascaderAbled = true;
@@ -232,10 +232,10 @@ export default {
                     clearTimeout(timer);
                 }, 60);
             } else {
-                this.changeEmptyText("加载中");
+                this.changeEmptyText('加载中');
                 this.$nextTick(() => {
                     const $pop = document.querySelector(
-                        ".el-cascader__dropdown"
+                        '.el-cascader__dropdown'
                     );
                     $pop && $pop.remove();
                 });
