@@ -535,23 +535,27 @@ function afterOnCellMouseDown(event, coords, $el) {
 }
 
 function afterPasteCustom({ row, col, value }) {
-    const { data, lazyLoadAbled, $parent, core } = this,
-        keys = getColumns.call(this, 'no'),
-        maxRow = core.countRows(),
-        { _mapleIndex } = core.getSourceDataAtRow(row) || {},
-        sourceIndex = data.findIndex(e => e._mapleIndex === _mapleIndex);
-    let key;
+    let t = setTimeout(() => {
+        const { data, lazyLoadAbled, $parent, core } = this,
+            keys = getColumns.call(this, 'no'),
+            maxRow = core.countRows(),
+            { _mapleIndex } = core.getSourceDataAtRow(row) || {},
+            sourceIndex = data.findIndex(e => e._mapleIndex === _mapleIndex);
+        let key;
 
-    if (lazyLoadAbled && keys && keys[col]) {
-        key = keys[col].data || keys[col].key;
-        data[sourceIndex] = data[row < maxRow ? sourceIndex : row] || {};
-        if (data[sourceIndex].mapleTotal === '合计') {
-            data[sourceIndex] = {
-                ...$parent.replaceSumData,
-                [key]: value
-            };
-        } else data[sourceIndex][key] = value;
-    }
+        if (lazyLoadAbled && keys && keys[col]) {
+            key = keys[col].data || keys[col].key;
+            data[sourceIndex] = data[row < maxRow ? sourceIndex : row] || {};
+            if (data[sourceIndex].mapleTotal === '合计') {
+                data[sourceIndex] = {
+                    ...$parent.replaceSumData,
+                    [key]: value
+                };
+            } else data[sourceIndex][key] = value;
+        }
+        clearTimeout(t);
+        t = null;
+    }, 0);
     return null;
 }
 
