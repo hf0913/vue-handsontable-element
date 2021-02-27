@@ -515,7 +515,12 @@ export default {
                             : this.copyData.length;
                         this.changeCheckAllabled(this.checkAllabledIndex === l);
                     }
-                    this.beforeFilter(v);
+                    return this.options.beforeFilter
+                        ? this.options.beforeFilter({
+                              conditions: v,
+                              columns: this.getNowColumns()
+                          })
+                        : this.beforeFilter(v);
                 },
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
@@ -1003,6 +1008,15 @@ export default {
             });
         },
         checkAllBox(event, coords, $el) {
+            if (
+                this.options.takeoverCheckAll &&
+                this.options.takeoverCheckAll({
+                    event,
+                    coords,
+                    $el
+                })
+            )
+                return;
             if (!coords) return;
             const { row, col } = coords,
                 {
