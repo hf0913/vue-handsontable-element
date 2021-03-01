@@ -180,7 +180,6 @@ export default {
     },
     activated() {
         this.fixView();
-        this.changeEmptyWidth(this.settings.data);
     },
     methods: {
         beforeFilter(conditions) {
@@ -449,7 +448,6 @@ export default {
                 startIndex = initSize,
                 initData = data;
             this.copyData = data;
-            this.changeEmptyWidth(data);
             if (this.options.cacheId && this.options.openCache) {
                 hiddCols = JSON.parse(
                     localStorage.getItem(
@@ -509,18 +507,22 @@ export default {
                     this.filterInit = true;
                     this.lastPage = this.initSize;
                     this.stopLazyAbled = true;
-                    if (this.checkAllabled) {
-                        const l = this.hasColumnSummary
-                            ? this.copyData.length - 1
-                            : this.copyData.length;
-                        this.changeCheckAllabled(this.checkAllabledIndex === l);
+                    if (this.options.beforeFilter)
+                        return this.options.beforeFilter({
+                            conditions: v,
+                            columns: this.getNowColumns()
+                        });
+                    else {
+                        if (this.checkAllabled) {
+                            const l = this.hasColumnSummary
+                                ? this.copyData.length - 1
+                                : this.copyData.length;
+                            this.changeCheckAllabled(
+                                this.checkAllabledIndex === l
+                            );
+                        }
+                        return this.beforeFilter(v);
                     }
-                    return this.options.beforeFilter
-                        ? this.options.beforeFilter({
-                              conditions: v,
-                              columns: this.getNowColumns()
-                          })
-                        : this.beforeFilter(v);
                 },
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
@@ -594,6 +596,7 @@ export default {
                     return asyncLoad(asyncLoadConfig);
 
                 if (
+                    !asyncLoadConfig &&
                     lastIndex >= currentLen - diff &&
                     currentLen < copyDataLen
                 ) {
@@ -1334,17 +1337,6 @@ export default {
         },
         changeCheckAllabled(bl) {
             this.checkAllabled = bl;
-        },
-        changeEmptyWidth(d) {
-            this.$nextTick(() => {
-                let w = '100%';
-                if (!d.length) {
-                    let $w = this.$el.querySelector('table');
-                    w = `${$w && $w.clientWidth}px`;
-                    this.changeCheckAllabled(false);
-                }
-                this.emptyWidth = w;
-            });
         },
         getCheckedData({ key, value, clear, getItem = () => {} } = {}) {
             if (!key)
