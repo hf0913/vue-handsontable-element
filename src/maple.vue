@@ -1008,15 +1008,6 @@ export default {
             });
         },
         checkAllBox(event, coords, $el) {
-            if (
-                this.options.takeoverCheckAll &&
-                this.options.takeoverCheckAll({
-                    event,
-                    coords,
-                    $el
-                })
-            )
-                return;
             if (!coords) return;
             const { row, col } = coords,
                 {
@@ -1033,6 +1024,17 @@ export default {
                 d = filterData(this.copyData);
             if (event.target.id === 'maple-all-checkbox') {
                 this.checkAllabled = !this.checkAllabled;
+                if (
+                    this.checkAllabled &&
+                    this.options.takeoverCheckAll &&
+                    this.options.takeoverCheckAll({
+                        event,
+                        coords,
+                        $el,
+                        checked: this.checkAllabled
+                    })
+                )
+                    return;
                 for (let i = 0; i < d.length; i++) {
                     if (d[i].mapleTotal === '合计') continue;
                     d[i][key] = this.checkAllabled
