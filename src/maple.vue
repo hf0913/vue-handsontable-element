@@ -555,9 +555,9 @@ export default {
             this.$refs.selectRef.controlOpen();
             if (type) this.$emit(type, e);
         },
-        asyncLoad({ ajax }) {
+        asyncLoad({ ajax, params }) {
             this.stopLazyAbled = false;
-            ajax();
+            ajax(params);
             this.asyncLoadConfig.cb = () => (this.stopLazyAbled = true);
         },
         lazyLoadData() {
