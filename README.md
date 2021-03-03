@@ -57,7 +57,8 @@
                             // 自定义校验，value为单元格值，callback回调函数，入参为boolean类型。
                             callback(true); // true校验通过,false校验失败，单元格背景色标记红色
                         },
-                        className: "htLeft htMiddle" // 对齐方式，仅支持：htRight htLeft htMiddle htBottom
+                        className: "htLeft htMiddle", // 对齐方式，仅支持：htRight htLeft htMiddle htBottom
+                        filterable: true, // 是否关闭过滤
                     },
                     {
                         title: "普通复选框",
@@ -320,6 +321,9 @@
                         // 自定义双击单元格回调函数
                         // row：行号，col：列号，$el：当前单元格dom
                         return true; // true即通过，false即阻止
+                    },
+                    takeoverCheckAll: o => {
+                        // 全选回调
                     }
                 },
                 core: Object, // https://handsontable.com/docs/7.4.2/Core.html
