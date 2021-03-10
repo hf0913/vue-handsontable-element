@@ -283,11 +283,11 @@ function customColumns() {
             } = this;
             item.renderer = (instance, td, row, col, prop, value) => {
                 const { readOnly, editor } = instance.getCellMeta(row, col),
-                    { _mapleIndex } = instance.getSourceDataAtRow(row) || {},
-                    sourceIndex = data.findIndex(
-                        e => e._mapleIndex === _mapleIndex
-                    );
-
+                    { _mapleIndex } = instance.getSourceDataAtRow(row) || {};
+                let sourceIndex = data.findIndex(
+                    e => e && e._mapleIndex === _mapleIndex
+                );
+                sourceIndex = ~sourceIndex ? sourceIndex : row;
                 if (!data[sourceIndex]) return td;
                 maple.dom.empty(td);
                 let $el = document.createElement('INPUT'),
@@ -520,6 +520,7 @@ function afterOnCellMouseDown(event, coords, $el) {
         if (event.target.id === 'maple-all-checkbox') {
             this.checkAllBox(event, coords, $el);
         } else {
+            this.currentCol = col;
             this.$emit('click', {
                 col,
                 row,
@@ -534,36 +535,79 @@ function afterOnCellMouseDown(event, coords, $el) {
     }
 }
 
-function afterPasteCustom({ row, col, value }) {
-    let t = setTimeout(() => {
-        const { data, lazyLoadAbled, $parent, core } = this,
-            keys = getColumns.call(this, 'no'),
-            maxRow = core.countRows(),
-            { _mapleIndex } = core.getSourceDataAtRow(row) || {},
-            sourceIndex = data.findIndex(e => e._mapleIndex === _mapleIndex);
-        let key;
+function beforePaste(d, [{ startRow, endRow, startCol, endCol }]) {
+    const { data, lazyLoadAbled, $parent, core, afterChange } = this,
+        keys = getColumns.call(this, 'no');
+    let rs = endRow - startRow + 1,
+        cs = endCol - startCol + 1,
+        rd = [],
+        cd = [],
+        key,
+        changes = [],
+        val;
 
-        if (lazyLoadAbled && keys && keys[col]) {
-            key = keys[col].data || keys[col].key;
-            data[sourceIndex] = data[row < maxRow ? sourceIndex : row] || {};
-            if (data[sourceIndex].mapleTotal === '合计') {
-                data[sourceIndex] = {
+    if (!lazyLoadAbled) return true;
+    if (startRow === endRow && d.length && endRow <= d.length) {
+        rs = d.length;
+        endRow = d.length - 1 + startRow;
+    }
+
+    for (let i = 0; i < rs; i++) {
+        if (rd.length === rs) break;
+        d.map(dItem => {
+            if (
+                startCol === endCol &&
+                dItem.length &&
+                endCol <= dItem.length &&
+                rd.length !== rs
+            ) {
+                cs = dItem.length;
+                endCol = dItem.length - 1 + startCol;
+            }
+            for (let j = 0; j < cs; j++) {
+                if (cd.length === cs) break;
+                dItem.map(di => {
+                    if (cd.length !== cs) {
+                        return cd.push(di);
+                    }
+                });
+            }
+            if (rd.length !== rs) {
+                rd.push(cd);
+                return (cd = []);
+            }
+        });
+    }
+
+    for (let x = startRow; x <= endRow; x++) {
+        for (let y = startCol; y <= endCol; y++) {
+            if (!keys[y]) return;
+            key = keys[y].key || keys[y].data;
+            data[x] = data[x] || {};
+            data[x]._mapleIndex =
+                data[x]._mapleIndex || `${x}-${Math.random()}`;
+            val = rd[x - startRow][y - startCol];
+            if (data[x].mapleTotal === '合计') {
+                data[x] = {
                     ...$parent.replaceSumData,
-                    [key]: value
+                    [key]: val
                 };
-            } else data[sourceIndex][key] = value;
+            } else {
+                changes.push([x, key, data[x][key], val]);
+                data[x][key] = val;
+            }
         }
-        clearTimeout(t);
-        t = null;
-    }, 0);
-    return null;
+    }
+    afterChange(changes, 'CopyPaste.paste');
+    core.render();
+    return false;
 }
 
 export {
     colHeaders,
     customColumns,
     beforeChange,
+    beforePaste,
     afterOnCellMouseDown,
-    getColumns,
-    afterPasteCustom
+    getColumns
 };

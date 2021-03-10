@@ -37,8 +37,9 @@ import {
     getColumns,
     beforeChange,
     afterOnCellMouseDown,
-    afterPasteCustom
+    beforePaste
 } from './utils/handsontable';
+import sortData from './utils/sort';
 
 export default {
     name: 'MapleHandsontable',
@@ -56,7 +57,7 @@ export default {
         },
         selectBoxConfig: {
             type: Object,
-            default: () => ({ key: 'mapleChecked', col: 0 })
+            default: () => ({ key: 'checked', col: 0 })
         },
         widthAuto: {
             type: Boolean
@@ -168,7 +169,9 @@ export default {
             copyData: [],
             stopLazyAbled: true,
             emptyWidth: '100%',
-            checkAllabledIndex: 0
+            checkAllabledIndex: 0,
+            filterFailData: [],
+            currentCol: 0
         };
     },
     components: { HotTable, MapleCascader, MapleDatePicker, MapleSelect },
@@ -182,6 +185,61 @@ export default {
         this.fixView();
     },
     methods: {
+        perfectFilters(conditions) {
+            let { copyData, filterFailData } = this,
+                d = [],
+                cLen = copyData.length,
+                fLen = filterFailData.length,
+                sumData;
+            this.conditions = conditions;
+            if (fLen) {
+                if (cLen > fLen) {
+                    filterFailData.map((item, index) => {
+                        let { mapleTotal, _maplePosition: p } = item,
+                            fItem = filterFailData[index - 1] || {
+                                _maplePosition: -1
+                            },
+                            _maplePosition =
+                                p == null ? fItem._maplePosition + 1 : p;
+                        if (fItem && _maplePosition < fItem._maplePosition) {
+                            _maplePosition = fItem._maplePosition + 1;
+                        }
+                        item = Object.assign(item, { _maplePosition });
+                        mapleTotal === '合计'
+                            ? (sumData = item)
+                            : copyData.splice(_maplePosition, 0, {
+                                  ...item,
+                                  _maplePosition
+                              });
+                    });
+                    if (sumData) copyData.push(sumData);
+                } else {
+                    copyData.map((item, index) => {
+                        let { mapleTotal, _maplePosition: p } = item,
+                            cItem = copyData[index - 1] || {
+                                _maplePosition: -1
+                            },
+                            _maplePosition =
+                                p == null ? cItem._maplePosition + 1 : p;
+                        if (cItem && _maplePosition < cItem._maplePosition) {
+                            _maplePosition = cItem._maplePosition + 1;
+                        }
+                        item = Object.assign(item, { _maplePosition });
+                        mapleTotal === '合计'
+                            ? (sumData = item)
+                            : filterFailData.splice(_maplePosition, 0, {
+                                  ...item,
+                                  _maplePosition
+                              });
+                    });
+                    if (sumData) filterFailData.push(sumData);
+                    this.copyData = copyData = filterFailData;
+                }
+            }
+            this.filterFailData = [];
+            d = this.filterData(copyData);
+            this.$emit('update', d);
+        },
         beforeFilter(conditions) {
             this.conditions = conditions;
             this.init(d => {
@@ -231,7 +289,6 @@ export default {
                 });
                 return data;
             });
-            return false;
         },
         filterData(d) {
             const {
@@ -242,7 +299,15 @@ export default {
                 } = this,
                 cols = getNowColumns(),
                 data = d.filter((item, index) => {
-                    let passCount = 0;
+                    let passCount = 0,
+                        bl = false,
+                        byValabled;
+
+                    item = Object.assign(item, {
+                        _maplePosition: index,
+                        _mapleIndex:
+                            item._mapleIndex || `${index}-${Math.random()}`
+                    });
                     if (!item) return false;
                     if (item.mapleTotal === '合计') {
                         if (index < d.length - 1) {
@@ -251,8 +316,8 @@ export default {
                             d[index] = item;
                         } else return false;
                     }
-                    conditions.map(
-                        ({ column: i, conditions: [{ name: type, args }] }) => {
+                    conditions.map(({ column: i, conditions: factor }) => {
+                        factor.map(({ name: type, args }) => {
                             const key = cols[i].key || cols[i].data;
                             let curr = item[key];
                             if (
@@ -276,7 +341,10 @@ export default {
                                         passCount++;
                                     break;
                                 case 'between':
-                                    if (curr >= args[0] && curr <= args[1])
+                                    if (
+                                        curr - 0 >= args[0] &&
+                                        curr - 0 <= args[1]
+                                    )
                                         passCount++;
                                     break;
                                 case 'contains':
@@ -301,21 +369,26 @@ export default {
                                     if (curr == args[0]) passCount++;
                                     break;
                                 case 'gt':
-                                    if (curr > args[0]) passCount++;
+                                    if (curr - 0 > args[0]) passCount++;
                                     break;
                                 // Greater than or equal
                                 case 'gte':
-                                    if (curr >= args[0]) passCount++;
+                                    if (curr - 0 >= args[0]) passCount++;
                                     break;
                                 case 'lt':
-                                    if (curr < args[0]) passCount++;
+                                    if (curr - 0 < args[0]) passCount++;
                                     break;
                                 // Less than or equal
                                 case 'lte':
-                                    if (curr <= args[0]) passCount++;
+                                    if (curr - 0 <= args[0]) passCount++;
                                     break;
                                 case 'not_between':
-                                    if (!(curr >= args[0] && curr <= args[1]))
+                                    if (
+                                        !(
+                                            curr - 0 >= args[0] &&
+                                            curr - 0 <= args[1]
+                                        )
+                                    )
                                         passCount++;
                                     break;
                                 case 'not_contains':
@@ -335,6 +408,18 @@ export default {
                                 case 'neq':
                                     if (curr != args[0]) passCount++;
                                     break;
+                                case 'by_value':
+                                    if (
+                                        byValabled == null &&
+                                        factor.length === 1
+                                    )
+                                        passCount++;
+                                    byValabled = args[0].some(e =>
+                                        curr == null
+                                            ? e == curr || e === ''
+                                            : curr == e
+                                    );
+                                    break;
                                 case 'date_before':
                                     break;
                                 case 'date_after':
@@ -346,9 +431,13 @@ export default {
                                 case 'date_yesterday':
                                     break;
                             }
-                        }
-                    );
-                    return passCount === conditions.length;
+                        });
+                    });
+                    bl =
+                        passCount === conditions.length &&
+                        (byValabled || byValabled == null);
+                    if (!bl) this.filterFailData.push(item);
+                    return bl;
                 });
             return data;
         },
@@ -429,6 +518,7 @@ export default {
             if (this.lazyLoadAbled) {
                 this.lazyLoadDataLen = this.core.countRows();
                 for (let [index, item] of this.data.entries()) {
+                    item = item || {};
                     item = Object.assign(item, {
                         _mapleIndex:
                             item._mapleIndex || `${index}-${Math.random()}`
@@ -437,12 +527,12 @@ export default {
             }
             let {
                     data,
-                    lastPage,
                     lazyLoadAbled,
                     initSize,
                     lazyLoadDataLen,
                     asyncLoadConfig,
-                    filterInit
+                    filterInit,
+                    rowHeight
                 } = this,
                 hiddCols = [],
                 startIndex = initSize,
@@ -460,24 +550,21 @@ export default {
                 (this.options.columnSummary &&
                     this.options.columnSummary.length > 0) ||
                 this.showLastTotalText;
-
             if (lazyLoadDataLen > initSize) {
+                lazyLoadDataLen =
+                    data.length - lazyLoadDataLen < 5
+                        ? data.length
+                        : lazyLoadDataLen;
                 startIndex = filterInit ? initSize : lazyLoadDataLen;
-                this.filterInit = false;
             }
+            if (filterInit) this.filterInit = false;
             this.options.minRows
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
             if (lazyLoadAbled && data.length > initSize && !asyncLoadConfig) {
                 cb instanceof Function
-                    ? (initData = cb(data).slice(
-                          0,
-                          lazyLoadAbled ? startIndex : lastPage || undefined
-                      ))
-                    : (initData = data.slice(
-                          0,
-                          lazyLoadAbled ? startIndex : lastPage || undefined
-                      ));
+                    ? (initData = cb(data).slice(0, startIndex))
+                    : (initData = data.slice(0, startIndex));
             }
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
@@ -502,27 +589,35 @@ export default {
                 afterUnhideColumns: this.afterUnhideColumns,
                 afterColumnMove: this.afterColumnMove,
                 afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
-                afterPasteCustom: afterPasteCustom.bind(this),
+                beforePaste: beforePaste.bind(this),
+                afterPasteCustom: v => {
+                    const { afterPasteCustom } = this.options || {};
+                    return (afterPasteCustom && afterPasteCustom(v)) || null;
+                },
                 beforeFilter: v => {
-                    this.filterInit = true;
-                    this.lastPage = this.initSize;
-                    this.stopLazyAbled = true;
-                    if (this.options.beforeFilter)
-                        return this.options.beforeFilter({
-                            conditions: v,
-                            columns: this.getNowColumns()
-                        });
-                    else {
-                        if (this.checkAllabled) {
-                            const l = this.hasColumnSummary
-                                ? this.copyData.length - 1
-                                : this.copyData.length;
-                            this.changeCheckAllabled(
-                                this.checkAllabledIndex === l
-                            );
+                    const {
+                        perfectFilters,
+                        initSize,
+                        options: {
+                            allowFilters,
+                            beforeFilter: beforeFilterFn,
+                            getNowColumns,
+                            filterData
                         }
-                        return this.beforeFilter(v);
+                    } = this;
+                    this.filterInit = true;
+                    this.lastPage = initSize;
+                    this.stopLazyAbled = true;
+                    if (allowFilters) {
+                        perfectFilters(v);
+                    } else if (beforeFilterFn) {
+                        beforeFilterFn({
+                            conditions: v,
+                            columns: getNowColumns(),
+                            filterData
+                        });
                     }
+                    return false;
                 },
                 beforeKeyDown: event => {
                     if (this.stopKeyEvent) {
@@ -547,9 +642,75 @@ export default {
                         ? d
                         : d.slice(0, hasColumnSummary ? lastRow - 1 : lastRow);
                 },
-                onCellDblClick: this.cellDblClick
+                beforeAdjustRowsAndCols: () => {
+                    const { settings, conditions } = this;
+                    if (settings.filters && conditions && conditions.length)
+                        return false;
+                },
+                onCellDblClick: this.cellDblClick,
+                customFilterByValueList: (items, o) => {
+                    const {
+                            lazyLoadAbled,
+                            copyData,
+                            currentCol,
+                            getNowColumns,
+                            filterFailData
+                        } = this,
+                        list = [];
+                    let emptyData;
+
+                    if (lazyLoadAbled) {
+                        const colItem = getNowColumns()[currentCol],
+                            key = colItem.key || colItem.data,
+                            getList = d => {
+                                d.map(ele => {
+                                    const val =
+                                        ele[key] === 0
+                                            ? ele[key]
+                                            : ele[key] || '';
+                                    if (
+                                        list.some(v => v.value == val) ||
+                                        ele.mapleTotal === '合计'
+                                    )
+                                        return;
+                                    if (!val) {
+                                        emptyData = {
+                                            checked: true,
+                                            value: '',
+                                            visualValue: '(空白单元格)'
+                                        };
+                                    } else {
+                                        list.push({
+                                            checked: true,
+                                            value: val,
+                                            visualValue: val
+                                        });
+                                    }
+                                });
+                            };
+                        getList(copyData);
+                        getList(filterFailData);
+                        setTimeout(() =>
+                            o.onSelectAllClick({ preventDefault: () => {} })
+                        );
+                        items = list.sort(
+                            sortData('asc', {
+                                sortEmptyCells: true,
+                                key: 'visualValue'
+                            })
+                        );
+                        if (emptyData) list.unshift(emptyData);
+                    }
+                    return items;
+                }
             });
-            this.core.updateSettings(this.settings);
+            this.core.updateSettings({
+                ...this.settings,
+                height:
+                    rowHeight * (initData.length + 1) < this.settings.height
+                        ? 'auto'
+                        : this.settings.height
+            });
         },
         hiddenPopup(type, e) {
             this.$refs.datePickerRef.controlOpen();
@@ -574,12 +735,10 @@ export default {
                 checkAllabled,
                 selectBoxConfig,
                 hasColumnSummary,
-                filterData,
                 diff,
                 asyncLoadConfig,
                 asyncLoad,
-                beforeSumData,
-                settings
+                beforeSumData
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
@@ -601,7 +760,6 @@ export default {
                     currentLen < copyDataLen
                 ) {
                     this.stopLazyAbled = false;
-                    copySoucreData = filterData(copyData);
                     copyDataLen = copySoucreData.length;
                     lastPage = currentLen + pageSize;
                     let data = copySoucreData.slice(0, lastPage);
@@ -615,16 +773,13 @@ export default {
                                 data[lastPage - 1] || data[data.length - 1]
                             );
                             data.length === copyDataLen
-                                ? data.splice(copyDataLen, 1, sumData)
+                                ? data.splice(copyDataLen - 1, 1, sumData)
                                 : data.splice(lastPage - 1, 1, sumData);
-
-                            if (!settings.filters) {
-                                copySoucreData[sumIndex] = beforeSumData;
-                            }
+                            copySoucreData[sumIndex] = beforeSumData;
                         }
                     }
                     if (checkAllabled) {
-                        const { key = 'mapleChecked' } = selectBoxConfig || {};
+                        const { key = 'checked' } = selectBoxConfig || {};
                         data.forEach(item => {
                             item[key] = true;
                         });
@@ -648,7 +803,7 @@ export default {
             this.hiddenPopup('afterScrollHorizontally');
         },
         afterChange(changes, source) {
-            if (!changes) return;
+            if (!changes || (changes && !changes.length)) return;
             const {
                     hasColumnSummary,
                     selectBoxConfig,
@@ -656,7 +811,7 @@ export default {
                     core
                 } = this,
                 {
-                    key = 'mapleChecked',
+                    key = 'checked',
                     col = 0,
                     checkedTemplate = 'checkedTemplate'
                 } = selectBoxConfig || {},
@@ -723,291 +878,302 @@ export default {
                 });
             }
             this.getDataDoubled = true;
-            this.clearFilters();
+            const timeOut = this.clearFilters() ? 2128 : 0;
             return new Promise(resolve => {
-                const d = this.core.getData();
-                const data = [];
-                let addressOtps = [];
-                let keyVals = {};
-                let sumIndex;
-                const judgeVals = val => {
-                    let bl = true;
-                    if (
-                        Object.prototype.toString.call(val) ===
-                            '[object Array]' &&
-                        !val.length
-                    ) {
-                        bl = false;
-                    }
-                    if (val == null || val === '') bl = false;
-                    return bl;
-                };
-                d.map((ele, i) => {
-                    let o = this.data[i] || {};
-                    const dItem = d[i];
-                    const keys = getColumns.call(this, 'no');
-                    for (let [j, itemData] of keys.entries()) {
-                        let v = dItem[j],
-                            k = itemData.key || itemData.data;
-                        let newItem = {};
-                        if (newItem[k]) {
-                            newItem = keyVals[k];
-                        } else {
-                            for (let [, w] of this.columns.entries()) {
-                                if (w.key === k || w.data === k) {
-                                    newItem = w;
-                                    keyVals[k] = w;
-                                    break;
+                setTimeout(() => {
+                    const d = this.core.getData();
+                    const data = [];
+                    let addressOtps = [];
+                    let keyVals = {};
+                    let sumIndex;
+                    const judgeVals = val => {
+                        let bl = true;
+                        if (
+                            Object.prototype.toString.call(val) ===
+                                '[object Array]' &&
+                            !val.length
+                        ) {
+                            bl = false;
+                        }
+                        if (val == null || val === '') bl = false;
+                        return bl;
+                    };
+                    d.map((ele, i) => {
+                        let o = this.data[i] || {};
+                        const dItem = d[i];
+                        const keys = getColumns.call(this, 'no');
+                        for (let [j, itemData] of keys.entries()) {
+                            let v = dItem[j],
+                                k = itemData.key || itemData.data;
+                            let newItem = {};
+                            if (newItem[k]) {
+                                newItem = keyVals[k];
+                            } else {
+                                for (let [, w] of this.columns.entries()) {
+                                    if (w.key === k || w.data === k) {
+                                        newItem = w;
+                                        keyVals[k] = w;
+                                        break;
+                                    }
                                 }
                             }
-                        }
 
-                        let {
-                            valueType,
-                            labelName = 'label',
-                            valueName = 'value',
-                            extraField = '_extraField_',
-                            subType,
-                            type,
-                            checkedTemplate,
-                            uncheckedTemplate,
-                            ajaxConfig
-                        } = newItem;
+                            let {
+                                valueType,
+                                labelName = 'label',
+                                valueName = 'value',
+                                extraField = '_extraField_',
+                                subType,
+                                type,
+                                checkedTemplate,
+                                uncheckedTemplate,
+                                ajaxConfig
+                            } = newItem;
 
-                        let opts = newItem.options || newItem.source;
-                        if (opts instanceof Function) {
-                            opts = opts() || [];
-                        }
-                        if (type === 'checkbox') {
-                            let checkboxVal = o[k];
-                            if (
-                                checkedTemplate != null &&
-                                checkedTemplate != ''
-                            ) {
-                                checkboxVal = checkboxVal
-                                    ? checkedTemplate
-                                    : uncheckedTemplate;
+                            let opts = newItem.options || newItem.source;
+                            if (opts instanceof Function) {
+                                opts = opts() || [];
                             }
-                            o = {
-                                ...o,
-                                [k]: checkboxVal
-                            };
-                        } else if (
-                            (((type === 'dropdown' ||
-                                type === 'autocomplete') &&
-                                ((opts && opts.length) ||
-                                    subType === 'ajax')) ||
-                                subType === 'select') &&
-                            k
-                        ) {
-                            const { multiple } = newItem.props || {};
-                            let currentValue,
-                                selectVals = this.selectVals[
-                                    `key-${k}-value-${v}`
-                                ];
-                            valueType = valueType || valueName;
-                            if (multiple) v = (v || '').split(',');
-                            if (selectVals) {
-                                currentValue = multiple
-                                    ? selectVals.map(ele => ele[valueName])
-                                    : selectVals[valueName];
-                            } else {
-                                currentValue =
-                                    _.exchange({
-                                        data: opts,
-                                        currentValue: v,
-                                        currentKey: labelName
-                                    })[valueName] || undefined;
-                            }
-                            if (valueType === valueName) {
+                            if (type === 'checkbox') {
+                                let checkboxVal = o[k];
+                                if (
+                                    checkedTemplate != null &&
+                                    checkedTemplate != ''
+                                ) {
+                                    checkboxVal = checkboxVal
+                                        ? checkedTemplate
+                                        : uncheckedTemplate;
+                                }
                                 o = {
                                     ...o,
-                                    [k]: judgeVals(v) ? currentValue : o[k],
-                                    [extraField]: judgeVals(v)
-                                        ? v
-                                        : o[extraField]
+                                    [k]: checkboxVal
                                 };
-                                if (
-                                    extraField === '_extraField_' &&
-                                    o[k] == null &&
-                                    ajaxConfig &&
-                                    ajaxConfig.url
-                                ) {
+                            } else if (
+                                (((type === 'dropdown' ||
+                                    type === 'autocomplete') &&
+                                    ((opts && opts.length) ||
+                                        subType === 'ajax')) ||
+                                    subType === 'select') &&
+                                k
+                            ) {
+                                const { multiple } = newItem.props || {};
+                                let currentValue,
+                                    selectVals = this.selectVals[
+                                        `key-${k}-value-${v}`
+                                    ];
+                                valueType = valueType || valueName;
+                                if (multiple) v = (v || '').split(',');
+                                if (selectVals) {
+                                    currentValue = multiple
+                                        ? selectVals.map(ele => ele[valueName])
+                                        : selectVals[valueName];
+                                } else {
+                                    currentValue =
+                                        _.exchange({
+                                            data: opts,
+                                            currentValue: v,
+                                            currentKey: labelName
+                                        })[valueName] || undefined;
+                                }
+                                if (valueType === valueName) {
                                     o = {
                                         ...o,
-                                        [k]: v,
-                                        [extraField]: undefined
+                                        [k]: judgeVals(v) ? currentValue : o[k],
+                                        [extraField]: judgeVals(v)
+                                            ? v
+                                            : o[extraField]
+                                    };
+                                    if (
+                                        extraField === '_extraField_' &&
+                                        o[k] == null &&
+                                        ajaxConfig &&
+                                        ajaxConfig.url
+                                    ) {
+                                        o = {
+                                            ...o,
+                                            [k]: v,
+                                            [extraField]: undefined
+                                        };
+                                    }
+                                } else {
+                                    o = {
+                                        ...o,
+                                        [k]: judgeVals(v) ? v : o[k],
+                                        [extraField]: judgeVals(currentValue)
+                                            ? currentValue
+                                            : o[extraField]
                                     };
                                 }
-                            } else {
-                                o = {
-                                    ...o,
-                                    [k]: judgeVals(v) ? v : o[k],
-                                    [extraField]: judgeVals(currentValue)
-                                        ? currentValue
-                                        : o[extraField]
-                                };
-                            }
-                        } else if (
-                            subType === 'cascader' ||
-                            subType === 'address'
-                        ) {
-                            const exchangeArrary = val => {
-                                return val instanceof Array
-                                    ? val
-                                    : (val || '').split('/');
-                            };
-                            if (
-                                addressOtps.length === 0 &&
+                            } else if (
+                                subType === 'cascader' ||
                                 subType === 'address'
                             ) {
-                                addressOtps = _.collageAddress(_.address);
-                            }
-                            if (this.cascaderVals[`key-${k}-value-${v}`]) {
-                                const cascaderVals = this.cascaderVals[
-                                    `key-${k}-value-${v}`
-                                ];
-                                if (valueType === 'label') {
-                                    o = {
-                                        ...o,
-                                        [k]: judgeVals(
-                                            exchangeArrary(cascaderVals.label)
-                                        )
-                                            ? exchangeArrary(cascaderVals.label)
-                                            : exchangeArrary(o[k]),
-                                        [extraField]: judgeVals(
-                                            exchangeArrary(cascaderVals.value)
-                                        )
-                                            ? exchangeArrary(cascaderVals.value)
-                                            : exchangeArrary(o[extraField])
-                                    };
-                                } else {
-                                    o = {
-                                        ...o,
-                                        [k]: judgeVals(
-                                            exchangeArrary(cascaderVals.value)
-                                        )
-                                            ? exchangeArrary(cascaderVals.value)
-                                            : exchangeArrary(o[k]),
-                                        [extraField]: judgeVals(
-                                            exchangeArrary(cascaderVals.label)
-                                        )
-                                            ? exchangeArrary(cascaderVals.label)
-                                            : exchangeArrary(o[extraField])
-                                    };
+                                const exchangeArrary = val => {
+                                    return val instanceof Array
+                                        ? val
+                                        : (val || '').split('/');
+                                };
+                                if (
+                                    addressOtps.length === 0 &&
+                                    subType === 'address'
+                                ) {
+                                    addressOtps = _.collageAddress(_.address);
                                 }
-                            } else {
-                                const res = _.getCascaderLabelValue({
-                                    data:
-                                        subType === 'address'
-                                            ? addressOtps
-                                            : opts,
-                                    value: (v && v.split('/')) || [],
-                                    matchFieldName: 'label'
-                                });
-                                if (valueType === 'label') {
-                                    o = {
-                                        ...o,
-                                        [k]: judgeVals(
-                                            res.map(({ label }) => label)
-                                        )
-                                            ? res.map(({ label }) => label)
-                                            : exchangeArrary(o[k]),
-                                        [extraField]: judgeVals(
-                                            res.map(({ value }) => value)
-                                        )
-                                            ? res.map(({ value }) => value)
-                                            : exchangeArrary(o[extraField])
-                                    };
+                                if (this.cascaderVals[`key-${k}-value-${v}`]) {
+                                    const cascaderVals = this.cascaderVals[
+                                        `key-${k}-value-${v}`
+                                    ];
+                                    if (valueType === 'label') {
+                                        o = {
+                                            ...o,
+                                            [k]: judgeVals(
+                                                exchangeArrary(
+                                                    cascaderVals.label
+                                                )
+                                            )
+                                                ? exchangeArrary(
+                                                      cascaderVals.label
+                                                  )
+                                                : exchangeArrary(o[k]),
+                                            [extraField]: judgeVals(
+                                                exchangeArrary(
+                                                    cascaderVals.value
+                                                )
+                                            )
+                                                ? exchangeArrary(
+                                                      cascaderVals.value
+                                                  )
+                                                : exchangeArrary(o[extraField])
+                                        };
+                                    } else {
+                                        o = {
+                                            ...o,
+                                            [k]: judgeVals(
+                                                exchangeArrary(
+                                                    cascaderVals.value
+                                                )
+                                            )
+                                                ? exchangeArrary(
+                                                      cascaderVals.value
+                                                  )
+                                                : exchangeArrary(o[k]),
+                                            [extraField]: judgeVals(
+                                                exchangeArrary(
+                                                    cascaderVals.label
+                                                )
+                                            )
+                                                ? exchangeArrary(
+                                                      cascaderVals.label
+                                                  )
+                                                : exchangeArrary(o[extraField])
+                                        };
+                                    }
                                 } else {
-                                    o = {
-                                        ...o,
-                                        [k]: judgeVals(
-                                            res.map(({ value }) => value)
-                                        )
-                                            ? res.map(({ value }) => value)
-                                            : exchangeArrary(o[k]),
-                                        [extraField]: judgeVals(
-                                            res.map(({ label }) => label)
-                                        )
-                                            ? res.map(({ label }) => label)
-                                            : exchangeArrary(o[extraField])
-                                    };
+                                    const res = _.getCascaderLabelValue({
+                                        data:
+                                            subType === 'address'
+                                                ? addressOtps
+                                                : opts,
+                                        value: (v && v.split('/')) || [],
+                                        matchFieldName: 'label'
+                                    });
+                                    if (valueType === 'label') {
+                                        o = {
+                                            ...o,
+                                            [k]: judgeVals(
+                                                res.map(({ label }) => label)
+                                            )
+                                                ? res.map(({ label }) => label)
+                                                : exchangeArrary(o[k]),
+                                            [extraField]: judgeVals(
+                                                res.map(({ value }) => value)
+                                            )
+                                                ? res.map(({ value }) => value)
+                                                : exchangeArrary(o[extraField])
+                                        };
+                                    } else {
+                                        o = {
+                                            ...o,
+                                            [k]: judgeVals(
+                                                res.map(({ value }) => value)
+                                            )
+                                                ? res.map(({ value }) => value)
+                                                : exchangeArrary(o[k]),
+                                            [extraField]: judgeVals(
+                                                res.map(({ label }) => label)
+                                            )
+                                                ? res.map(({ label }) => label)
+                                                : exchangeArrary(o[extraField])
+                                        };
+                                    }
                                 }
+                            } else if (subType !== 'handle' && k) {
+                                o = {
+                                    ...o,
+                                    [k]: v
+                                };
                             }
-                        } else if (subType !== 'handle' && k) {
-                            o = {
-                                ...o,
-                                [k]: v
-                            };
                         }
-                    }
-                    let extraItem = callback(o, i) || {};
+                        let extraItem = callback(o, i) || {};
 
-                    o = {
-                        ...o,
-                        ...extraItem
-                    };
-                    if (
-                        !checkedKey ||
-                        (checkedKey &&
-                            (o[checkedKey] === checkedVal ||
-                                o[checkedKey] === true))
-                    ) {
-                        // 根据callback返回的notAddabled字段，判断是否添加数据
-                        if (!o.notAddabled && o.mapleTotal !== '合计') {
-                            data.push({
-                                ...o,
-                                notAddabled: undefined,
-                                _extraField_: undefined,
-                                undefined
-                            });
-                            if (
-                                !this.asyncLoadConfig &&
-                                this.lazyLoadAbled &&
-                                this.hasColumnSummary &&
-                                i === d.length - 1
-                            ) {
-                                sumIndex = i;
+                        o = {
+                            ...o,
+                            ...extraItem
+                        };
+                        if (
+                            !checkedKey ||
+                            (checkedKey &&
+                                (o[checkedKey] === checkedVal ||
+                                    o[checkedKey] === true))
+                        ) {
+                            // 根据callback返回的notAddabled字段，判断是否添加数据
+                            if (!o.notAddabled && o.mapleTotal !== '合计') {
+                                data.push({
+                                    ...o,
+                                    notAddabled: undefined,
+                                    _extraField_: undefined,
+                                    undefined
+                                });
+                                if (
+                                    !this.asyncLoadConfig &&
+                                    this.lazyLoadAbled &&
+                                    this.hasColumnSummary &&
+                                    i === d.length - 1
+                                ) {
+                                    sumIndex = i;
+                                }
                             }
-                        } else if (
+                        }
+                    });
+                    this.core.validateCells(valid => {
+                        let popData = this.copyData.slice(d.length);
+                        if (checkedKey) {
+                            popData = popData.filter(
+                                item =>
+                                    item[checkedKey] === checkedVal ||
+                                    item[checkedKey] === true
+                            );
+                        }
+                        const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
+                        if (
                             !this.asyncLoadConfig &&
                             this.lazyLoadAbled &&
                             this.hasColumnSummary &&
-                            data.length < this.copyData.length - 1
+                            sumIndex
                         ) {
-                            data.push(this.beforeSumData);
+                            value[sumIndex] = this.beforeSumData;
                         }
-                    }
-                });
-                this.core.validateCells(valid => {
-                    let popData = this.copyData.slice(d.length);
-                    if (checkedKey) {
-                        popData = popData.filter(
-                            item =>
-                                item[checkedKey] === checkedVal ||
-                                item[checkedKey] === true
-                        );
-                    }
-                    const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
-                    if (
-                        !this.asyncLoadConfig &&
-                        this.lazyLoadAbled &&
-                        this.hasColumnSummary &&
-                        sumIndex
-                    ) {
-                        value[sumIndex] = this.beforeSumData;
-                    }
-                    resolve({
-                        value:
-                            value[value.length - 1] &&
-                            value[value.length - 1].mapleTotal === '合计'
-                                ? value.slice(0, value.length - 1)
-                                : value,
-                        valid: valid
+                        resolve({
+                            value:
+                                value[value.length - 1] &&
+                                value[value.length - 1].mapleTotal === '合计'
+                                    ? value.slice(0, value.length - 1)
+                                    : value,
+                            valid: valid
+                        });
+                        this.getDataDoubled = false;
                     });
-                    this.getDataDoubled = false;
-                });
+                }, timeOut);
             });
         },
         checkAllBox(event, coords, $el) {
@@ -1018,13 +1184,11 @@ export default {
                     getKeyChange,
                     filterKeysChanges,
                     myColumns,
-                    selectBoxConfig,
-                    filterData
+                    selectBoxConfig
                 } = this,
-                { key = 'mapleChecked', col: checkedIndex } =
-                    selectBoxConfig || {};
+                { key = 'checked', col: checkedIndex } = selectBoxConfig || {};
             let type = 'checkbox',
-                d = filterData(this.copyData);
+                d = this.copyData;
             if (event.target.id === 'maple-all-checkbox') {
                 this.checkAllabled = !this.checkAllabled;
                 if (
@@ -1069,13 +1233,15 @@ export default {
             });
         },
         clearFilters() {
-            if (this.settings.filters) {
-                const filtersPlugin = this.core.getPlugin('filters');
-                for (let i of this.columns.keys()) {
+            const { settings, conditions, columns, core } = this,
+                bl = settings.filters && conditions && conditions.length;
+            if (bl) {
+                const filtersPlugin = core.getPlugin('filters');
+                for (let i of columns.keys()) {
                     filtersPlugin.removeConditions(i);
                 }
                 filtersPlugin.filter();
-                this.core.updateSettings({
+                core.updateSettings({
                     hiddenRows: {
                         copyPasteEnabled: true,
                         indicators: true,
@@ -1083,6 +1249,7 @@ export default {
                     }
                 });
             }
+            return bl;
         },
         getKeyChange(key, changes, filterSummaryRow = false, precise = true) {
             let o = [];
