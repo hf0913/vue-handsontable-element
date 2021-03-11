@@ -297,7 +297,9 @@
                     ],
                     openEmptyValid: true, // 是否开启空行校验，默认开启
                     hasDefaultValFileds: ["字段一", "字段二"], // 是否存在默认值的字段集合，在getData数据校验空行会综合考虑是否标记单元格红色，如果默认字段有值且符合单元格校验规则，则被视为空单元格
-                    openSort: true, // 自定义排序
+                    openSort: true, // 开启排序
+                    customSort: true, // 允许启用内部排序方法
+                    allowFilters: true, // 允许启用内部过滤方法
                     multiColumnSorting: true, // 开启排序
                     multiColumnSorting: {
                         // 排序配置

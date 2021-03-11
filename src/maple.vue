@@ -102,6 +102,7 @@ export default {
     data() {
         return {
             settings: {
+                selectionMode: 'range',
                 beforeSumData: null,
                 data: [],
                 columns: [],
@@ -239,56 +240,6 @@ export default {
             this.filterFailData = [];
             d = this.filterData(copyData);
             this.$emit('update', d);
-        },
-        beforeFilter(conditions) {
-            this.conditions = conditions;
-            this.init(d => {
-                const {
-                        options: { columnSummary = [], lastTotalFields = [] },
-                        filterData,
-                        core,
-                        getNowColumns,
-                        settings,
-                        hasColumnSummary
-                    } = this,
-                    data = filterData(d),
-                    sumData = this.sumData,
-                    h = settings.height,
-                    height =
-                        this.rowHeight * (data.length + 1) < h ? 'auto' : h,
-                    t = columnSummary.length ? columnSummary : lastTotalFields;
-
-                if (sumData && hasColumnSummary) {
-                    const cols = getNowColumns();
-                    this.$nextTick(() => {
-                        let dataAtCells = [],
-                            len = core.countRows() - 1;
-                        if (data[len] && data[len].mapleTotal !== '合计')
-                            this.replaceSumData = _.deepCopy(data[len]);
-                        if (len === 0 || height === 'auto') len++;
-                        data.splice(len, 1, sumData);
-                        for (let j = 0; j < t.length; j++) {
-                            const { key } = t[j],
-                                keyIndex = cols.findIndex((item, index) => {
-                                    const bl =
-                                        item.key === key || item.data === key;
-                                    if (!bl)
-                                        dataAtCells.push([len, index, null]);
-                                    return bl;
-                                });
-                            if (~keyIndex)
-                                dataAtCells.push([len, keyIndex, sumData[key]]);
-                        }
-                        core.setDataAtCell(dataAtCells);
-                    });
-                }
-                this.$nextTick(() => {
-                    this.core.updateSettings({
-                        height
-                    });
-                });
-                return data;
-            });
         },
         filterData(d) {
             const {
@@ -531,7 +482,7 @@ export default {
                     initSize,
                     lazyLoadDataLen,
                     asyncLoadConfig,
-                    filterInit,
+                    initSizeAbled,
                     rowHeight
                 } = this,
                 hiddCols = [],
@@ -555,9 +506,9 @@ export default {
                     data.length - lazyLoadDataLen < 5
                         ? data.length
                         : lazyLoadDataLen;
-                startIndex = filterInit ? initSize : lazyLoadDataLen;
+                startIndex = initSizeAbled ? initSize : lazyLoadDataLen;
             }
-            if (filterInit) this.filterInit = false;
+            if (initSizeAbled) this.initSizeAbled = false;
             this.options.minRows
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
@@ -605,9 +556,10 @@ export default {
                             filterData
                         }
                     } = this;
-                    this.filterInit = true;
+                    this.initSizeAbled = true;
                     this.lastPage = initSize;
                     this.stopLazyAbled = true;
+                    this.clearSort(false);
                     if (allowFilters) {
                         perfectFilters(v);
                     } else if (beforeFilterFn) {
@@ -693,12 +645,7 @@ export default {
                         setTimeout(() =>
                             o.onSelectAllClick({ preventDefault: () => {} })
                         );
-                        items = list.sort(
-                            sortData('asc', {
-                                sortEmptyCells: true,
-                                key: 'visualValue'
-                            })
-                        );
+                        items = list.sort(sortData('asc', 'visualValue'));
                         if (emptyData) list.unshift(emptyData);
                     }
                     return items;
@@ -1232,11 +1179,16 @@ export default {
                 columns: this.myColumns
             });
         },
-        clearFilters() {
+        clearFilters(clearAll = false) {
             const { settings, conditions, columns, core } = this,
                 bl = settings.filters && conditions && conditions.length;
             if (bl) {
                 const filtersPlugin = core.getPlugin('filters');
+                if (clearAll) {
+                    this.initSizeAbled = true;
+                    this.conditions = [];
+                    this.filterFailData = [];
+                }
                 for (let i of columns.keys()) {
                     filtersPlugin.removeConditions(i);
                 }
@@ -1248,7 +1200,7 @@ export default {
                         rows: []
                     }
                 });
-            }
+            } else this.clearSort();
             return bl;
         },
         getKeyChange(key, changes, filterSummaryRow = false, precise = true) {
@@ -1424,6 +1376,7 @@ export default {
             const { col, direction } = o,
                 key = this.myColumns[col].key || this.myColumns[col].data;
             let sortType = 0,
+                sortConfig = {},
                 v = this.sort[key] || {};
             if ((!v.type || v.type === -1) && direction === 'up') {
                 sortType = 1;
@@ -1437,7 +1390,7 @@ export default {
             if (v.type === -1 && direction === 'down') {
                 sortType = 0;
             }
-            this.$emit('changeSort', {
+            sortConfig = {
                 data: {
                     ...o,
                     currentData: {
@@ -1470,13 +1423,20 @@ export default {
                         };
                     }
                     this.sortabled = false;
-                    this.core.render();
+                    if (!config.notRender) this.core.render();
                 }
-            });
+            };
+            this.core.selectCell(0, col);
+            if (this.settings.customSort) return this.customSort(sortConfig);
+            this.$emit('changeSort', sortConfig);
         },
-        clearSort() {
-            this.sort = {};
-            this.core.render();
+        clearSort(bl = true) {
+            if (this.options.openSort) {
+                this.sort = {};
+                this.sortDir = null;
+                this.sortK = null;
+                if (bl) this.core.render();
+            }
         },
         sum(o) {
             if (this.settings.summaryColumn instanceof Array) {
@@ -1527,6 +1487,32 @@ export default {
                 checkedData: d,
                 clearFilters
             };
+        },
+        customSort({ data: info, callback: end }) {
+            const { copyData, sortDir, sortK } = this,
+                {
+                    currentData: { key },
+                    direction
+                } = info;
+            if (sortDir === direction && sortK === key) {
+                this.sortDir = null;
+                return end({
+                    state: true,
+                    clear: true
+                });
+            }
+            this.sortK = key;
+            this.sortDir = direction;
+            let d = copyData
+                .filter(item => item.mapleTotal !== '合计')
+                .sort(sortData(direction === 'up' ? 'asc' : 'desc', key));
+            end({
+                state: true,
+                notRender: true,
+                clear: true
+            });
+            this.initSizeAbled = true;
+            this.$emit('update', d);
         }
     },
     watch: {

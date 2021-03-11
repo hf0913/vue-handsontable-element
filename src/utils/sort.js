@@ -2,25 +2,18 @@ const DO_NOT_SWAP = 0;
 const FIRST_BEFORE_SECOND = -1;
 const FIRST_AFTER_SECOND = 1;
 
-function isUndefined(variable) {
-    return typeof variable === 'undefined';
-}
-
 function isEmpty(variable) {
-    return variable === null || variable === '' || isUndefined(variable);
+    if (typeof variable === 'string') variable = variable.trim();
+    return variable == null || variable === '';
 }
 /**
  * @param {string} sortOrder 排序 (`asc` for 正序, `desc` for 倒序).
  * @param {object} columnPluginSettings 配置.
  * @returns {Function} 排序比较
  */
-export default function compareFunctionFactory(
-    sortOrder,
-    columnPluginSettings
-) {
+export default function compareFunctionFactory(sortOrder, key) {
     return function(value, nextValue) {
-        const { sortEmptyCells, key } = columnPluginSettings;
-
+        let sortEmptyCells = false;
         if (key) {
             value = value[key];
             nextValue = nextValue[key];
