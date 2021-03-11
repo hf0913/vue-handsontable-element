@@ -12,7 +12,7 @@ function isEmpty(variable) {
  * @returns {Function} 排序比较
  */
 export default function compareFunctionFactory(sortOrder, key) {
-    return function(value, nextValue) {
+    return function (value, nextValue) {
         let sortEmptyCells = false;
         if (key) {
             value = value[key];
