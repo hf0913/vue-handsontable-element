@@ -1188,6 +1188,7 @@ export default {
                     this.initSizeAbled = true;
                     this.conditions = [];
                     this.filterFailData = [];
+                    this.copyData = [];
                 }
                 for (let i of columns.keys()) {
                     filtersPlugin.removeConditions(i);
