@@ -549,10 +549,10 @@ export default {
                     const {
                         perfectFilters,
                         initSize,
+                        getNowColumns,
                         options: {
                             allowFilters,
                             beforeFilter: beforeFilterFn,
-                            getNowColumns,
                             filterData
                         }
                     } = this;
