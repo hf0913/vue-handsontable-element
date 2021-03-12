@@ -513,11 +513,10 @@ export default {
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
 
-            if (lazyLoadAbled && data.length > initSize && (!asyncLoadConfig || this.needInitLazy)) {
+            if (lazyLoadAbled && data.length > initSize && (!asyncLoadConfig || data.length - this.lazyLoadDataLen > 128)) {
                 cb instanceof Function
                     ? (initData = cb(data).slice(0, startIndex))
                     : (initData = data.slice(0, startIndex));
-                    this.needInitLazy = null
             }
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
@@ -1516,14 +1515,6 @@ export default {
             });
             this.initSizeAbled = true;
             this.$emit('update', d);
-        },
-        changeKeyVal(keyVals) {
-            keyVals.map(({ key, value }) => {
-                if (value === "keepValue") return;
-                Object.prototype.toString.call(value) === '[object Object]'
-                ? this[key] = Object.assign({}, this[key], value)
-                : this[key] = value
-            });
         }
     },
     watch: {
