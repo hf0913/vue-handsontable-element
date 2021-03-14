@@ -193,18 +193,36 @@ export default {
                 fLen = filterFailData.length,
                 sumData;
             this.conditions = conditions;
+
             if (fLen) {
+                let currP, _currP, hasPItem;
                 if (cLen > fLen) {
                     filterFailData.map((item, index) => {
+                        currP = _currP = null;
                         let { mapleTotal, _maplePosition: p } = item,
                             fItem = filterFailData[index - 1] || {
                                 _maplePosition: -1
                             },
                             _maplePosition =
                                 p == null ? fItem._maplePosition + 1 : p;
-                        if (fItem && _maplePosition < fItem._maplePosition) {
+                        if (
+                            _maplePosition &&
+                            _maplePosition <= fItem._maplePosition
+                        ) {
                             _maplePosition = fItem._maplePosition + 1;
                         }
+                        currP = _maplePosition;
+                        _currP = (copyData[currP] || {})._maplePosition;
+                        if (_currP != null) _currP = currP;
+                        while (
+                            currP < copyData.length &&
+                            ((_currP && _currP < _maplePosition) ||
+                                _currP == null)
+                        ) {
+                            currP++;
+                            _currP = (copyData[currP] || {})._maplePosition;
+                        }
+                        _maplePosition = currP;
                         item = Object.assign(item, { _maplePosition });
                         mapleTotal === '合计'
                             ? (sumData = item)
@@ -222,7 +240,29 @@ export default {
                             },
                             _maplePosition =
                                 p == null ? cItem._maplePosition + 1 : p;
-                        if (cItem && _maplePosition < cItem._maplePosition) {
+                        if (item._maplePosition != null && hasPItem == null)
+                            hasPItem = JSON.parse(JSON.stringify(item));
+                        if (item._maplePosition == null)
+                            _currP == null ? (_currP = 1) : _currP++;
+                        else if (
+                            _currP > 1 &&
+                            item._maplePosition - hasPItem._maplePosition !== 1
+                        ) {
+                            _maplePosition += _currP;
+                            _currP = null;
+                            hasPItem = null;
+                        }
+                        if (
+                            hasPItem &&
+                            item._maplePosition != null &&
+                            item._maplePosition - hasPItem._maplePosition === 1
+                        ) {
+                            hasPItem = JSON.parse(JSON.stringify(item));
+                        }
+                        if (
+                            _maplePosition &&
+                            _maplePosition <= cItem._maplePosition
+                        ) {
                             _maplePosition = cItem._maplePosition + 1;
                         }
                         item = Object.assign(item, { _maplePosition });
@@ -233,6 +273,8 @@ export default {
                                   _maplePosition
                               });
                     });
+                    _currP = null;
+                    hasPItem = null;
                     if (sumData) filterFailData.push(sumData);
                     this.copyData = copyData = filterFailData;
                 }
@@ -263,7 +305,12 @@ export default {
                     if (item.mapleTotal === '合计') {
                         if (index < d.length - 1) {
                             this.sumData = _.deepCopy(item);
-                            item = Object.assign({}, beforeSumData);
+                            item = Object.assign({}, beforeSumData, {
+                                _maplePosition:
+                                    beforeSumData._maplePosition == null
+                                        ? item._maplePosition
+                                        : beforeSumData._maplePosition
+                            });
                             d[index] = item;
                         } else return false;
                     }
@@ -468,13 +515,6 @@ export default {
         init(cb) {
             if (this.lazyLoadAbled) {
                 this.lazyLoadDataLen = this.core.countRows();
-                for (let [index, item] of this.data.entries()) {
-                    item = item || {};
-                    item = Object.assign(item, {
-                        _mapleIndex:
-                            item._mapleIndex || `${index}-${Math.random()}`
-                    });
-                }
             }
             let {
                     data,
@@ -513,10 +553,20 @@ export default {
                 ? (this.showEmpty = false)
                 : (this.showEmpty = !this.copyData.length);
 
-            if (lazyLoadAbled && data.length > initSize && (!asyncLoadConfig || data.length - this.lazyLoadDataLen > 128)) {
+            if (
+                lazyLoadAbled &&
+                data.length > initSize &&
+                (!asyncLoadConfig || asyncLoadConfig.allabled)
+            ) {
                 cb instanceof Function
                     ? (initData = cb(data).slice(0, startIndex))
                     : (initData = data.slice(0, startIndex));
+            }
+            for (let [index, item] of initData.entries()) {
+                item = item || {};
+                item = Object.assign(item, {
+                    _mapleIndex: item._mapleIndex || `${index}-${Math.random()}`
+                });
             }
             this.settings = Object.assign(this.settings, this.options, {
                 columns: customColumns.call(this),
@@ -607,7 +657,8 @@ export default {
                             copyData,
                             currentCol,
                             getNowColumns,
-                            filterFailData
+                            filterFailData,
+                            beforeSumData
                         } = this,
                         list = [];
                     let emptyData;
@@ -617,15 +668,13 @@ export default {
                             key = colItem.key || colItem.data,
                             getList = d => {
                                 d.map(ele => {
-                                    const val =
+                                    let val =
                                         ele[key] === 0
                                             ? ele[key]
                                             : ele[key] || '';
-                                    if (
-                                        list.some(v => v.value == val) ||
-                                        ele.mapleTotal === '合计'
-                                    )
-                                        return;
+                                    if (ele.mapleTotal === '合计')
+                                        val = beforeSumData[key];
+                                    if (list.some(v => v.value == val)) return;
                                     if (!val) {
                                         emptyData = {
                                             checked: true,
@@ -690,39 +739,60 @@ export default {
             } = this;
             if (lazyLoadAbled && stopLazyAbled) {
                 const lastIndex = autoRowSizePlugin.getLastVisibleRow(),
-                    sourceData = core.getSourceData(),
-                    currentLen = sourceData.length;
+                    currentLen = core.countRows();
                 let copySoucreData = copyData,
                     copyDataLen = copySoucreData.length;
-
                 if (
                     asyncLoadConfig &&
                     lastIndex >= currentLen - diff &&
-                    currentLen < asyncLoadConfig.total
+                    currentLen < asyncLoadConfig.total &&
+                    !asyncLoadConfig.allabled
                 )
                     return asyncLoad(asyncLoadConfig);
-
                 if (
-                    !asyncLoadConfig &&
                     lastIndex >= currentLen - diff &&
                     currentLen < copyDataLen
                 ) {
                     this.stopLazyAbled = false;
                     copyDataLen = copySoucreData.length;
-                    lastPage = currentLen + pageSize;
-                    let data = copySoucreData.slice(0, lastPage);
+                    lastPage =
+                        currentLen + pageSize > copyDataLen
+                            ? copyDataLen
+                            : currentLen + pageSize;
+                    let data = copySoucreData.slice(0, lastPage),
+                        startI = core.countRows() - 1;
+                    for (let index = startI; index < lastPage - 1; index++) {
+                        data[index] = Object.assign(data[index], {
+                            _mapleIndex:
+                                data[index]._mapleIndex ||
+                                `${index}-${Math.random()}`
+                        });
+                    }
                     if (hasColumnSummary) {
-                        let sumIndex = lastPage - pageSize - 1,
-                            sumData = _.deepCopy(sourceData[sumIndex]);
+                        let sumIndex =
+                            lastPage - pageSize - 1 < 0
+                                ? startI
+                                : lastPage - pageSize - 1;
+                        if (data[startI].mapleTotal === '合计')
+                            sumIndex = startI;
+                        let sumData = _.deepCopy(data[sumIndex]);
                         if (sumData) {
                             sumData.mapleTotal = '合计';
                             data.splice(sumIndex, 1, beforeSumData);
                             this.beforeSumData = _.deepCopy(
                                 data[lastPage - 1] || data[data.length - 1]
                             );
-                            data.length === copyDataLen
-                                ? data.splice(copyDataLen - 1, 1, sumData)
-                                : data.splice(lastPage - 1, 1, sumData);
+                            this.$emit(
+                                'updata-replace-sum-data',
+                                this.beforeSumData
+                            );
+                            if (data.length === copyDataLen) {
+                                copySoucreData[copyDataLen - 1] = sumData;
+                                data.splice(copyDataLen - 1, 1, sumData);
+                            } else {
+                                copySoucreData[lastPage - 1] = sumData;
+                                data.splice(lastPage - 1, 1, sumData);
+                            }
                             copySoucreData[sumIndex] = beforeSumData;
                         }
                     }
@@ -1074,6 +1144,14 @@ export default {
                                 (o[checkedKey] === checkedVal ||
                                     o[checkedKey] === true))
                         ) {
+                            if (o.mapleTotal === '合计') {
+                                o = {
+                                    ...o,
+                                    ...this.beforeSumData,
+                                    ...extraItem,
+                                    mapleTotal: undefined
+                                };
+                            }
                             // 根据callback返回的notAddabled字段，判断是否添加数据
                             if (!o.notAddabled && o.mapleTotal !== '合计') {
                                 data.push({
