@@ -101,9 +101,9 @@ export default {
     },
     data() {
         return {
+            beforeSumData: {},
             settings: {
                 selectionMode: 'range',
-                beforeSumData: null,
                 data: [],
                 columns: [],
                 trimRows: true,
