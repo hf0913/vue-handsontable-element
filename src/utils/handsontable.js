@@ -593,9 +593,9 @@ function beforePaste(d, [{ startRow, endRow, startCol, endCol }]) {
                     [key]: val
                 };
             } else {
-                changes.push([x, key, data[x][key], val]);
                 data[x][key] = val;
             }
+            changes.push([x, key, data[x][key], val]);
         }
     }
     afterChange(changes, 'CopyPaste.paste');
