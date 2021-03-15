@@ -903,7 +903,6 @@ export default {
                     const data = [];
                     let addressOtps = [];
                     let keyVals = {};
-                    let sumIndex;
                     const judgeVals = val => {
                         let bl = true;
                         if (
@@ -1132,26 +1131,20 @@ export default {
                                 };
                             }
                         }
-                        let extraItem = callback(o, i) || {};
-
-                        o = {
-                            ...o,
-                            ...extraItem
-                        };
+                        if (
+                            o.mapleTotal === '合计' &&
+                            this.hasColumnSummary &&
+                            this.beforeSumData
+                        ) {
+                            o = _.deepCopy(this.beforeSumData);
+                        }
+                        o = callback(o, i) || o;
                         if (
                             !checkedKey ||
                             (checkedKey &&
                                 (o[checkedKey] === checkedVal ||
                                     o[checkedKey] === true))
                         ) {
-                            if (o.mapleTotal === '合计') {
-                                o = {
-                                    ...o,
-                                    ...this.beforeSumData,
-                                    ...extraItem,
-                                    mapleTotal: undefined
-                                };
-                            }
                             // 根据callback返回的notAddabled字段，判断是否添加数据
                             if (!o.notAddabled && o.mapleTotal !== '合计') {
                                 data.push({
@@ -1160,14 +1153,6 @@ export default {
                                     _extraField_: undefined,
                                     undefined
                                 });
-                                if (
-                                    !this.asyncLoadConfig &&
-                                    this.lazyLoadAbled &&
-                                    this.hasColumnSummary &&
-                                    i === d.length - 1
-                                ) {
-                                    sumIndex = i;
-                                }
                             }
                         }
                     });
@@ -1180,15 +1165,8 @@ export default {
                                     item[checkedKey] === true
                             );
                         }
+                        console.log(JSON.parse(JSON.stringify(data)), popData);
                         const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
-                        if (
-                            !this.asyncLoadConfig &&
-                            this.lazyLoadAbled &&
-                            this.hasColumnSummary &&
-                            sumIndex
-                        ) {
-                            value[sumIndex] = this.beforeSumData;
-                        }
                         resolve({
                             value:
                                 value[value.length - 1] &&
