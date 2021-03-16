@@ -1134,9 +1134,13 @@ export default {
                         if (
                             o.mapleTotal === '合计' &&
                             this.hasColumnSummary &&
-                            this.beforeSumData
+                            this.beforeSumData &&
+                            i < this.copyData.length - 1
                         ) {
-                            o = _.deepCopy(this.beforeSumData);
+                            o = _.deepCopy({
+                                ...this.beforeSumData,
+                                mapleTotal: undefined
+                            });
                         }
                         o = callback(o, i) || o;
                         if (
