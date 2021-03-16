@@ -257,7 +257,8 @@ function customColumns() {
                             $el: $btn,
                             event,
                             core: instance,
-                            name
+                            name,
+                            getCols: this.getNowColumns
                         });
                         event.stopPropagation && event.stopPropagation();
                         event.cancelBubble = true;
@@ -529,7 +530,7 @@ function afterOnCellMouseDown(event, coords, $el) {
                 name: 'cells',
                 event,
                 type: 'click',
-                columns: this.myColumns
+                getCols: this.getNowColumns
             });
         }
     }
@@ -587,6 +588,7 @@ function beforePaste(d, [{ startRow, endRow, startCol, endCol }]) {
             data[x]._mapleIndex =
                 data[x]._mapleIndex || `${x}-${Math.random()}`;
             val = rd[x - startRow][y - startCol];
+            changes.push([x, key, data[x][key], val]);
             if (data[x].mapleTotal === '合计') {
                 data[x] = {
                     ...$parent.replaceSumData,
@@ -595,7 +597,6 @@ function beforePaste(d, [{ startRow, endRow, startCol, endCol }]) {
             } else {
                 data[x][key] = val;
             }
-            changes.push([x, key, data[x][key], val]);
         }
     }
     afterChange(changes, 'CopyPaste.paste');

@@ -1165,7 +1165,6 @@ export default {
                                     item[checkedKey] === true
                             );
                         }
-                        console.log(JSON.parse(JSON.stringify(data)), popData);
                         const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
                         resolve({
                             value:
@@ -1233,7 +1232,7 @@ export default {
                 name: event.target.type,
                 event,
                 type,
-                columns: this.myColumns
+                getCols: this.getNowColumns
             });
         },
         clearFilters(clearAll = false) {
