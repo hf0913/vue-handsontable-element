@@ -186,6 +186,93 @@ export default {
         this.fixView();
     },
     methods: {
+        contextMenu() {
+            const vm = this,
+                contextMenu = vm.options.contextMenu || vm.settings.contextMenu,
+                fill_cells_data = {
+                    name: '填充',
+                    disabled: function () {
+                        return vm.options.controlFillDisabled instanceof
+                            Function
+                            ? vm.options.controlFillDisabled()
+                            : false;
+                    },
+                    callback: function (
+                        key,
+                        [
+                            {
+                                start: { col: startCol, row: startRow },
+                                end: { col: endCol, row: endRow }
+                            }
+                        ]
+                    ) {
+                        let {
+                                copyData,
+                                getNowColumns,
+                                core,
+                                beforeSumData,
+                                afterChange
+                            } = vm,
+                            keys = getNowColumns(),
+                            fillData = [],
+                            changes = [],
+                            k,
+                            changeKeys = [],
+                            ij = 0,
+                            collcet = (row, oldVals, newVals) => {
+                                changeKeys.map(v => {
+                                    changes.push([
+                                        row,
+                                        v,
+                                        oldVals[v],
+                                        newVals[v]
+                                    ]);
+                                });
+                            };
+                        for (let i = startRow; i <= endRow; i++) {
+                            fillData.push({});
+                            for (let j = startCol; j <= endCol; j++) {
+                                k = keys[j].key || keys[j].data;
+                                fillData[i - startRow][k] = copyData[i][k];
+                            }
+                        }
+                        if (!fillData.length) return;
+                        for (let r = endRow + 1; r < copyData.length - 1; r++) {
+                            if (
+                                r === copyData.length - 1 &&
+                                copyData[r].mapleTotal === '合计'
+                            )
+                                break;
+                            changeKeys = Object.keys(fillData[ij]);
+                            if (
+                                copyData[r].mapleTotal === '合计' &&
+                                beforeSumData
+                            ) {
+                                collcet(r, beforeSumData, fillData[ij]);
+                                Object.assign(beforeSumData, fillData[ij]);
+                                vm.$emit(
+                                    'updata-replace-sum-data',
+                                    beforeSumData
+                                );
+                                continue;
+                            }
+                            collcet(r, copyData[r], fillData[ij]);
+                            copyData[r] = Object.assign(
+                                copyData[r],
+                                fillData[ij]
+                            );
+                            ij >= fillData.length - 1 ? (ij = 0) : ij++;
+                        }
+                        vm.$emit('update', copyData);
+                        afterChange(changes, 'customFill.fill');
+                        core.render();
+                    }
+                };
+            if (contextMenu) {
+                contextMenu.items.fill_cells_data = fill_cells_data;
+            }
+            return contextMenu;
+        },
         perfectFilters(conditions) {
             let { copyData, filterFailData } = this,
                 d = [],
@@ -592,6 +679,7 @@ export default {
                 afterColumnMove: this.afterColumnMove,
                 afterOnCellCornerDblClick: this.afterOnCellCornerDblClick,
                 beforePaste: beforePaste.bind(this),
+                contextMenu: this.contextMenu(),
                 afterPasteCustom: v => {
                     const { afterPasteCustom } = this.options || {};
                     return (afterPasteCustom && afterPasteCustom(v)) || null;
@@ -1134,13 +1222,9 @@ export default {
                         if (
                             o.mapleTotal === '合计' &&
                             this.hasColumnSummary &&
-                            this.beforeSumData &&
-                            i < this.copyData.length - 1
+                            this.beforeSumData
                         ) {
-                            o = _.deepCopy({
-                                ...this.beforeSumData,
-                                mapleTotal: undefined
-                            });
+                            o = _.deepCopy(this.beforeSumData);
                         }
                         o = callback(o, i) || o;
                         if (
@@ -1236,7 +1320,7 @@ export default {
                 name: event.target.type,
                 event,
                 type,
-                getCols: this.getNowColumns
+                columns: this.myColumns
             });
         },
         clearFilters(clearAll = false) {
