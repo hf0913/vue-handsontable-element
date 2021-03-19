@@ -108,6 +108,7 @@ function customColumns() {
             item.subType === 'optimize' &&
             (item.type === 'autocomplete' || item.type === 'dropdown')
         ) {
+            item.type = 'dropdown'
             const sourceFn = (query, process, item, k) => {
                 const optionsTotal = item.maxMatchLen || 12,
                     labelName = item.labelName || 'label';
@@ -172,21 +173,10 @@ function customColumns() {
                         key: k
                     });
                 }
-                process(processOpts);
+                process(options.map(oItem => oItem[labelName]));
             };
             // 下拉框静态优化模式
-            item.source = (query, process) => {
-                if (
-                    query &&
-                    this.keyOpts[k] &&
-                    this.keyOpts[k].query === query &&
-                    this.keyOpts[k].key === k
-                ) {
-                    process(this.keyOpts[k].processOpts);
-                } else {
-                    sourceFn(query, process, item, k);
-                }
-            };
+            item.source = (query, process) => sourceFn(query, process, item, k);
             item.validator = (value, callback) => {
                 callback(
                     utils.checkType.call(this, {
