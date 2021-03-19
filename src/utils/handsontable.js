@@ -1,13 +1,31 @@
 import utils from './index';
 import maple from 'custom-handsontable';
 function getColumns(t) {
-    let _cols = [];
-    if (!t) this.myColumns = utils.deepCopy(this.columns);
-    if (this.options.cacheId && this.options.openCache) {
+    let _cols = [],
+        cols = [],
+        key,
+        { columns, options } = this;
+    if (!t) this.myColumns = utils.deepCopy(columns);
+    if (options.cacheId && options.openCache) {
         _cols = JSON.parse(
-            localStorage.getItem(`${this.options.cacheId}-columns`) || '[]'
+            localStorage.getItem(`${options.cacheId}-columns`) || '[]'
         );
-        if (_cols.length && !t) this.myColumns = _cols;
+        if (_cols.length && !t) {
+            _cols.map(item => {
+                key = item.key || item.data;
+                cols.push({
+                    ...columns.find(
+                        ele =>
+                            (ele.key || ele.data) === key ||
+                            (ele.subType === item.subType &&
+                                item.subType === 'handle')
+                    ),
+                    _width: item._width,
+                    className: item.className || 'htMiddle htCenter'
+                });
+            });
+            this.myColumns = cols;
+        }
     }
     if (!_cols.length) _cols = this.myColumns;
     return _cols;

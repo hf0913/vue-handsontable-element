@@ -1222,7 +1222,8 @@ export default {
                         if (
                             o.mapleTotal === '合计' &&
                             this.hasColumnSummary &&
-                            this.beforeSumData
+                            this.beforeSumData &&
+                            i !== this.copyData.length - 1
                         ) {
                             o = _.deepCopy(this.beforeSumData);
                         }
@@ -1238,8 +1239,7 @@ export default {
                                 data.push({
                                     ...o,
                                     notAddabled: undefined,
-                                    _extraField_: undefined,
-                                    undefined
+                                    _extraField_: undefined
                                 });
                             }
                         }

@@ -116,6 +116,9 @@ export default {
                         opts: items
                     };
                     this.selectVals[`key-${key}-value-${cellVals}`] = items;
+                    this.selectVals[`k-${key}-v-${cellVals}`] = JSON.parse(
+                        JSON.stringify(this.options)
+                    );
                     if (cellVals.length) {
                         this.$emit('getSelectOpts', {
                             keyOpts: this.keyOpts,
@@ -135,6 +138,7 @@ export default {
                     this.core.setDataAtCell(row, col, null, 'changeCells');
                 }
                 this.$emit('change', false);
+                this.selectAbled = false;
             }
         },
         change(v) {
@@ -169,6 +173,9 @@ export default {
                         };
                         value = item[labelName];
                         this.selectVals[`key-${key}-value-${value}`] = item;
+                        this.selectVals[
+                            `k-${this.key}-v-${value}`
+                        ] = JSON.parse(JSON.stringify(this.options));
                         break;
                     }
                 }
@@ -254,8 +261,8 @@ export default {
                     if (itemData) {
                         this.value = multiple
                             ? itemData.map(item => item[valueName])
-                            : itemData[labelName];
-                        this.options = multiple ? itemData : [itemData];
+                            : itemData[valueName];
+                        this.options = this.selectVals[`k-${this.key}-v-${v}`];
                     }
                     if (this.prop.remote && ajaxConfig && ajaxConfig.url) {
                         this.ajaxConfig = ajaxConfig;
@@ -273,12 +280,18 @@ export default {
                         if (!itemData) {
                             this.value = multiple ? [] : null;
                             this.options = [];
+                            this.selectVals[
+                                `k-${this.key}-v-${v}`
+                            ] = JSON.parse(JSON.stringify(this.options));
                             this.search(v, 'autoFill');
                         }
                     } else {
                         if (!itemData) {
                             this.value = multiple ? [] : null;
                             this.options = [];
+                            this.selectVals[
+                                `k-${this.key}-v-${v}`
+                            ] = JSON.parse(JSON.stringify(this.options));
                         }
                         for (let [, w] of orgColumns.entries()) {
                             if (w.key === this.key || w.data === this.key) {
@@ -296,6 +309,9 @@ export default {
                                         ? wOptions({ row, col }) || []
                                         : wOptions;
                                 this.options = opts;
+                                this.selectVals[
+                                    `k-${this.key}-v-${v}`
+                                ] = JSON.parse(JSON.stringify(this.options));
                                 let cellVals = [],
                                     items = [];
                                 if (multiple) {
@@ -326,7 +342,7 @@ export default {
                                 } else {
                                     for (let [i, item] of opts.entries()) {
                                         if (item[labelName] === v) {
-                                            this.value = item[this.labelName];
+                                            this.value = item[valueName];
                                             this.keyOpts[key] = {
                                                 opts: [item]
                                             };
@@ -372,10 +388,16 @@ export default {
                 if (this.multiple) {
                     if (!this.value.length) {
                         this.options = [];
+                        this.selectVals[`k-${this.key}-v-${v}`] = JSON.parse(
+                            JSON.stringify(this.options)
+                        );
                         this.isOK = false;
                     }
                 } else {
                     this.options = [];
+                    this.selectVals[`k-${this.key}-v-${v}`] = JSON.parse(
+                        JSON.stringify(this.options)
+                    );
                     this.isOK = false;
                 }
                 this.loading = false;
@@ -383,6 +405,7 @@ export default {
         },
         search(query, source) {
             if (query) {
+                query = query.replace(/\s+/g, '');
                 let {
                         coords,
                         ajaxConfig,
@@ -401,7 +424,7 @@ export default {
                     if (queryField && v && Reflect.has(v, queryField)) {
                         ajaxConfig[k] = {
                             ...v,
-                            [queryField]: query.replace(/\s+/g, '')
+                            [queryField]: query
                         };
                     }
                 };
@@ -433,14 +456,14 @@ export default {
                             v[0] &&
                             v[0][labelName] === query
                         ) {
-                            this.value = v[0][labelName];
+                            this.value = v[0][valueName];
                         } else {
                             for (let [i, item] of v.entries()) {
                                 if (
                                     item[labelName] === query &&
                                     source === 'autoFill'
                                 ) {
-                                    this.value = item[labelName];
+                                    this.value = item[valueName];
                                     break;
                                 }
                                 if (i === v.length - 1) {
@@ -455,7 +478,7 @@ export default {
         }
     },
     beforeDestroy() {
-        Object.assign(this.$data, this.$options.data());
+        Object.assign(this.$data, {});
     }
 };
 </script>
