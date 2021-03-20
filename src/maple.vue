@@ -1294,7 +1294,8 @@ export default {
                 )
                     return;
                 for (let i = 0; i < d.length; i++) {
-                    if (d[i].mapleTotal === '合计') continue;
+                    if (d[i].mapleTotal === '合计' && i !== d.length - 1)
+                        continue;
                     d[i][key] = this.checkAllabled
                         ? myColumns[checkedIndex].checkedTemplate || true
                         : myColumns[checkedIndex].uncheckedTemplate || false;
@@ -1615,8 +1616,9 @@ export default {
                 throw `Please provide the field name of the selection box`;
             let d = [],
                 { clearFilters, copyData } = this;
-            for (const item of copyData.values()) {
+            for (let item of copyData.values()) {
                 if (item[key] === value || item[key] === true) {
+                    if (item.mapleTotal === '合计') item = this.beforeSumData;
                     getItem(item);
                     d.push(item);
                 }
