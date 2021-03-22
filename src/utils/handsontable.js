@@ -6,7 +6,7 @@ function getColumns(t) {
         key,
         { columns, options } = this;
     if (!t) this.myColumns = utils.deepCopy(columns);
-    if (options.cacheId && options.openCache) {
+    if (options.cacheId && options.openCache && columns.length) {
         _cols = JSON.parse(
             localStorage.getItem(`${options.cacheId}-columns`) || '[]'
         );
@@ -108,7 +108,7 @@ function customColumns() {
             item.subType === 'optimize' &&
             (item.type === 'autocomplete' || item.type === 'dropdown')
         ) {
-            item.type = 'dropdown'
+            item.type = 'dropdown';
             const sourceFn = (query, process, item, k) => {
                 const optionsTotal = item.maxMatchLen || 12,
                     labelName = item.labelName || 'label';
