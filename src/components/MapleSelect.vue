@@ -454,7 +454,8 @@ export default {
                         if (
                             v.length === 1 &&
                             v[0] &&
-                            v[0][labelName] === query
+                            v[0][labelName] === query &&
+                            source === 'autoFill'
                         ) {
                             this.value = v[0][valueName];
                         } else {
