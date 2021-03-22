@@ -987,279 +987,313 @@ export default {
             const timeOut = this.clearFilters() ? 2128 : 0;
             return new Promise(resolve => {
                 setTimeout(() => {
-                    const d = this.core.getData();
-                    const data = [];
-                    let addressOtps = [];
-                    let keyVals = {};
-                    const judgeVals = val => {
-                        let bl = true;
-                        if (
-                            Object.prototype.toString.call(val) ===
-                                '[object Array]' &&
-                            !val.length
-                        ) {
-                            bl = false;
-                        }
-                        if (val == null || val === '') bl = false;
-                        return bl;
-                    };
-                    d.map((ele, i) => {
-                        let o = this.data[i] || {};
-                        const dItem = d[i];
-                        const keys = getColumns.call(this, 'no');
-                        for (let [j, itemData] of keys.entries()) {
-                            let v = dItem[j],
-                                k = itemData.key || itemData.data;
-                            let newItem = {};
-                            if (newItem[k]) {
-                                newItem = keyVals[k];
-                            } else {
-                                for (let [, w] of this.columns.entries()) {
-                                    if (w.key === k || w.data === k) {
-                                        newItem = w;
-                                        keyVals[k] = w;
-                                        break;
+                    let addressOtps = [],
+                        keyVals = {},
+                        popData = [],
+                        dItem = {},
+                        o = {},
+                        hasReplace = false;
+                    const d = this.core.getData(),
+                        data = [],
+                        keys = getColumns.call(this, 'no'),
+                        judgeVals = val => {
+                            let bl = true;
+                            if (
+                                Object.prototype.toString.call(val) ===
+                                    '[object Array]' &&
+                                !val.length
+                            ) {
+                                bl = false;
+                            }
+                            if (val == null || val === '') bl = false;
+                            return bl;
+                        },
+                        handleMap = (i, mapItem) => {
+                            o = mapItem || this.data[i] || {};
+                            dItem = d[i] || [];
+                            if (
+                                o.mapleTotal === '合计' &&
+                                this.hasColumnSummary &&
+                                this.beforeSumData &&
+                                i !== this.copyData.length - 1 &&
+                                !hasReplace
+                            ) {
+                                hasReplace = true;
+                                o = _.deepCopy(this.beforeSumData);
+                                o._markReplace = true;
+                            }
+                            for (let [j, itemData] of keys.entries()) {
+                                let v = dItem[j],
+                                    k = itemData.key || itemData.data;
+                                let newItem = {};
+                                if (mapItem) v = mapItem[k];
+                                if (o._markReplace) v = o[k];
+                                if (newItem[k]) {
+                                    newItem = keyVals[k];
+                                } else {
+                                    for (let [, w] of this.columns.entries()) {
+                                        if (w.key === k || w.data === k) {
+                                            newItem = w;
+                                            keyVals[k] = w;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            let {
-                                valueType,
-                                labelName = 'label',
-                                valueName = 'value',
-                                extraField = '_extraField_',
-                                subType,
-                                type,
-                                checkedTemplate,
-                                uncheckedTemplate,
-                                ajaxConfig
-                            } = newItem;
+                                let {
+                                    valueType,
+                                    labelName = 'label',
+                                    valueName = 'value',
+                                    extraField = '_extraField_',
+                                    subType,
+                                    type,
+                                    checkedTemplate,
+                                    uncheckedTemplate,
+                                    ajaxConfig
+                                } = newItem;
 
-                            let opts = newItem.options || newItem.source;
-                            if (opts instanceof Function) {
-                                opts = opts() || [];
-                            }
-                            if (type === 'checkbox') {
-                                let checkboxVal = o[k];
-                                if (
-                                    checkedTemplate != null &&
-                                    checkedTemplate != ''
-                                ) {
-                                    checkboxVal = checkboxVal
-                                        ? checkedTemplate
-                                        : uncheckedTemplate;
+                                let opts = newItem.options || newItem.source;
+                                if (opts instanceof Function) {
+                                    opts = opts() || [];
                                 }
-                                o = {
-                                    ...o,
-                                    [k]: checkboxVal
-                                };
-                            } else if (
-                                (((type === 'dropdown' ||
-                                    type === 'autocomplete') &&
-                                    ((opts && opts.length) ||
-                                        subType === 'ajax')) ||
-                                    subType === 'select') &&
-                                k
-                            ) {
-                                const { multiple } = newItem.props || {};
-                                let currentValue,
-                                    selectVals = this.selectVals[
-                                        `key-${k}-value-${v}`
-                                    ];
-                                valueType = valueType || valueName;
-                                if (multiple) v = (v || '').split(',');
-                                if (selectVals) {
-                                    currentValue = multiple
-                                        ? selectVals.map(ele => ele[valueName])
-                                        : selectVals[valueName];
-                                } else {
-                                    currentValue =
-                                        _.exchange({
-                                            data: opts,
-                                            currentValue: v,
-                                            currentKey: labelName
-                                        })[valueName] || undefined;
-                                }
-                                if (valueType === valueName) {
+                                if (type === 'checkbox') {
+                                    let checkboxVal = o[k];
+                                    if (
+                                        checkedTemplate != null &&
+                                        checkedTemplate != ''
+                                    ) {
+                                        checkboxVal = checkboxVal
+                                            ? checkedTemplate
+                                            : uncheckedTemplate;
+                                    }
                                     o = {
                                         ...o,
-                                        [k]: judgeVals(v) ? currentValue : o[k],
-                                        [extraField]: judgeVals(v)
-                                            ? v
-                                            : o[extraField]
+                                        [k]: checkboxVal
                                     };
-                                    if (
-                                        extraField === '_extraField_' &&
-                                        o[k] == null &&
-                                        ajaxConfig &&
-                                        ajaxConfig.url
-                                    ) {
+                                } else if (
+                                    (((type === 'dropdown' ||
+                                        type === 'autocomplete') &&
+                                        ((opts && opts.length) ||
+                                            subType === 'ajax')) ||
+                                        subType === 'select') &&
+                                    k
+                                ) {
+                                    const { multiple } = newItem.props || {};
+                                    let currentValue,
+                                        selectVals = this.selectVals[
+                                            `key-${k}-value-${v}`
+                                        ];
+                                    valueType = valueType || valueName;
+                                    if (multiple) v = (v || '').split(',');
+                                    if (selectVals) {
+                                        currentValue = multiple
+                                            ? selectVals.map(
+                                                  ele => ele[valueName]
+                                              )
+                                            : selectVals[valueName];
+                                    } else {
+                                        currentValue =
+                                            _.exchange({
+                                                data: opts,
+                                                currentValue: v,
+                                                currentKey: labelName
+                                            })[valueName] || undefined;
+                                    }
+                                    if (valueType === valueName) {
                                         o = {
                                             ...o,
-                                            [k]: v,
-                                            [extraField]: undefined
+                                            [k]: judgeVals(v)
+                                                ? currentValue
+                                                : o[k],
+                                            [extraField]: judgeVals(v)
+                                                ? v
+                                                : o[extraField]
+                                        };
+                                        if (
+                                            extraField === '_extraField_' &&
+                                            o[k] == null &&
+                                            ajaxConfig &&
+                                            ajaxConfig.url
+                                        ) {
+                                            o = {
+                                                ...o,
+                                                [k]: v,
+                                                [extraField]: undefined
+                                            };
+                                        }
+                                    } else {
+                                        o = {
+                                            ...o,
+                                            [k]: judgeVals(v) ? v : o[k],
+                                            [extraField]: judgeVals(
+                                                currentValue
+                                            )
+                                                ? currentValue
+                                                : o[extraField]
                                         };
                                     }
-                                } else {
-                                    o = {
-                                        ...o,
-                                        [k]: judgeVals(v) ? v : o[k],
-                                        [extraField]: judgeVals(currentValue)
-                                            ? currentValue
-                                            : o[extraField]
-                                    };
-                                }
-                            } else if (
-                                subType === 'cascader' ||
-                                subType === 'address'
-                            ) {
-                                const exchangeArrary = val => {
-                                    return val instanceof Array
-                                        ? val
-                                        : (val || '').split('/');
-                                };
-                                if (
-                                    addressOtps.length === 0 &&
+                                } else if (
+                                    subType === 'cascader' ||
                                     subType === 'address'
                                 ) {
-                                    addressOtps = _.collageAddress(_.address);
-                                }
-                                if (this.cascaderVals[`key-${k}-value-${v}`]) {
-                                    const cascaderVals = this.cascaderVals[
-                                        `key-${k}-value-${v}`
-                                    ];
-                                    if (valueType === 'label') {
-                                        o = {
-                                            ...o,
-                                            [k]: judgeVals(
-                                                exchangeArrary(
-                                                    cascaderVals.label
-                                                )
-                                            )
-                                                ? exchangeArrary(
-                                                      cascaderVals.label
-                                                  )
-                                                : exchangeArrary(o[k]),
-                                            [extraField]: judgeVals(
-                                                exchangeArrary(
-                                                    cascaderVals.value
-                                                )
-                                            )
-                                                ? exchangeArrary(
-                                                      cascaderVals.value
-                                                  )
-                                                : exchangeArrary(o[extraField])
-                                        };
-                                    } else {
-                                        o = {
-                                            ...o,
-                                            [k]: judgeVals(
-                                                exchangeArrary(
-                                                    cascaderVals.value
-                                                )
-                                            )
-                                                ? exchangeArrary(
-                                                      cascaderVals.value
-                                                  )
-                                                : exchangeArrary(o[k]),
-                                            [extraField]: judgeVals(
-                                                exchangeArrary(
-                                                    cascaderVals.label
-                                                )
-                                            )
-                                                ? exchangeArrary(
-                                                      cascaderVals.label
-                                                  )
-                                                : exchangeArrary(o[extraField])
-                                        };
+                                    const exchangeArrary = val => {
+                                        return val instanceof Array
+                                            ? val
+                                            : (val || '').split('/');
+                                    };
+                                    if (
+                                        addressOtps.length === 0 &&
+                                        subType === 'address'
+                                    ) {
+                                        addressOtps = _.collageAddress(
+                                            _.address
+                                        );
                                     }
-                                } else {
-                                    const res = _.getCascaderLabelValue({
-                                        data:
-                                            subType === 'address'
-                                                ? addressOtps
-                                                : opts,
-                                        value: (v && v.split('/')) || [],
-                                        matchFieldName: 'label'
+                                    if (
+                                        this.cascaderVals[`key-${k}-value-${v}`]
+                                    ) {
+                                        const cascaderVals = this.cascaderVals[
+                                            `key-${k}-value-${v}`
+                                        ];
+                                        if (valueType === 'label') {
+                                            o = {
+                                                ...o,
+                                                [k]: judgeVals(
+                                                    exchangeArrary(
+                                                        cascaderVals.label
+                                                    )
+                                                )
+                                                    ? exchangeArrary(
+                                                          cascaderVals.label
+                                                      )
+                                                    : exchangeArrary(o[k]),
+                                                [extraField]: judgeVals(
+                                                    exchangeArrary(
+                                                        cascaderVals.value
+                                                    )
+                                                )
+                                                    ? exchangeArrary(
+                                                          cascaderVals.value
+                                                      )
+                                                    : exchangeArrary(
+                                                          o[extraField]
+                                                      )
+                                            };
+                                        } else {
+                                            o = {
+                                                ...o,
+                                                [k]: judgeVals(
+                                                    exchangeArrary(
+                                                        cascaderVals.value
+                                                    )
+                                                )
+                                                    ? exchangeArrary(
+                                                          cascaderVals.value
+                                                      )
+                                                    : exchangeArrary(o[k]),
+                                                [extraField]: judgeVals(
+                                                    exchangeArrary(
+                                                        cascaderVals.label
+                                                    )
+                                                )
+                                                    ? exchangeArrary(
+                                                          cascaderVals.label
+                                                      )
+                                                    : exchangeArrary(
+                                                          o[extraField]
+                                                      )
+                                            };
+                                        }
+                                    } else {
+                                        const res = _.getCascaderLabelValue({
+                                            data:
+                                                subType === 'address'
+                                                    ? addressOtps
+                                                    : opts,
+                                            value: (v && v.split('/')) || [],
+                                            matchFieldName: 'label'
+                                        });
+                                        if (valueType === 'label') {
+                                            o = {
+                                                ...o,
+                                                [k]: judgeVals(
+                                                    res.map(
+                                                        ({ label }) => label
+                                                    )
+                                                )
+                                                    ? res.map(
+                                                          ({ label }) => label
+                                                      )
+                                                    : exchangeArrary(o[k]),
+                                                [extraField]: judgeVals(
+                                                    res.map(
+                                                        ({ value }) => value
+                                                    )
+                                                )
+                                                    ? res.map(
+                                                          ({ value }) => value
+                                                      )
+                                                    : exchangeArrary(
+                                                          o[extraField]
+                                                      )
+                                            };
+                                        } else {
+                                            o = {
+                                                ...o,
+                                                [k]: judgeVals(
+                                                    res.map(
+                                                        ({ value }) => value
+                                                    )
+                                                )
+                                                    ? res.map(
+                                                          ({ value }) => value
+                                                      )
+                                                    : exchangeArrary(o[k]),
+                                                [extraField]: judgeVals(
+                                                    res.map(
+                                                        ({ label }) => label
+                                                    )
+                                                )
+                                                    ? res.map(
+                                                          ({ label }) => label
+                                                      )
+                                                    : exchangeArrary(
+                                                          o[extraField]
+                                                      )
+                                            };
+                                        }
+                                    }
+                                } else if (subType !== 'handle' && k) {
+                                    o = {
+                                        ...o,
+                                        [k]: v
+                                    };
+                                }
+                            }
+                            o = callback(o, i) || o;
+                            if (
+                                !checkedKey ||
+                                (checkedKey &&
+                                    (o[checkedKey] === checkedVal ||
+                                        o[checkedKey] === true))
+                            ) {
+                                // 根据callback返回的notAddabled字段，判断是否添加数据
+                                if (!o.notAddabled && o.mapleTotal !== '合计') {
+                                    data.push({
+                                        ...o,
+                                        notAddabled: undefined,
+                                        _extraField_: undefined,
+                                        _markReplace: undefined
                                     });
-                                    if (valueType === 'label') {
-                                        o = {
-                                            ...o,
-                                            [k]: judgeVals(
-                                                res.map(({ label }) => label)
-                                            )
-                                                ? res.map(({ label }) => label)
-                                                : exchangeArrary(o[k]),
-                                            [extraField]: judgeVals(
-                                                res.map(({ value }) => value)
-                                            )
-                                                ? res.map(({ value }) => value)
-                                                : exchangeArrary(o[extraField])
-                                        };
-                                    } else {
-                                        o = {
-                                            ...o,
-                                            [k]: judgeVals(
-                                                res.map(({ value }) => value)
-                                            )
-                                                ? res.map(({ value }) => value)
-                                                : exchangeArrary(o[k]),
-                                            [extraField]: judgeVals(
-                                                res.map(({ label }) => label)
-                                            )
-                                                ? res.map(({ label }) => label)
-                                                : exchangeArrary(o[extraField])
-                                        };
-                                    }
                                 }
-                            } else if (subType !== 'handle' && k) {
-                                o = {
-                                    ...o,
-                                    [k]: v
-                                };
                             }
-                        }
-                        if (
-                            o.mapleTotal === '合计' &&
-                            this.hasColumnSummary &&
-                            this.beforeSumData &&
-                            i !== this.copyData.length - 1
-                        ) {
-                            o = _.deepCopy(this.beforeSumData);
-                        }
-                        o = callback(o, i) || o;
-                        if (
-                            !checkedKey ||
-                            (checkedKey &&
-                                (o[checkedKey] === checkedVal ||
-                                    o[checkedKey] === true))
-                        ) {
-                            // 根据callback返回的notAddabled字段，判断是否添加数据
-                            if (!o.notAddabled && o.mapleTotal !== '合计') {
-                                data.push({
-                                    ...o,
-                                    notAddabled: undefined,
-                                    _extraField_: undefined
-                                });
-                            }
-                        }
-                    });
+                        };
+                    d.map((dEle, i) => handleMap(i));
+                    popData = this.copyData.slice(d.length);
+                    popData.map((pEle, i) => handleMap(i, pEle));
                     this.core.validateCells(valid => {
-                        let popData = this.copyData.slice(d.length);
-                        if (checkedKey) {
-                            popData = popData.filter(
-                                item =>
-                                    item[checkedKey] === checkedVal ||
-                                    item[checkedKey] === true
-                            );
-                        }
-                        const value = data.concat(popData).filter(item => item); // 暂时只增加filter方法，后续需要优化，针对设置最少行数
                         resolve({
-                            value:
-                                value[value.length - 1] &&
-                                value[value.length - 1].mapleTotal === '合计'
-                                    ? value.slice(0, value.length - 1)
-                                    : value,
+                            value: data,
                             valid: valid
                         });
                         this.getDataDoubled = false;
