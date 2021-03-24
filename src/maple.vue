@@ -97,6 +97,10 @@ export default {
         rowHeight: {
             type: Number,
             default: 23
+        },
+        menuFillName: {
+            type: String,
+            default: '向下填充'
         }
     },
     data() {
@@ -190,7 +194,7 @@ export default {
             const vm = this,
                 contextMenu = vm.options.contextMenu || vm.settings.contextMenu,
                 fill_cells_data = {
-                    name: '填充',
+                    name: this.menuFillName,
                     disabled: function () {
                         return vm.options.controlFillDisabled instanceof
                             Function

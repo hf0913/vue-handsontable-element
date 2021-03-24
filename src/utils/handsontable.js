@@ -4,6 +4,7 @@ function getColumns(t) {
     let _cols = [],
         cols = [],
         key,
+        itemData,
         { columns, options } = this;
     if (!t) this.myColumns = utils.deepCopy(columns);
     if (options.cacheId && options.openCache && columns.length) {
@@ -11,20 +12,23 @@ function getColumns(t) {
             localStorage.getItem(`${options.cacheId}-columns`) || '[]'
         );
         if (_cols.length && !t) {
-            _cols.map(item => {
+            for (let item of _cols.values()) {
                 key = item.key || item.data;
+                itemData = columns.find(
+                    ele =>
+                        (ele.key || ele.data) === key ||
+                        (ele.subType === item.subType &&
+                            item.subType === 'handle')
+                );
+                if (!itemData) continue;
                 cols.push({
-                    ...columns.find(
-                        ele =>
-                            (ele.key || ele.data) === key ||
-                            (ele.subType === item.subType &&
-                                item.subType === 'handle')
-                    ),
+                    ...itemData,
                     _width: item._width,
                     className: item.className || 'htMiddle htCenter'
                 });
-            });
-            this.myColumns = cols;
+            }
+            this.myColumns =
+                cols.length === this.myColumns ? cols : this.myColumns;
         }
     }
     if (!_cols.length) _cols = this.myColumns;
