@@ -101,6 +101,9 @@ export default {
         menuFillName: {
             type: String,
             default: '向下填充'
+        },
+        handleFilterHtmlShow: {
+            type: Boolean
         }
     },
     data() {
@@ -421,6 +424,12 @@ export default {
                                 d[index] = item;
                             }
                             curr = item[key];
+                            if (
+                                typeof curr === 'string' &&
+                                curr.includes('javascript')
+                            ) {
+                                curr = curr.slice(30).replace(/<\/a>/g, '');
+                            }
                             switch (type) {
                                 case 'begins_with':
                                     if (
@@ -750,12 +759,13 @@ export default {
                             currentCol,
                             getNowColumns,
                             filterFailData,
-                            beforeSumData
+                            beforeSumData,
+                            handleFilterHtmlShow
                         } = this,
                         list = [];
                     let emptyData;
 
-                    if (lazyLoadAbled) {
+                    if (lazyLoadAbled || handleFilterHtmlShow) {
                         const colItem = getNowColumns()[currentCol],
                             key = colItem.key || colItem.data,
                             getList = d => {
@@ -766,6 +776,15 @@ export default {
                                             : ele[key] || '';
                                     if (ele.mapleTotal === '合计')
                                         val = beforeSumData[key];
+                                    if (ele._mapleTotal === '合计') return;
+                                    if (
+                                        typeof val === 'string' &&
+                                        val.includes('javascript')
+                                    ) {
+                                        val = val
+                                            .slice(30)
+                                            .replace(/<\/a>/g, '');
+                                    }
                                     if (list.some(v => v.value == val)) return;
                                     if (!val) {
                                         emptyData = {
@@ -1532,14 +1551,25 @@ export default {
         },
         getColumns() {
             if (this.settings.cacheId && this.settings.openCache) {
-                const t = this.core.getColHeader();
+                const myColumns = this.myColumns,
+                    t = this.core.getColHeader();
                 const cols = [];
+                let _width, className, key, subType;
                 t.map(ele => {
                     const index = ele.slice(
                         ele.indexOf('index=') + 6,
                         ele.indexOf('CDC')
                     );
-                    cols.push(this.myColumns[index]);
+                    _width = myColumns[index]._width;
+                    className = myColumns[index].className;
+                    key = myColumns[index].key || myColumns[index].data;
+                    subType = myColumns[index].subType;
+                    cols.push({
+                        subType,
+                        key,
+                        _width,
+                        className
+                    });
                 });
                 localStorage.setItem(
                     `${this.settings.cacheId}-hiddenColumns`,

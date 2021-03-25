@@ -5,7 +5,8 @@ function getColumns(t) {
         cols = [],
         key,
         itemData,
-        { columns, options } = this;
+        columns = this.columns,
+        options = this.options;
     if (!t) this.myColumns = utils.deepCopy(columns);
     if (options.cacheId && options.openCache && columns.length) {
         _cols = JSON.parse(
@@ -22,13 +23,13 @@ function getColumns(t) {
                 );
                 if (!itemData) continue;
                 cols.push({
-                    ...itemData,
+                    ...utils.deepCopy(itemData),
                     _width: item._width,
                     className: item.className || 'htMiddle htCenter'
                 });
             }
             this.myColumns =
-                cols.length === this.myColumns ? cols : this.myColumns;
+                cols.length === this.myColumns.length ? cols : this.myColumns;
         }
     }
     if (!_cols.length) _cols = this.myColumns;
