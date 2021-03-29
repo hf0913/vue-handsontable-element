@@ -67,7 +67,7 @@ export default {
         change(v) {
             const { row, col } = this.coords;
             const { subType, valueName, labelName } = this.columns[col];
-            const key = this.columns[col].key || this.columns[col].data;
+            const key = this.key;
             const value = v;
 
             if (subType === 'address' || subType === 'cascader') {
@@ -108,7 +108,7 @@ export default {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtRowProp(row, col, v, 'changeCascader');
+                this.core.setDataAtRowProp(row, this.key, v, 'changeCascader');
             }
         },
         async controlOpen({
@@ -193,7 +193,7 @@ export default {
                         if (!this.value.length) {
                             this.core.setDataAtRowProp(
                                 row,
-                                col,
+                                this.key,
                                 '',
                                 'changeCascader'
                             );
