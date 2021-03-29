@@ -133,9 +133,14 @@ export default {
                             source: 'select'
                         });
                     }
-                    this.core.setDataAtCell(row, col, cellVals, 'changeCells');
+                    this.core.setDataAtRowProp(
+                        row,
+                        key,
+                        cellVals,
+                        'changeCells'
+                    );
                 } else if (!this.isOK) {
-                    this.core.setDataAtCell(row, col, null, 'changeCells');
+                    this.core.setDataAtRowProp(row, key, null, 'changeCells');
                 }
                 this.$emit('change', false);
                 this.selectAbled = false;
@@ -192,7 +197,12 @@ export default {
                     source: 'select'
                 });
                 let t = setTimeout(() => {
-                    this.core.setDataAtCell(row, col, value, 'changeCells');
+                    this.core.setDataAtRowProp(
+                        row,
+                        this.key,
+                        value,
+                        'changeCells'
+                    );
                     clearTimeout(t);
                     t = null;
                 }, 128);

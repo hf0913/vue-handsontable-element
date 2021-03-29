@@ -937,32 +937,25 @@ export default {
                     hasColumnSummary,
                     selectBoxConfig,
                     getKeyChange,
-                    core
+                    core,
+                    getCheckedData,
+                    copyData
                 } = this,
-                {
-                    key = 'checked',
-                    col = 0,
-                    checkedTemplate = 'checkedTemplate'
-                } = selectBoxConfig || {},
+                { key = 'checked', checkedTemplate = 'checkedTemplate' } =
+                    selectBoxConfig || {},
                 checkBoxVal = getKeyChange(key, changes);
             let checked = [];
 
             if (checkBoxVal.length) {
-                let { length: len } = core
-                    .getDataAtCol(col)
-                    .filter((bl, row) => {
-                        if (bl || bl === checkedTemplate) {
-                            checked.push({
-                                row,
-                                checked: bl
-                            });
-                        }
-                        return bl;
-                    });
-                let countRows = core.countRows(),
+                checked = getCheckedData({
+                    key,
+                    value: checkedTemplate
+                });
+                checked = checked.checkedData;
+                let countRows = copyData.length,
                     bl = hasColumnSummary
-                        ? len === countRows - 1
-                        : len === countRows;
+                        ? checked.length === countRows - 1
+                        : checked.length === countRows;
                 if (bl !== this.checkAllabled) {
                     this.checkAllabled = bl;
                     core.render();
@@ -1378,6 +1371,7 @@ export default {
                 name: event.target.type,
                 event,
                 type,
+                getCols: this.getNowColumns,
                 columns: this.myColumns
             });
         },
@@ -1540,20 +1534,25 @@ export default {
         },
         afterHideColumns(currentHideConfig, destinationHideConfig) {
             this.hiddenColumns = destinationHideConfig;
-            this.getColumns();
         },
         afterUnhideColumns(currentHideConfig, destinationHideConfig) {
             this.hiddenColumns = destinationHideConfig;
-            this.getColumns();
         },
-        afterColumnMove() {
-            this.getColumns();
+        afterColumnMove(
+            movedColumns,
+            finalIndex,
+            dropIndex,
+            movePossible,
+            orderChanged
+        ) {
+            if (orderChanged) this.getColumns();
         },
         getColumns() {
             if (this.settings.cacheId && this.settings.openCache) {
                 const myColumns = this.myColumns,
-                    t = this.core.getColHeader();
-                const cols = [];
+                    t = this.core.getColHeader(),
+                    cols = [],
+                    columns = [];
                 let _width, className, key, subType;
                 t.map(ele => {
                     const index = ele.slice(
@@ -1570,6 +1569,7 @@ export default {
                         _width,
                         className
                     });
+                    columns.push(myColumns[index]);
                 });
                 localStorage.setItem(
                     `${this.settings.cacheId}-hiddenColumns`,
@@ -1579,6 +1579,10 @@ export default {
                     `${this.settings.cacheId}-columns`,
                     JSON.stringify(cols)
                 );
+                this.myColumns = columns;
+                this.$nextTick(() => {
+                    this.$emit('update-columns', columns);
+                });
             }
         },
         getNowColumns() {
@@ -1683,10 +1687,15 @@ export default {
             if (!key)
                 throw `Please provide the field name of the selection box`;
             let d = [],
-                { clearFilters, copyData } = this;
-            for (let item of copyData.values()) {
-                if (item[key] === value || item[key] === true) {
-                    if (item.mapleTotal === '合计') item = this.beforeSumData;
+                { clearFilters, copyData, beforeSumData } = this;
+            for (let [index, item] of copyData.entries()) {
+                if (
+                    index !== copyData.length - 1 &&
+                    (item[key] === value || item[key] === true)
+                ) {
+                    if (item.mapleTotal === '合计') {
+                        item = _.deepCopy(beforeSumData);
+                    }
                     getItem(item);
                     d.push(item);
                 }

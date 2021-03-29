@@ -37,6 +37,7 @@ export default {
     data() {
         return {
             options: [],
+            key: null,
             value: null,
             show: true,
             coords: {},
@@ -107,7 +108,7 @@ export default {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtCell(row, col, v, 'changeCascader');
+                this.core.setDataAtRowProp(row, col, v, 'changeCascader');
             }
         },
         async controlOpen({
@@ -133,7 +134,9 @@ export default {
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
                 let list = [];
                 const key = columns[col].key || columns[col].data,
-                    { subType = '', props = {}, type } = columns[col];
+                    { subType = '', props = {}, type, key: k, data } = columns[
+                        col
+                    ];
                 if (type) return;
                 this.controlPickerPanel(open);
                 this.show = !open;
@@ -142,6 +145,7 @@ export default {
                 this.left = left;
                 this.prop = Object.assign({}, props);
                 this.value = null;
+                this.key = k || data;
                 for (let [, w] of orgColumns.entries()) {
                     if (w.key === key || w.data === key) {
                         let wOptions = w.options || w.source || [];
@@ -187,7 +191,7 @@ export default {
                         }
 
                         if (!this.value.length) {
-                            this.core.setDataAtCell(
+                            this.core.setDataAtRowProp(
                                 row,
                                 col,
                                 '',

@@ -34,6 +34,7 @@ export default {
     components: { 'el-date-picker': DatePicker },
     data() {
         return {
+            key: null,
             value: null,
             show: true,
             coords: {},
@@ -65,7 +66,7 @@ export default {
             const { row, col } = this.coords;
 
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                this.core.setDataAtCell(row, col, v, 'changeDate');
+                this.core.setDataAtRowProp(row, this.key, v, 'changeDate');
             }
         },
         controlOpen({
@@ -88,7 +89,9 @@ export default {
                 row
             };
             if (col !== -1208 && row !== -1208 && col != null && row != null) {
-                const { subType = '', props = {}, type } = columns[col];
+                const { subType = '', props = {}, type, key, data } = columns[
+                    col
+                ];
                 const charReg = /^[\u4e00-\u9fa5]+$/;
                 const { valueFormat = 'yyyy-MM-dd HH:mm:ss' } = props;
 
@@ -96,6 +99,7 @@ export default {
                 if (subType === 'datePicker' && !type) {
                     let v = core.getDataAtCell(row, col);
 
+                    this.key = key || data;
                     this.value =
                         v && v.length === valueFormat.length && !charReg.test(v)
                             ? v

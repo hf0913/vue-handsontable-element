@@ -12,7 +12,7 @@ function getColumns(t) {
         _cols = JSON.parse(
             localStorage.getItem(`${options.cacheId}-columns`) || '[]'
         );
-        if (_cols.length && !t) {
+        if (_cols.length) {
             for (let item of _cols.values()) {
                 key = item.key || item.data;
                 itemData = columns.find(
@@ -28,7 +28,7 @@ function getColumns(t) {
                     className: item.className || 'htMiddle htCenter'
                 });
             }
-            this.myColumns =
+            this.myColumns = _cols =
                 cols.length === this.myColumns.length ? cols : this.myColumns;
         }
     }
@@ -104,10 +104,21 @@ function colHeaders(col) {
 }
 
 function customColumns() {
-    const columns = [];
-
     getColumns.call(this);
-    this.myColumns.map(item => {
+    const cols = [],
+        {
+            columns,
+            data,
+            getKeyChange,
+            filterKeysChanges,
+            myColumns,
+            hasColumnSummary,
+            singleSelectConfig,
+            getCheckedData,
+            copyData
+        } = this;
+
+    myColumns.map(item => {
         const k = item.key || item.data;
         if (
             item.subType === 'optimize' &&
@@ -123,7 +134,7 @@ function customColumns() {
                     processOpts = [],
                     opts = [];
                 let list = [];
-                for (let [, w] of this.columns.entries()) {
+                for (let [, w] of columns.entries()) {
                     if (w.key === k || w.data === k) {
                         const wOptions = w.options || w.source;
                         list =
@@ -244,7 +255,7 @@ function customColumns() {
                 $el.style.justifyContent = 'space-around';
                 $el.style.alignItems = 'center';
 
-                if (this.hasColumnSummary && row === instance.countRows() - 1) {
+                if (hasColumnSummary && row === instance.countRows() - 1) {
                     maple.dom.empty(td);
                     td.innerHTML = col === 0 ? '合计' : '';
                     td.setAttribute('class', 'maple-table-total');
@@ -271,7 +282,8 @@ function customColumns() {
                             event,
                             core: instance,
                             name,
-                            getCols: this.getNowColumns
+                            getCols: this.getNowColumns,
+                            columns: this.myColumns
                         });
                         event.stopPropagation && event.stopPropagation();
                         event.cancelBubble = true;
@@ -285,25 +297,27 @@ function customColumns() {
             };
         }
         if (item.type === 'checkbox') {
-            // eslint-disable-next-line no-unused-vars
-            const {
-                columns,
-                data,
-                getKeyChange,
-                filterKeysChanges,
-                myColumns,
-                hasColumnSummary,
-                singleSelectConfig
-            } = this;
             item.renderer = (instance, td, row, col, prop, value) => {
+                if ((item.key || item.data) !== prop) return;
                 const { readOnly, editor } = instance.getCellMeta(row, col),
                     { _mapleIndex } = instance.getSourceDataAtRow(row) || {};
                 let sourceIndex = data.findIndex(
                     e => e && e._mapleIndex === _mapleIndex
                 );
                 sourceIndex = ~sourceIndex ? sourceIndex : row;
-                if (!data[sourceIndex]) return td;
+                if (!data[sourceIndex]) return;
                 maple.dom.empty(td);
+                if (hasColumnSummary && row === instance.countRows() - 1) {
+                    maple.dom.empty(td);
+                    td.innerHTML = col === 0 ? '合计' : '';
+                    td.setAttribute('class', 'maple-table-total');
+                    td.parentElement &&
+                        td.parentElement.setAttribute(
+                            'class',
+                            'maple-table-total-tr'
+                        );
+                    return td;
+                }
                 let $el = document.createElement('INPUT'),
                     $div = document.createElement('DIV'),
                     oldVal = $el.checked,
@@ -372,15 +386,11 @@ function customColumns() {
                         this.singleSelectIndex = row;
                     }
 
-                    data.filter((item, row) => {
-                        let cVal = item[prop];
-                        if (cVal) {
-                            checked.push({
-                                row,
-                                checked: cVal
-                            });
-                        }
+                    checked = getCheckedData({
+                        key: prop,
+                        value: checkedTemplate
                     });
+                    checked = checked.checkedData;
                     this.$emit('change', {
                         source: 'checkbox',
                         changes: [[row, prop, oldVal, checkedClickVal]],
@@ -392,8 +402,8 @@ function customColumns() {
                         columns: myColumns
                     });
                     this.checkAllabled = !!(checked.length && hasColumnSummary
-                        ? checked.length === data.length - 1
-                        : checked.length === data.length);
+                        ? checked.length === copyData.length - 1
+                        : checked.length === copyData.length);
                     instance.render();
                 });
                 if (
@@ -446,15 +456,11 @@ function customColumns() {
                         this.singleSelectIndex = row;
                     }
 
-                    data.filter((item, row) => {
-                        let cVal = item[prop];
-                        if (cVal) {
-                            checked.push({
-                                row,
-                                checked: cVal
-                            });
-                        }
+                    checked = getCheckedData({
+                        key: prop,
+                        value: checkedTemplate
                     });
+                    checked = checked.checkedData;
                     this.$emit('change', {
                         source: 'checkbox',
                         changes: [[row, prop, oldVal, checkedClickVal]],
@@ -466,8 +472,8 @@ function customColumns() {
                         columns: myColumns
                     });
                     this.checkAllabled = !!(checked.length && hasColumnSummary
-                        ? checked.length === data.length - 1
-                        : checked.length === data.length);
+                        ? checked.length === copyData.length - 1
+                        : checked.length === copyData.length);
                     instance.render();
                 });
                 td.setAttribute('class', 'maple-custom-checkbox-td');
@@ -485,9 +491,9 @@ function customColumns() {
             title: null,
             visibleRows: item.visibleRows || 6
         };
-        columns.push(item);
+        cols.push(item);
     });
-    return columns;
+    return cols;
 }
 
 function beforeChange(change) {
@@ -543,7 +549,8 @@ function afterOnCellMouseDown(event, coords, $el) {
                 name: 'cells',
                 event,
                 type: 'click',
-                getCols: this.getNowColumns
+                getCols: this.getNowColumns,
+                columns: this.myColumns
             });
         }
     }
