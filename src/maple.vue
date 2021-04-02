@@ -1683,21 +1683,32 @@ export default {
         changeCheckAllabled(bl) {
             this.checkAllabled = bl;
         },
-        getCheckedData({ key, value, clear, getItem = () => {} } = {}) {
+        getCheckedData({
+            key,
+            value,
+            clear,
+            getItem = () => {},
+            all = false
+        } = {}) {
             if (!key)
                 throw `Please provide the field name of the selection box`;
             let d = [],
                 { clearFilters, copyData, beforeSumData } = this;
+
             for (let [index, item] of copyData.entries()) {
-                if (
-                    index !== copyData.length - 1 &&
-                    (item[key] === value || item[key] === true)
-                ) {
+                if (index !== copyData.length - 1) {
                     if (item.mapleTotal === '合计') {
                         item = _.deepCopy(beforeSumData);
+                        getItem(item);
+                        d.push(item);
+                    } else if (
+                        item[key] === value ||
+                        item[key] === true ||
+                        all
+                    ) {
+                        getItem(item);
+                        d.push(item);
                     }
-                    getItem(item);
-                    d.push(item);
                 }
             }
             if (clear) {
