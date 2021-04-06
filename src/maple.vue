@@ -1353,6 +1353,10 @@ export default {
                 }
                 this.core.render();
                 type = 'allCheckbox';
+                this.beforeSumData[key] = this.checkAllabled
+                    ? myColumns[checkedIndex].checkedTemplate || true
+                    : myColumns[checkedIndex].uncheckedTemplate || false;
+                this.$emit('updata-replace-sum-data', this.beforeSumData);
                 this.$emit('change', {
                     type,
                     event,
@@ -1697,15 +1701,9 @@ export default {
 
             for (let [index, item] of copyData.entries()) {
                 if (index !== copyData.length - 1) {
-                    if (item.mapleTotal === '合计') {
+                    if (item.mapleTotal === '合计')
                         item = _.deepCopy(beforeSumData);
-                        getItem(item);
-                        d.push(item);
-                    } else if (
-                        item[key] === value ||
-                        item[key] === true ||
-                        all
-                    ) {
+                    if (item[key] === value || item[key] === true || all) {
                         getItem(item);
                         d.push(item);
                     }
