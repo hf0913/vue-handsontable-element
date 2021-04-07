@@ -1701,8 +1701,10 @@ export default {
 
             for (let [index, item] of copyData.entries()) {
                 if (index !== copyData.length - 1) {
-                    if (item.mapleTotal === '合计')
+                    if (item.mapleTotal === '合计') {
                         item = _.deepCopy(beforeSumData);
+                        item._mapleTotal = '合计';
+                    }
                     if (item[key] === value || item[key] === true || all) {
                         getItem(item);
                         d.push(item);
