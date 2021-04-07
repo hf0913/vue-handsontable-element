@@ -1697,19 +1697,22 @@ export default {
             if (!key)
                 throw `Please provide the field name of the selection box`;
             let d = [],
-                { clearFilters, copyData, beforeSumData } = this;
+                index = 0,
+                { clearFilters, copyData, beforeSumData } = this,
+                data = new Set(copyData);
 
-            for (let [index, item] of copyData.entries()) {
-                if (index !== copyData.length - 1) {
+            for (let item of data.values()) {
+                if (index !== data.length - 1) {
                     if (item.mapleTotal === '合计') {
                         item = _.deepCopy(beforeSumData);
                         item._mapleTotal = '合计';
                     }
                     if (item[key] === value || item[key] === true || all) {
-                        getItem(item);
-                        d.push(item);
+                        item = getItem(item) || item;
+                        if (item._add || item._add === void 0) d.push(item);
                     }
                 }
+                index++;
             }
             if (clear) {
                 let t = setTimeout(() => {
