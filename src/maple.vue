@@ -1702,7 +1702,7 @@ export default {
                 data = new Set(copyData);
 
             for (let item of data.values()) {
-                if (index !== data.length - 1) {
+                if (index !== data.size - 1) {
                     if (item.mapleTotal === '合计') {
                         item = _.deepCopy(beforeSumData);
                         item._mapleTotal = '合计';
