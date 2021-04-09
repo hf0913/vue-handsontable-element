@@ -1344,19 +1344,26 @@ export default {
                 )
                     return;
                 for (let i = 0; i < d.length; i++) {
-                    if (d[i].mapleTotal === '合计' && i !== d.length - 1)
-                        continue;
-                    d[i][key] = this.checkAllabled
-                        ? myColumns[checkedIndex].checkedTemplate || true
-                        : myColumns[checkedIndex].uncheckedTemplate || false;
+                    if (d[i].mapleTotal === '合计' && i !== d.length - 1) {
+                        this.beforeSumData[key] = this.checkAllabled
+                            ? myColumns[checkedIndex].checkedTemplate || true
+                            : myColumns[checkedIndex].uncheckedTemplate ||
+                              false;
+                        this.$emit(
+                            'updata-replace-sum-data',
+                            this.beforeSumData
+                        );
+                    }
+                    if (d[i].mapleTotal !== '合计') {
+                        d[i][key] = this.checkAllabled
+                            ? myColumns[checkedIndex].checkedTemplate || true
+                            : myColumns[checkedIndex].uncheckedTemplate ||
+                              false;
+                    }
                     if (this.checkAllabled) this.checkAllabledIndex++;
                 }
                 this.core.render();
                 type = 'allCheckbox';
-                this.beforeSumData[key] = this.checkAllabled
-                    ? myColumns[checkedIndex].checkedTemplate || true
-                    : myColumns[checkedIndex].uncheckedTemplate || false;
-                this.$emit('updata-replace-sum-data', this.beforeSumData);
                 this.$emit('change', {
                     type,
                     event,
