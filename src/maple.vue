@@ -189,6 +189,36 @@ export default {
         this.autoRowSizePlugin = this.core.getPlugin('autoRowSize');
         this.init();
     },
+    created() {
+        this.validateRows = [];
+        for (let i = 0; i <= 303; i++) {
+            this.validateRows.push(i);
+        }
+        Array.prototype.duff = function (fn) {
+            const len = this.length;
+            let num = Math.floor(len / 8),
+                leftover = len % 8,
+                i = 0;
+            if (leftover > 0) {
+                do {
+                    fn(this[i], i++);
+                } while (--leftover > 0);
+            }
+            if (this.length < 8) {
+                return;
+            }
+            do {
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+                fn(this[i], i++);
+            } while (--num > 0);
+        };
+    },
     activated() {
         this.fixView();
     },
@@ -213,12 +243,14 @@ export default {
                             }
                         ]
                     ) {
+                        this.$emit('fill-down-start');
                         let {
                                 copyData,
                                 getNowColumns,
                                 core,
                                 beforeSumData,
-                                afterChange
+                                afterChange,
+                                options: { columnSummary }
                             } = vm,
                             keys = getNowColumns(),
                             fillData = [],
@@ -256,11 +288,28 @@ export default {
                                 beforeSumData
                             ) {
                                 collcet(r, beforeSumData, fillData[ij]);
-                                Object.assign(beforeSumData, fillData[ij]);
-                                vm.$emit(
-                                    'updata-replace-sum-data',
-                                    beforeSumData
-                                );
+                                setTimeout(() => {
+                                    let oldItem = _.deepCopy(copyData[r]);
+                                    oldItem.mapleTotal = undefined;
+                                    for (
+                                        let s = columnSummary.length - 1, sk;
+                                        s >= 0;
+                                        s--
+                                    ) {
+                                        sk = columnSummary[s].key;
+                                        oldItem[sk] = beforeSumData[sk];
+                                    }
+                                    Object.assign(
+                                        beforeSumData,
+                                        oldItem,
+                                        fillData[ij]
+                                    );
+                                    vm.$emit(
+                                        'updata-replace-sum-data',
+                                        beforeSumData
+                                    );
+                                    this.$emit('fill-down-end');
+                                }, 0);
                                 continue;
                             }
                             collcet(r, copyData[r], fillData[ij]);
@@ -1000,6 +1049,7 @@ export default {
                 });
             }
             this.getDataDoubled = true;
+            this.initSizeAbled = true;
             const timeOut = this.clearFilters() ? 2128 : 0;
             return new Promise(resolve => {
                 setTimeout(() => {
@@ -1008,7 +1058,9 @@ export default {
                         popData = [],
                         dItem = {},
                         o = {},
-                        hasReplace = false;
+                        hasReplace = false,
+                        status = true,
+                        count = 0;
                     const d = this.core.getData(),
                         data = [],
                         keys = getColumns.call(this, 'no'),
@@ -1038,6 +1090,7 @@ export default {
                                 o = _.deepCopy(this.beforeSumData);
                                 o._markReplace = true;
                             }
+                            count++;
                             for (let [j, itemData] of keys.entries()) {
                                 let v = dItem[j],
                                     k = itemData.key || itemData.data;
@@ -1065,10 +1118,20 @@ export default {
                                     type,
                                     checkedTemplate,
                                     uncheckedTemplate,
-                                    ajaxConfig
+                                    ajaxConfig,
+                                    allowEmpty
                                 } = newItem;
 
                                 let opts = newItem.options || newItem.source;
+
+                                if (
+                                    count > 303 &&
+                                    allowEmpty === false &&
+                                    o.mapleTotal !== '合计' &&
+                                    status
+                                ) {
+                                    status = v != null && v !== '';
+                                }
                                 if (opts instanceof Function) {
                                     opts = opts() || [];
                                 }
@@ -1304,13 +1367,13 @@ export default {
                                 }
                             }
                         };
-                    d.map((dEle, i) => handleMap(i));
+                    d.duff((dEle, i) => handleMap(i));
                     popData = this.copyData.slice(d.length);
-                    popData.map((pEle, i) => handleMap(i, pEle));
-                    this.core.validateCells(valid => {
+                    popData.duff((pEle, i) => handleMap(i, pEle));
+                    this.core.validateRows(this.validateRows, valid => {
                         resolve({
                             value: data,
-                            valid: valid
+                            valid: valid ? status : valid
                         });
                         this.getDataDoubled = false;
                     });
@@ -1590,10 +1653,7 @@ export default {
                     `${this.settings.cacheId}-columns`,
                     JSON.stringify(cols)
                 );
-                this.myColumns = columns;
-                this.$nextTick(() => {
-                    this.$emit('update-columns', columns);
-                });
+                this.init();
             }
         },
         getNowColumns() {
@@ -1758,6 +1818,9 @@ export default {
             });
             this.initSizeAbled = true;
             this.$emit('update', d);
+        },
+        initLazySize(bl) {
+            this.initSizeAbled = bl;
         }
     },
     watch: {
