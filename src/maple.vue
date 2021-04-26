@@ -227,7 +227,7 @@ export default {
             const vm = this,
                 contextMenu = vm.options.contextMenu || vm.settings.contextMenu,
                 fill_cells_data = {
-                    name: this.menuFillName,
+                    name: vm.menuFillName,
                     disabled: function () {
                         return vm.options.controlFillDisabled instanceof
                             Function
@@ -243,7 +243,7 @@ export default {
                             }
                         ]
                     ) {
-                        this.$emit('fill-down-start');
+                        vm.$emit('fill-down-start');
                         let {
                                 copyData,
                                 getNowColumns,
@@ -308,7 +308,7 @@ export default {
                                         'updata-replace-sum-data',
                                         beforeSumData
                                     );
-                                    this.$emit('fill-down-end');
+                                    vm.$emit('fill-down-end');
                                 }, 0);
                                 continue;
                             }
