@@ -308,7 +308,6 @@ export default {
                                         'updata-replace-sum-data',
                                         beforeSumData
                                     );
-                                    vm.$emit('fill-down-end');
                                 }, 0);
                                 continue;
                             }
@@ -322,6 +321,9 @@ export default {
                         vm.$emit('update', copyData);
                         afterChange(changes, 'customFill.fill');
                         core.render();
+                        setTimeout(() => {
+                            vm.$emit('fill-down-end');
+                        }, 12);
                     }
                 };
             if (contextMenu) {
