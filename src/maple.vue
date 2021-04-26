@@ -1771,15 +1771,15 @@ export default {
                 data = new Set(copyData);
 
             for (let item of data.values()) {
-                if (index !== data.size - 1) {
-                    if (item.mapleTotal === '合计') {
-                        item = _.deepCopy(beforeSumData);
-                        item._mapleTotal = '合计';
-                    }
-                    if (item[key] === value || item[key] === true || all) {
-                        item = getItem(item) || item;
-                        if (item._add || item._add === void 0) d.push(item);
-                    }
+                if (index === data.size - 1 && item.mapleTotal === '合计')
+                    break;
+                if (item.mapleTotal === '合计') {
+                    item = _.deepCopy(beforeSumData);
+                    item._mapleTotal = '合计';
+                }
+                if (item[key] === value || item[key] === true || all) {
+                    item = getItem(item) || item;
+                    if (item._add || item._add === void 0) d.push(item);
                 }
                 index++;
             }
